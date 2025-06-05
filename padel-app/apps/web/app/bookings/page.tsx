@@ -31,6 +31,7 @@ interface Booking {
 }
 
 const ITEMS_PER_PAGE = 10;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 function BookingsPageInternal() {
   const { accessToken } = useAuth();
@@ -61,7 +62,7 @@ function BookingsPageInternal() {
       if (sortBy) params.append('sort_by', sortBy);
       if (sortOrder === 'desc') params.append('sort_desc', 'true');
 
-      const response = await fetch(`/api/v1/bookings?${params.toString()}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/bookings?${params.toString()}`, {
         headers: { 'Authorization': `Bearer ${accessToken}` },
       });
 

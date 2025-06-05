@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Separator } from '@workspace/ui/components/separator';
 
 const MAX_PLAYERS_PER_GAME = 4; // Define the constant here
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 // Interfaces matching backend schemas
 interface UserForGame {
@@ -60,7 +61,7 @@ function GameDetailPageInternal() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/v1/games/${gameId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/games/${gameId}`, {
         headers: { 'Authorization': `Bearer ${accessToken}` },
       });
       if (!response.ok) {
@@ -88,7 +89,7 @@ function GameDetailPageInternal() {
     }
     setIsRespondingToInvite(true);
     try {
-        const response = await fetch(`/api/v1/games/${game.id}/invitations/${currentUser.id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/games/${game.id}/invitations/${currentUser.id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -117,7 +118,7 @@ function GameDetailPageInternal() {
     }
     setIsManagingPlayer(prev => ({ ...prev, [playerUserId]: true }));
     try {
-        const response = await fetch(`/api/v1/games/${game.id}/players/${playerUserId}/status`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/games/${game.id}/players/${playerUserId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

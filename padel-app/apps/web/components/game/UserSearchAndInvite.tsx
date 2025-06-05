@@ -25,6 +25,8 @@ interface UserSearchAndInviteProps {
   onPlayerInvited: (invitedPlayer: UserSearchResult) => void; // Callback after successful invitation
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 export default function UserSearchAndInvite({ gameId, currentPlayers, onPlayerInvited }: UserSearchAndInviteProps) {
   const { accessToken } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,7 +44,7 @@ export default function UserSearchAndInvite({ gameId, currentPlayers, onPlayerIn
       }
       setIsSearching(true);
       try {
-        const response = await fetch(`/api/v1/users/search?query=${encodeURIComponent(query)}&limit=5`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/users/search?query=${encodeURIComponent(query)}&limit=5`, {
           headers: { 'Authorization': `Bearer ${accessToken}` },
         });
         if (!response.ok) {
@@ -74,7 +76,7 @@ export default function UserSearchAndInvite({ gameId, currentPlayers, onPlayerIn
     }
     setInviteLoading(prev => ({ ...prev, [userToInvite.id]: true }));
     try {
-      const response = await fetch(`/api/v1/games/${gameId}/invitations`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/games/${gameId}/invitations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

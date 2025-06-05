@@ -12,6 +12,8 @@ import withAuth from '@/components/auth/withAuth';
 import { format, parseISO } from 'date-fns';
 import { Separator } from '@workspace/ui/components/separator';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 // Interface for Booking data from backend
 interface BookingDetail {
   id: number;
@@ -28,7 +30,7 @@ interface BookingDetail {
 // This is a temporary client-side workaround. Ideally, backend sends all this.
 async function fetchEnrichedBookingDetails(bookingId: string, accessToken: string | null): Promise<BookingDetail | null> {
     if (!accessToken) return null;
-    const bookingResponse = await fetch(`/api/v1/bookings/${bookingId}`, {
+    const bookingResponse = await fetch(`${API_BASE_URL}/api/v1/bookings/${bookingId}`, {
         headers: { 'Authorization': `Bearer ${accessToken}` },
     });
     if (!bookingResponse.ok) {

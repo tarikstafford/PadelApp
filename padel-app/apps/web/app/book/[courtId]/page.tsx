@@ -56,6 +56,8 @@ interface ApiError {
     detail?: string | { message: string } | any; // More flexible error detail typing
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 function BookingPageInternal() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -100,7 +102,7 @@ function BookingPageInternal() {
     setSelectedTimeSlot(null); // Reset selected slot when date changes
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      const response = await fetch(`/api/v1/courts/${courtId}/availability?date=${formattedDate}`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/courts/${courtId}/availability?date=${formattedDate}`);
       if (!response.ok) {
         const errorData: ApiError = await response.json().catch(() => ({ detail: "Failed to fetch time slots" }));
         const errorMessage = typeof errorData.detail === 'string' ? errorData.detail : "Failed to fetch time slots";
@@ -128,7 +130,7 @@ function BookingPageInternal() {
     }
     setIsBooking(true);
     try {
-      const response = await fetch("/api/v1/bookings/", {
+      const response = await fetch(`${API_BASE_URL}/api/v1/bookings/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -162,7 +164,7 @@ function BookingPageInternal() {
     if (!accessToken) return;
     // Potentially add loading state for fetching game details if it takes time
     try {
-        const response = await fetch(`/api/v1/games/${gameIdToFetch}`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/games/${gameIdToFetch}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` },
         });
         if (!response.ok) {
@@ -187,7 +189,7 @@ function BookingPageInternal() {
     setIsCreatingGame(true);
     setGameCreationError(null);
     try {
-        const response = await fetch("/api/v1/games/", {
+        const response = await fetch(`${API_BASE_URL}/api/v1/games/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

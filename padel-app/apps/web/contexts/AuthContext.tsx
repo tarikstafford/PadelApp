@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''; // Get base URL from env
+
 // Define a type for the user object
 interface User {
   id?: number; // Changed from string to number to match backend User model ID type
@@ -39,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     try {
-      const response = await fetch('/api/v1/auth/users/me', {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/users/me`, {
         headers: { 'Authorization': `Bearer ${currentToken}` },
       });
       if (response.ok) {
@@ -84,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // A more robust version might handle direct token setting for session recovery.
       if (!password_param) throw new Error("Password is required for login.");
 
-      const response = await fetch("/api/v1/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ username: email_param, password: password_param }).toString(),
@@ -114,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (name_param: string, email_param: string, password_param: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/v1/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name_param, email: email_param, password: password_param }),

@@ -24,6 +24,7 @@ interface Club {
 }
 
 const ITEMS_PER_PAGE = 6;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function DiscoverPage() {
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -53,7 +54,7 @@ export default function DiscoverPage() {
       if (sortOrder === 'desc') params.append('sort_desc', 'true');
 
       // console.log(`/api/v1/clubs?${params.toString()}`);
-      const response = await fetch(`/api/v1/clubs?${params.toString()}`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/clubs?${params.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch clubs" }));
         throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);

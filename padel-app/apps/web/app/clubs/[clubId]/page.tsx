@@ -35,6 +35,8 @@ interface ClubWithCourts {
   courts: Court[];
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 export default function ClubDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -50,7 +52,7 @@ export default function ClubDetailPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/v1/clubs/${clubId}`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/clubs/${clubId}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch club details" }));
         throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
