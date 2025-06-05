@@ -51,9 +51,8 @@ COPY --from=builder /app/out/full/ ./
 # Debug: List contents of node_modules/.bin to see if turbo is present
 RUN ls -la ./node_modules/.bin/
 
-# Attempt to run the build using npx, which should resolve turbo from local/global path
-# Also, let's simplify the filter for now to ensure it's not a filter syntax issue with the shell
-RUN npx turbo run build --filter=web 
+# Attempt to run the build using npx, with verbose flag for Next.js build
+RUN npx turbo run build --filter=web -- --verbose
 
 # Stage 4: Production Image - copy only necessary artifacts
 FROM node:18-alpine AS production-runner
