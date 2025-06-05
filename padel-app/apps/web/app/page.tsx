@@ -12,7 +12,7 @@ export default function HomePage() {
                 Book Your Padel Court with Ease
               </h1>
               <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                Discover and reserve Padel courts in your area. Invite friends, join games, and get on the court faster with PadelGo.
+                Discover and reserve Padel courts in your area!! Invite friends, join games, and get on the court faster with PadelGo.
               </p>
             </div>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
