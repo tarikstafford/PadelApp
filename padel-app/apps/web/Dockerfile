@@ -10,14 +10,13 @@ RUN npm install -g pnpm
 # Install Turbo globally (or use npx turbo later)
 RUN npm install -g turbo
 
-# Copy root manifests and config files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./ 
-# Note: .npmrc* copies .npmrc if it exists. If not, this might cause issues if Docker requires the file to exist.
-# If .npmrc does not exist and is not needed, remove .npmrc* or ensure it exists (even if empty).
-COPY .npmrc ./.npmrc
+# Copy ALL monorepo files, including .git directory
+COPY . .
+
+# (Optional but good practice) Clean pnpm cache if it was copied
+# RUN pnpm store prune
 
 # Prune the monorepo to only include dependencies for the 'web' app
-# This creates a minimal set of package.json files in out/json and copies source code to out/full
 RUN turbo prune web --docker
 
 # Stage 2: Install dependencies for the pruned 'web' app
