@@ -1,79 +1,72 @@
-# Stage 1: Build dependencies and application code
-FROM node:18-alpine AS builder
-
-# Set working directory for the entire monorepo context
+# Stage 1: Install dependencies and prepare for pruning
+FROM node:18-alpine AS deps_installer
 WORKDIR /app
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Install pnpm globally (specific version from your package.json)
+RUN npm install -g pnpm@10.4.1
 
-# Install Turbo globally (or use npx turbo later)
-RUN npm install -g turbo
+# Copy manifest files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+# If you have a .npmrc at the root, copy it too:
+# COPY .npmrc ./ 
 
-# Copy ALL monorepo files, including .git directory
+# Install all monorepo dependencies. This allows turbo to correctly build the graph.
+RUN pnpm install --frozen-lockfile --prod=false # Ensure devDependencies like 'turbo' are available
+
+# Stage 2: Prune and build the specific application ('web')
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+# Install pnpm and turbo globally for the prune and build commands
+RUN npm install -g pnpm@10.4.1 turbo
+
+# Copy manifest files again (needed for turbo prune context)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+# COPY .npmrc ./
+
+# Copy the fully installed node_modules from the previous stage.
+COPY --from=deps_installer /app/node_modules ./node_modules/
+
+# Copy all source code (respecting .dockerignore at the monorepo root)
 COPY . .
 
-# (Optional but good practice) Clean pnpm cache if it was copied
-# RUN pnpm store prune
-
-# Prune the monorepo to only include dependencies for the 'web' app
+# Now prune. With all files and node_modules present, prune should understand the graph.
 RUN turbo prune web --docker
 
-# Stage 2: Install dependencies for the pruned 'web' app
+# Stage 3: Install dependencies for the PRUNED 'web' app
 FROM node:18-alpine AS installer
-
 WORKDIR /app
-
-# Install pnpm globally (needed again in this new stage)
-RUN npm install -g pnpm
-
-# Copy the pruned monorepo structure (package.json files and lockfile)
+RUN npm install -g pnpm@10.4.1
 COPY --from=builder /app/out/json/ ./ 
 COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN pnpm install --frozen-lockfile --prod=false
 
-# Install dependencies using pnpm (only for the 'web' app and its direct dependencies)
-RUN pnpm install --frozen-lockfile --prod=false # Install devDependencies if build scripts need them
-
-# Stage 3: Build the Next.js application
+# Stage 4: Build the Next.js application (runner)
 FROM node:18-alpine AS runner
-
 WORKDIR /app
+RUN npm install -g pnpm@10.4.1 turbo
+ENV PATH /usr/local/lib/node_modules/.bin:/usr/local/bin:$PATH
 
-# No global turbo install here, we'll rely on npx or project's node_modules
-
-# Copy dependencies from the installer stage
+COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=installer /app/node_modules ./node_modules/
 COPY --from=installer /app/package.json ./package.json 
-
-# Copy the pruned source code for the 'web' app and its dependencies
 COPY --from=builder /app/out/full/ ./
 
-# Debug: List contents of node_modules/.bin to see if turbo is present
-RUN ls -la ./node_modules/.bin/
+RUN echo "--- RUNNER STAGE DEBUG ---" && \
+    echo "Current PATH: $PATH" && \
+    echo "Contents of /app:" && ls -la /app && \
+    echo "pnpm version:" && pnpm --version && \
+    echo "turbo version:" && turbo --version && \
+    echo "--- END RUNNER STAGE DEBUG ---"
 
-# Attempt to run the build using npx, with verbose flag for Next.js build
-RUN npx turbo run build --filter=web -- --verbose
+RUN turbo run build --filter=web -- --verbose
 
-# Stage 4: Production Image - copy only necessary artifacts
+# Stage 5: Production Image
 FROM node:18-alpine AS production-runner
-
 WORKDIR /app
-
 ENV NODE_ENV production
-# ENV NEXT_TELEMETRY_DISABLED 1 # Uncomment to disable Next.js telemetry
-
-# Correctly copy standalone output to the root of /app for production runner
 COPY --from=runner /app/apps/web/.next/standalone ./ 
-# Static assets are relative to the server.js inside standalone
 COPY --from=runner /app/apps/web/.next/static ./apps/web/.next/static 
 COPY --from=runner /app/apps/web/public ./apps/web/public
-
-# Set the correct user for running the application (optional but good practice)
-# RUN addgroup --system --gid 1001 nodejs
-# RUN adduser --system --uid 1001 nextjs
-# USER nextjs
-
 EXPOSE 3000
-
-# CMD for standalone output is typically node server.js from the root of the standalone dir
 CMD ["node", "server.js"] 

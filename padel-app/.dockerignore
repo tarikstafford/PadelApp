@@ -1,0 +1,31 @@
+# Git specific
+.git
+.gitignore
+
+# Node modules and pnpm store
+node_modules
+**/node_modules
+.pnpm-store
+
+# Turborepo cache
+.turbo
+
+# Next.js build outputs (local)
+apps/web/.next
+apps/web/out
+
+# OS-specific & editor specific
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.idea/
+.vscode/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo 
