@@ -59,7 +59,7 @@ RUN echo "--- RUNNER STAGE DEBUG ---" && \
     echo "turbo version:" && turbo --version && \
     echo "--- END RUNNER STAGE DEBUG ---"
 
-RUN turbo run build --filter=web -- --verbose
+RUN turbo run build --filter=web
 
 # Stage 5: Production Image
 FROM node:18-alpine AS production-runner
