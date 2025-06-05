@@ -39,6 +39,8 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
+# No global turbo install here, we'll rely on npx or project's node_modules
+
 # Copy dependencies from the installer stage
 COPY --from=installer /app/node_modules ./node_modules/
 COPY --from=installer /app/package.json ./package.json 
@@ -46,11 +48,12 @@ COPY --from=installer /app/package.json ./package.json
 # Copy the pruned source code for the 'web' app and its dependencies
 COPY --from=builder /app/out/full/ ./
 
-# Build the Next.js application (within the context of the pruned monorepo structure)
-# This command will be run from /app, which is the root of the pruned monorepo structure.
-# Ensure your turbo.json and package.json scripts are set up for this.
-# The filter ensures only the 'web' app is built.
-RUN turbo run build --filter=web...
+# Debug: List contents of node_modules/.bin to see if turbo is present
+RUN ls -la ./node_modules/.bin/
+
+# Attempt to run the build using npx, which should resolve turbo from local/global path
+# Also, let's simplify the filter for now to ensure it's not a filter syntax issue with the shell
+RUN npx turbo run build --filter=web 
 
 # Stage 4: Production Image - copy only necessary artifacts
 FROM node:18-alpine AS production-runner
