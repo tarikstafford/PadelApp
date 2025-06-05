@@ -13,6 +13,8 @@ import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Separator } from '@workspace/ui/components/separator';
 
+const MAX_PLAYERS_PER_GAME = 4; // Define the constant here
+
 // Interfaces matching backend schemas
 interface UserForGame {
     id: number;
@@ -200,7 +202,7 @@ function GameDetailPageInternal() {
             </div>
             <Separator />
             <div>
-                <h3 className="text-lg font-semibold mb-2 flex items-center"><Users className="mr-2 h-5 w-5 text-muted-foreground"/> Players ({game.players.filter(p => p.status === "ACCEPTED").length} / 4 Accepted)</h3>
+                <h3 className="text-lg font-semibold mb-2 flex items-center"><Users className="mr-2 h-5 w-5 text-muted-foreground"/> Players ({game.players.filter(p => p.status === "ACCEPTED").length} / {MAX_PLAYERS_PER_GAME} Accepted)</h3>
                 {game.players.length > 0 ? (
                     <ul className="space-y-2">
                         {game.players.map(playerEntry => (
