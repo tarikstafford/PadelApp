@@ -1,0 +1,31 @@
+from sqlalchemy import Column, Integer, ForeignKey, Enum as SAEnum
+from sqlalchemy.orm import relationship
+import enum
+
+from app.database import Base
+
+# Enum for GamePlayer status
+class GamePlayerStatus(str, enum.Enum):
+    INVITED = "invited"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    REQUESTED_TO_JOIN = "requested_to_join" # New status for join requests
+    # Add other statuses if needed, e.g., WAITING_LIST
+
+class GamePlayer(Base):
+    __tablename__ = "game_players"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_id = Column(Integer, ForeignKey("games.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(SAEnum(GamePlayerStatus), default=GamePlayerStatus.INVITED, nullable=False)
+
+    # Relationship to Game model
+    game = relationship("Game", back_populates="players")
+
+    # Relationship to User model
+    player = relationship("User" #, back_populates="game_participations" # Add to User model later
+                          )
+
+    def __repr__(self):
+        return f"<GamePlayer(id={self.id}, game_id={self.game_id}, user_id={self.user_id}, status='{self.status}')>" 

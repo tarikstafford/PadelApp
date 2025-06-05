@@ -1,0 +1,26 @@
+# This file makes 'models' a Python package
+
+# Import Base from database to make it accessible for Alembic and model definitions
+from app.database import Base
+
+# Import all model classes and enums to make them easily accessible
+from .user import User
+from .club import Club
+from .court import Court
+from .booking import Booking, BookingStatus
+from .game import Game, GameType
+from .game_player import GamePlayer, GamePlayerStatus
+
+# Optional: Define __all__ to control `from app.models import *` behavior
+__all__ = [
+    "Base",
+    "User",
+    "Club",
+    "Court",
+    "Booking",
+    "BookingStatus",
+    "Game",
+    "GameType",
+    "GamePlayer",
+    "GamePlayerStatus",
+] 

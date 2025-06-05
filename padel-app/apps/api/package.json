@@ -1,0 +1,13 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FastAPI backend for PadelGo, managed within the monorepo.",
+  "scripts": {
+    "dev": "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app",
+    "build": "echo 'No build step required for FastAPI backend in this setup' && exit 0",
+    "lint": "echo 'Lint script for API to be configured'"
+  },
+  "author": "",
+  "license": "ISC"
+} 

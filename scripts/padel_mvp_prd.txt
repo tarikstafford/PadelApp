@@ -1,0 +1,123 @@
+<context>
+# Overview
+This document outlines the requirements for "PadelGo," a Padel court booking web application. The application aims to provide a seamless experience for players to find and book Padel courts, manage their games, and connect with other players. It targets Padel enthusiasts and club administrators, offering a modern, user-friendly platform for all aspects of Padel game organization.
+
+# Core Features
+- **User Authentication & Profiles:**
+    - What it does: Allows users to register, log in (e.g., via email/password, potentially social logins later), and manage their profiles.
+    - Why it's important: Essential for personalized experience, booking history, game invitations, and security.
+    - How it works: User accounts with profiles storing name, email, and a profile picture.
+- **Club & Court Discovery:**
+    - What it does: Users can view a list of Padel clubs and the courts available at each club.
+    - Why it's important: Allows players to find suitable locations to play.
+    - How it works: Clubs will have details (name, location) and a list of their courts. Initially, this data might be seeded.
+- **Court Booking System:**
+    - What it does: Enables players to book available courts for specific time slots.
+    - Why it's important: The central functionality of the application.
+    - How it works: Users select a club, date, and a 30-minute time interval. Each game booking is intended for 4 players.
+- **Game Creation & Invitations:**
+    - What it does: Allows a player who booked a court to create a game session and invite three other registered players.
+    - Why it's important: Facilitates organizing matches.
+    - How it works: The game creator can search for and invite other users to fill the 4 player slots.
+- **Public & Private Games:**
+    - What it does: Games can be marked as "public" (discoverable by other users who might want to join) or "private" (only visible to invited players).
+    - Why it's important: Helps players find games if they don't have a full group, and allows for private matches.
+    - How it works: Public games will be listed with details (club, time, slots available). Players can request to join public games.
+- **Player Profile Management:**
+    - What it does: Users can update their basic profile information (name, email, profile picture).
+    - Why it's important: Keeps user information current.
+    - How it works: A dedicated section for users to manage their account details.
+
+# User Experience
+- **User Personas:**
+    - **Casual Player (Alex):** Plays Padel occasionally, needs an easy way to find/book courts and invite friends.
+    - **Regular Player (Maria):** Plays frequently, looks for public games, values a quick booking process.
+- **Key User Flows:**
+    - **Registration/Login:** New user signs up -> Existing user logs in.
+    - **Book a Court & Create Private Game:** User logs in -> Searches clubs/courts -> Selects slot -> Invites 3 players -> Confirms.
+    - **Create Public Game:** User logs in -> Searches clubs/courts -> Selects slot -> Marks game public -> (Optionally) Invites initial players -> Confirms. Other users can then see and request to join.
+    - **Manage Profile:** User updates their profile info.
+- **UI/UX Considerations:**
+    - Modern, clean, and responsive interface using shadcn UI components.
+    - Intuitive navigation and booking process.
+    - Clear visual indicators for court availability.
+</context>
+<PRD>
+# Technical Architecture
+- **Monorepo Structure:**
+    - Managed with `pnpm` workspaces and `Turborepo`.
+    - Location: `padel-app` directory.
+- **Frontend:**
+    - **Framework:** Next.js (within the `padel-app/apps/web` or similar directory).
+    - **Language:** TypeScript.
+    - **UI:** shadcn UI components, Tailwind CSS.
+    - **State Management:** React Context/Hooks, or a lightweight library like Zustand if complex state arises.
+- **Backend:**
+    - **Framework:** Python with FastAPI.
+    - **Language:** Python.
+    - **Database:** PostgreSQL.
+    - **Location:** To be decided (e.g., a new `api_backend` directory at the project root, or a package within the `padel-app` monorepo if feasible).
+- **Authentication:** JWT-based authentication for securing API endpoints.
+- **Key Data Models (Initial):**
+    - `User`: id, name, email, password_hash, profile_picture_url.
+    - `Club`: id, name, address, (config: opening_hours, number_of_courts).
+    - `Court`: id, club_id (FK to Club), name_or_number.
+    - `Booking`: id, court_id (FK to Court), start_time, end_time, created_by_user_id (FK to User).
+    - `Game`: id, booking_id (FK to Booking), game_type (public/private).
+    - `GamePlayer`: game_id (FK to Game), user_id (FK to User), status (invited, accepted, declined).
+- **APIs:** RESTful API endpoints for all frontend-backend interactions.
+- **Deployment:**
+    - **Platform:** Railway.
+    - **Services:**
+        - Next.js web application service.
+        - FastAPI backend service.
+        - PostgreSQL database service.
+
+# Development Roadmap
+- **MVP Requirements:**
+    1.  User registration & login (email/password).
+    2.  Player profile (view/edit name, email, picture).
+    3.  List clubs and view court details (seeded data).
+    4.  Book a court for a 4-player game (specific 30-min slot).
+    5.  Create a game instance upon booking, invite 3 other registered users.
+    6.  Distinguish between public/private games (simple flag).
+    7.  Basic view for users to see games they've created or been invited to.
+- **Phase 2 (Post-MVP Enhancements):**
+    - Public game listing page where users can see and request to join public games.
+    - Approval mechanism for joining public games.
+    - Notifications (e.g., game invitations, confirmations).
+    - Improved search/filtering for clubs/games.
+- **Future Considerations:**
+    - Club administration interface.
+    - Payment integration.
+    - Advanced player statistics/rankings.
+
+# Logical Dependency Chain (MVP Focus)
+1.  **Foundation:**
+    - Backend: Setup FastAPI, PostgreSQL schema for User, Club, Court, Booking, Game, GamePlayer.
+    - Backend: Implement User registration & login API endpoints.
+    - Frontend: Basic Next.js app setup with shadcn UI. User registration/login pages.
+2.  **Core Booking & Game Creation:**
+    - Backend: API endpoints for listing clubs/courts, booking a court, creating a game, inviting players.
+    - Frontend: UI for displaying clubs/courts, booking form, game creation/invitation flow.
+3.  **Profile & Game Viewing:**
+    - Backend: API endpoints for player profile management, viewing user's games.
+    - Frontend: Profile page, page to list user's games.
+4.  **Public/Private Distinction:**
+    - Backend: Logic to handle game privacy.
+    - Frontend: UI elements to set/display game privacy.
+
+# Risks and Mitigations
+- **Monorepo Complexity:**
+    - **Risk:** Managing build processes and dependencies in a Turborepo/pnpm setup can have a learning curve.
+    - **Mitigation:** Follow best practices for Turborepo. Start with a simple setup and incrementally add complexity.
+- **Backend Integration:**
+    - **Risk:** Deciding on the optimal location and integration strategy for the FastAPI backend within or alongside the pnpm monorepo.
+    - **Mitigation:** Evaluate options: separate repository, dedicated folder at root, or attempt integration as a non-JS package in Turborepo. Prioritize simplicity and clear separation of concerns for MVP.
+- **Scope Creep for MVP:**
+    - **Risk:** Adding too many features beyond the defined MVP.
+    - **Mitigation:** Strictly adhere to the MVP roadmap. Defer non-essential features to Phase 2.
+
+# Appendix
+- **Key Technologies:** Next.js, shadcn UI, FastAPI, PostgreSQL, Railway, pnpm, Turborepo.
+</PRD>
