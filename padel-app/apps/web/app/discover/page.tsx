@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -57,7 +58,8 @@ export default function DiscoverPage() {
       const response = await fetch(`${API_BASE_URL}/api/v1/clubs?${params.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch clubs" }));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        const errorMessage = typeof errorData.detail === 'string' ? errorData.detail : "Failed to fetch clubs";
+        throw new Error(errorMessage);
       }
       const data: Club[] = await response.json();
       
@@ -68,10 +70,11 @@ export default function DiscoverPage() {
         setHasNextPage(false);
         setClubs(data);
       }
-    } catch (err: any) {
-      console.error("Error fetching clubs:", err);
-      setError(err.message || "An unexpected error occurred.");
-      setClubs([]); // Clear clubs on error
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+      console.error("Error fetching clubs:", error);
+      setError(message);
+      setClubs([]);
     } finally {
       setIsLoading(false);
     }
@@ -178,11 +181,15 @@ export default function DiscoverPage() {
           {clubs.map((club) => (
             <Link key={club.id} href={`/clubs/${club.id}`} passHref legacyBehavior>
               <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer h-full flex flex-col">
-                <img 
-                  src={club.image_url || `https://via.placeholder.com/400x200?text=${encodeURIComponent(club.name)}`}
-                  alt={`Image of ${club.name}`}
-                  className="w-full h-48 object-cover"
-                />
+                <div className="relative w-full h-48">
+                  <Image 
+                    src={club.image_url || `https://via.placeholder.com/400x200?text=${encodeURIComponent(club.name)}`}
+                    alt={`Image of ${club.name}`}
+                    layout="fill"
+                    objectFit="cover"
+                    className="bg-muted"
+                  />
+                </div>
                 <CardHeader>
                   <CardTitle className="text-lg truncate" title={club.name}>{club.name}</CardTitle>
                   <CardDescription className="truncate" title={club.city || 'N/A'}>{club.city || 'Location not specified'}</CardDescription>
@@ -207,7 +214,7 @@ export default function DiscoverPage() {
           <Button 
             variant="outline" 
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || isLoading}
           >
             Previous
           </Button>
@@ -215,7 +222,7 @@ export default function DiscoverPage() {
           <Button 
             variant="outline" 
             onClick={() => setCurrentPage(prev => prev + 1)} 
-            disabled={!hasNextPage}
+            disabled={!hasNextPage || isLoading}
           >
             Next
           </Button>

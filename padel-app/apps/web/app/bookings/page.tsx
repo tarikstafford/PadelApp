@@ -2,18 +2,18 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation'; // Unused
 import { Button } from "@workspace/ui/components/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@workspace/ui/components/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card"; // Removed unused CardFooter
 import { Calendar } from "@workspace/ui/components/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Badge } from "@workspace/ui/components/badge";
-import { Loader2, AlertTriangle, CalendarIcon, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertTriangle, CalendarIcon } from 'lucide-react'; // Removed unused ArrowLeft
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+// import { toast } from 'sonner'; // Unused
 import withAuth from '@/components/auth/withAuth';
-import { format, parseISO, addDays } from 'date-fns';
+import { format, parseISO } from 'date-fns'; // Removed unused addDays
 import type { DateRange } from "react-day-picker";
 
 // Interface for Booking data, assuming backend might enrich this later
@@ -35,7 +35,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 function BookingsPageInternal() {
   const { accessToken } = useAuth();
-  const router = useRouter();
+  // const router = useRouter(); // Unused
 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,7 +49,7 @@ function BookingsPageInternal() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const fetchUserBookings = useCallback(async () => {
-    if (!accessToken) return; // Should be handled by withAuth, but good check
+    if (!accessToken) return;
 
     setIsLoading(true);
     setError(null);
@@ -68,7 +68,8 @@ function BookingsPageInternal() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch bookings" }));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        const errorMessage = typeof errorData.detail === 'string' ? errorData.detail : "Failed to fetch bookings";
+        throw new Error(errorMessage);
       }
       const data: Booking[] = await response.json();
       
@@ -79,9 +80,10 @@ function BookingsPageInternal() {
         setHasNextPage(false);
         setBookings(data);
       }
-    } catch (err: any) {
-      console.error("Error fetching bookings:", err);
-      setError(err.message || "An unexpected error occurred.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+      console.error("Error fetching bookings:", error);
+      setError(message);
       setBookings([]);
     } finally {
       setIsLoading(false);
@@ -99,11 +101,11 @@ function BookingsPageInternal() {
     setCurrentPage(1);
   };
 
-  const getStatusVariant = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "outline" | "destructive" | "secondary" => {
     switch (status.toUpperCase()) {
       case 'CONFIRMED':
-      case 'UPCOMING': // Assuming UPCOMING might be a status
-        return "default"; // Or a specific success-like variant
+      case 'UPCOMING':
+        return "default";
       case 'COMPLETED':
         return "secondary";
       case 'CANCELLED':

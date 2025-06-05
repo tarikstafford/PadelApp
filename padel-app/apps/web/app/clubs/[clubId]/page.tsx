@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation'; // useParams to get clubId, useRouter for back navigation
+import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
-import { Loader2, AlertTriangle, ArrowLeft, MapPin, Phone, Mail, Clock, Sun, Moon, List, LayoutGrid } from 'lucide-react'; // Added List, LayoutGrid
-import { Separator } from '@workspace/ui/components/separator'; // For visual separation
-import { ToggleGroup, ToggleGroupItem } from "@workspace/ui/components/toggle-group"; // Import ToggleGroup
+import { Loader2, AlertTriangle, ArrowLeft, Phone, Mail, Clock, Sun, Moon, List, LayoutGrid } from 'lucide-react';
+import { Separator } from '@workspace/ui/components/separator';
+import { ToggleGroup, ToggleGroupItem } from "@workspace/ui/components/toggle-group";
 
 // Interfaces matching backend schemas (ensure these are consistent)
 interface Court {
@@ -55,13 +56,15 @@ export default function ClubDetailPage() {
       const response = await fetch(`${API_BASE_URL}/api/v1/clubs/${clubId}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch club details" }));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        const errorMessage = typeof errorData.detail === 'string' ? errorData.detail : "Failed to fetch club details";
+        throw new Error(errorMessage);
       }
       const data: ClubWithCourts = await response.json();
       setClub(data);
-    } catch (err: any) {
-      console.error(`Error fetching club ${clubId} details:`, err);
-      setError(err.message || "An unexpected error occurred.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+      console.error(`Error fetching club ${clubId} details:`, error);
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -116,11 +119,15 @@ export default function ClubDetailPage() {
 
       <Card className="overflow-hidden">
         {club.image_url && (
-          <img 
-            src={club.image_url} 
-            alt={`Image of ${club.name}`}
-            className="w-full h-64 md:h-80 object-cover"
-          />
+          <div className="relative w-full h-64 md:h-80">
+            <Image 
+              src={club.image_url} 
+              alt={`Image of ${club.name}`}
+              layout="fill"
+              objectFit="cover"
+              className="bg-muted"
+            />
+          </div>
         )}
         <CardHeader className="pt-6">
           <CardTitle className="text-3xl md:text-4xl font-bold">{club.name}</CardTitle>

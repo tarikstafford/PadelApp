@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Input } from '@workspace/ui/components/input'; // Fallback, ideally use CommandInput
 import { Button } from '@workspace/ui/components/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@workspace/ui/components/command';
 import { Loader2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UserSearchResult {
-  id: number; // Assuming id is number from backend User schema
+// Export the interface to be used by other components
+export interface UserSearchResult {
+  id: number;
   name?: string | null;
   email: string;
 }
@@ -26,6 +26,19 @@ interface UserSearchAndInviteProps {
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+// A more correctly typed debounce function
+function debounce<T extends (...args: any[]) => void>(func: T, delay: number) {
+  let timeoutId: NodeJS.Timeout | undefined;
+  return function(this: ThisParameterType<T>, ...args: Parameters<T>) {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+    }, delay);
+  };
+}
 
 export default function UserSearchAndInvite({ gameId, currentPlayers, onPlayerInvited }: UserSearchAndInviteProps) {
   const { accessToken } = useAuth();
@@ -92,9 +105,10 @@ export default function UserSearchAndInvite({ gameId, currentPlayers, onPlayerIn
       onPlayerInvited(userToInvite); // Notify parent to refresh player list
       setSearchTerm(""); // Clear search term after inviting
       setSearchResults([]); // Clear results
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to send invitation.";
       console.error("Invite error:", error);
-      toast.error(error.message || "Failed to send invitation.");
+      toast.error(message);
     } finally {
       setInviteLoading(prev => ({ ...prev, [userToInvite.id]: false }));
     }
@@ -120,7 +134,6 @@ export default function UserSearchAndInvite({ gameId, currentPlayers, onPlayerIn
                 <CommandItem 
                   key={userRes.id} 
                   className="flex justify-between items-center"
-                  // onSelect={() => handleInvite(userRes)} // Can be used if CommandItem itself is clickable for invite
                 >
                   <div>
                     <p className="text-sm font-medium">{userRes.name || 'N/A'}</p>
@@ -143,13 +156,4 @@ export default function UserSearchAndInvite({ gameId, currentPlayers, onPlayerIn
       </Command>
     </div>
   );
-}
-
-// Simple debounce function
-function debounce<T extends (...args: any[]) => void>(func: T, delay: number) {
-  let timeoutId: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  };
 } 

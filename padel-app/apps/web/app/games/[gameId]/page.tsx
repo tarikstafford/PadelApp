@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
-import { Loader2, AlertTriangle, ArrowLeft, Calendar as CalendarIcon, Clock, Users, Hash, ShieldCheck, UserCheck, UserX, Info, CheckCircleIcon, XCircleIcon } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Calendar as CalendarIcon, Users, Hash, ShieldCheck, UserCheck, UserX, Info, CheckCircleIcon, XCircleIcon } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import withAuth from '@/components/auth/withAuth';
 import { format, parseISO } from 'date-fns';
@@ -70,9 +71,10 @@ function GameDetailPageInternal() {
       }
       const data: GameDetail = await response.json();
       setGame(data);
-    } catch (err: any) {
-      console.error(`Error fetching game ${gameId} details:`, err);
-      setError(err.message || "An unexpected error occurred.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+      console.error(`Error fetching game ${gameId} details:`, error);
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -91,21 +93,19 @@ function GameDetailPageInternal() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/v1/games/${game.id}/invitations/${currentUser.id}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`,
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
             body: JSON.stringify({ status: newStatus }),
         });
-        const data = await response.json(); // Expects updated GamePlayerResponse or error
+        const data = await response.json();
         if (!response.ok) {
             throw new Error(data.detail || "Failed to update invitation status.");
         }
         toast.success(`Invitation ${newStatus.toLowerCase()} successfully!`);
-        fetchGameData(); // Refresh game data to show updated status
-    } catch (err: any) {
-        console.error("Error responding to invitation:", err);
-        toast.error(err.message || "Failed to update invitation status.");
+        fetchGameData();
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to update invitation status.";
+        console.error("Error responding to invitation:", error);
+        toast.error(message);
     } finally {
         setIsRespondingToInvite(false);
     }
@@ -120,10 +120,7 @@ function GameDetailPageInternal() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/v1/games/${game.id}/players/${playerUserId}/status`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`,
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
             body: JSON.stringify({ status: newStatus }),
         });
         const data = await response.json(); 
@@ -131,10 +128,11 @@ function GameDetailPageInternal() {
             throw new Error(data.detail || "Failed to update player status.");
         }
         toast.success(`Player request ${newStatus.toLowerCase()} successfully!`);
-        fetchGameData(); // Refresh game data
-    } catch (err: any) {
-        console.error("Error managing join request:", err);
-        toast.error(err.message || "Failed to update player status.");
+        fetchGameData();
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to update player status.";
+        console.error("Error managing join request:", error);
+        toast.error(message);
     } finally {
         setIsManagingPlayer(prev => ({ ...prev, [playerUserId]: false }));
     }
@@ -209,7 +207,9 @@ function GameDetailPageInternal() {
                         {game.players.map(playerEntry => (
                             <li key={playerEntry.user.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
                                 <div className="flex items-center space-x-3 mb-2 sm:mb-0">
-                                    <img src={playerEntry.user.profile_picture_url || `https://avatar.vercel.sh/${playerEntry.user.email}?s=40`} alt={playerEntry.user.name || playerEntry.user.email} className="h-10 w-10 rounded-full" />
+                                    <div className="relative h-10 w-10">
+                                        <Image src={playerEntry.user.profile_picture_url || `https://avatar.vercel.sh/${playerEntry.user.email}?s=40`} alt={playerEntry.user.name || playerEntry.user.email} layout="fill" className="rounded-full" />
+                                    </div>
                                     <div>
                                         <p className="font-medium">{playerEntry.user.name || playerEntry.user.email}</p>
                                         <p className="text-xs text-muted-foreground">{playerEntry.user.email}</p>

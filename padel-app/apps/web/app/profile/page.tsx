@@ -73,11 +73,11 @@ function ProfilePage() { // Changed to a named function for HOC
       await fetchAndUpdateUser(); // Refresh user data from context
       setIsEditing(false);
       toast.success("Profile updated successfully!"); // Use toast for success
-    } catch (err: any) {
-      console.error("Error updating profile:", err);
-      // Display form-specific errors directly, use toast for general API errors
-      setFormError(err.message || "An unexpected error occurred.");
-      toast.error(err.message || "An unexpected error occurred updating profile."); // Also show a toast for general error
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+      console.error("Error updating profile:", error);
+      setFormError(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -89,7 +89,7 @@ function ProfilePage() { // Changed to a named function for HOC
   };
 
   // Profile picture URL (can be expanded in Subtask 5.4)
-  const profilePictureDisplayUrl = user.profile_picture_url || `https://avatar.vercel.sh/${user.email}?s=96`;
+  // const profilePictureDisplayUrl = user.profile_picture_url || `https://avatar.vercel.sh/${user.email}?s=96`; // REMOVED as it's unused
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">

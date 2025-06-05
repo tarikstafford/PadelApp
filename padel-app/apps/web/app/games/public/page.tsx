@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import Link from 'next/link';
+// import Link from 'next/link'; // Unused
 import { useRouter } from 'next/navigation';
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@workspace/ui/components/card";
@@ -9,12 +9,12 @@ import { Calendar } from "@workspace/ui/components/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Badge } from "@workspace/ui/components/badge";
 import { Label } from "@workspace/ui/components/label";
-import { Loader2, AlertTriangle, CalendarIcon, Users, Info, UserPlus, CheckSquare, Clock } from 'lucide-react';
+import { Loader2, AlertTriangle, CalendarIcon, Users, UserPlus } from 'lucide-react'; // Removed unused icons
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import withAuth from '@/components/auth/withAuth'; // Public games page might still need auth for join requests
+import withAuth from '@/components/auth/withAuth';
 import { format, parseISO } from 'date-fns';
-import type { DateRange } from "react-day-picker";
+import type { DateRange } from "react-day-picker"; // Kept as it is used for state typing
 
 // Interfaces matching backend GameResponse structure
 interface UserForGamePlayer {
@@ -44,10 +44,11 @@ interface PublicGame {
 
 const MAX_PLAYERS_PER_GAME = 4;
 const ITEMS_PER_PAGE = 9;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 function PublicGamesPageInternal() {
   const { user: currentUser, accessToken } = useAuth();
-  const router = useRouter();
+  // const router = useRouter(); // Unused
 
   const [publicGames, setPublicGames] = useState<PublicGame[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +57,7 @@ function PublicGamesPageInternal() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [joinRequestLoading, setJoinRequestLoading] = useState<Record<number, boolean>>({}); // { gameId: isLoading }
+  const [joinRequestLoading, setJoinRequestLoading] = useState<Record<number, boolean>>({});
 
   const fetchPublicGames = useCallback(async () => {
     setIsLoading(true);
@@ -64,15 +65,15 @@ function PublicGamesPageInternal() {
     try {
       const params = new URLSearchParams();
       params.append('skip', ((currentPage - 1) * ITEMS_PER_PAGE).toString());
-      params.append('limit', (ITEMS_PER_PAGE + 1).toString()); // Fetch one extra for hasNextPage check
+      params.append('limit', (ITEMS_PER_PAGE + 1).toString());
       if (selectedDate) {
         params.append('target_date', format(selectedDate, 'yyyy-MM-dd'));
       }
-      // No auth needed for viewing public games, but needed for join requests
-      const response = await fetch(`/api/v1/games/public/?${params.toString()}`); 
+      const response = await fetch(`${API_BASE_URL}/api/v1/games/public/?${params.toString()}`); 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch public games" }));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        const errorMessage = typeof errorData.detail === 'string' ? errorData.detail : "Failed to fetch public games";
+        throw new Error(errorMessage);
       }
       const data: PublicGame[] = await response.json();
       
@@ -83,9 +84,10 @@ function PublicGamesPageInternal() {
         setHasNextPage(false);
         setPublicGames(data);
       }
-    } catch (err: any) {
-      console.error("Error fetching public games:", err);
-      setError(err.message || "An unexpected error occurred.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
+      console.error("Error fetching public games:", error);
+      setError(message);
       setPublicGames([]);
     } finally {
       setIsLoading(false);
@@ -103,22 +105,21 @@ function PublicGamesPageInternal() {
     }
     setJoinRequestLoading(prev => ({ ...prev, [gameId]: true }));
     try {
-        const response = await fetch(`/api/v1/games/${gameId}/join`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/games/${gameId}/join`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${accessToken}` },
         });
         const data = await response.json();
         if (!response.ok) {
-            throw new Error(data.detail || "Failed to send join request.");
+            const errorMessage = typeof data.detail === 'string' ? data.detail : "Failed to send join request.";
+            throw new Error(errorMessage);
         }
         toast.success("Join request sent successfully! The game creator will be notified.");
-        // Optionally, update the specific game in the list to reflect the request was made,
-        // or disable the button, or refetch all games if status changes are immediate.
-        // For now, we just show a toast and disable button via loading state.
-        fetchPublicGames(); // Refetch to update UI if request changes available slots or player list
-    } catch (err: any) {
-        console.error("Error sending join request:", err);
-        toast.error(err.message || "Failed to send join request.");
+        fetchPublicGames();
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to send join request.";
+        console.error("Error sending join request:", error);
+        toast.error(message);
     } finally {
         setJoinRequestLoading(prev => ({ ...prev, [gameId]: false }));
     }

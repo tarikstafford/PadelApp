@@ -3,14 +3,15 @@
 import React, { ComponentType, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
-// Exporting the interface to resolve linter error
-export interface WithAuthProps {}
+// No props are passed by this HOC, so we can remove the empty interface
+// export interface WithAuthProps {} // REMOVED
 
 export default function withAuth<P extends object>(
   WrappedComponent: ComponentType<P>
 ) {
-  const ComponentWithAuth = (props: P & WithAuthProps) => {
+  const ComponentWithAuth = (props: P) => { // Removed WithAuthProps from here
     const { user, accessToken, isLoading } = useAuth();
     const router = useRouter();
 
@@ -21,7 +22,7 @@ export default function withAuth<P extends object>(
     }, [user, accessToken, isLoading, router]);
 
     if (isLoading) {
-      return <p>Loading...</p>; // Or a proper loading spinner component
+      return <div className="flex justify-center items-center min-h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>; // Improved loading state
     }
 
     if (!accessToken) { // Render nothing or a redirect message if not authenticated
