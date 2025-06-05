@@ -67,6 +67,5 @@ WORKDIR /app
 ENV NODE_ENV production
 COPY --from=runner /app/apps/web/.next/standalone ./ 
 COPY --from=runner /app/apps/web/.next/static ./apps/web/.next/static 
-COPY --from=runner /app/apps/web/public ./apps/web/public
 EXPOSE 3000
 CMD ["node", "server.js"] 
