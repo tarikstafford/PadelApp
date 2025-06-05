@@ -1,0 +1,101 @@
+<context>
+# Overview
+This Product Requirements Document (PRD) outlines the steps to deploy and operationalize the "PadelGo" web application on the Railway platform. The primary goal is to make the developed application (Next.js frontend, FastAPI backend, PostgreSQL database) fully functional and accessible via a public URL on Railway, utilizing the Railway CLI for setup and management where appropriate.
+
+# Core Goals for Deployment & Operationalization
+- **Railway CLI Integration:**
+    - What it does: Install and authenticate the Railway CLI to manage the project programmatically. Link the local project to the existing Railway project.
+    - Why it's important: Enables scripted and repeatable deployment configurations and management tasks.
+- **PostgreSQL Service Verification & Configuration:**
+    - What it does: Confirm the Railway PostgreSQL service is correctly provisioned. Ensure the `DATABASE_URL` is securely configured for the backend service.
+    - Why it's important: The database is the foundation for all application data.
+- **FastAPI Backend Deployment:**
+    - What it does: Deploy the FastAPI backend service to Railway using its Dockerfile. Configure all necessary environment variables (e.g., `DATABASE_URL`, `SECRET_KEY`, `API_V1_STR`, `PROJECT_NAME`). Ensure database migrations run successfully upon deployment.
+    - Why it's important: Makes the application's core logic and data operations live.
+- **Next.js Frontend Deployment:**
+    - What it does: Deploy the Next.js frontend service to Railway using its Dockerfile. Configure all necessary environment variables, critically the `NEXT_PUBLIC_API_URL` pointing to the deployed backend service.
+    - Why it's important: Makes the user interface accessible.
+- **Database Seeding in Deployed Environment:**
+    - What it does: Execute the database seed script against the deployed Railway PostgreSQL instance to populate it with initial data (clubs, courts).
+    - Why it's important: Provides initial content for testing and demonstration.
+- **Domain Configuration & HTTPS (Optional but Recommended):**
+    - What it does: Configure a custom domain for the deployed frontend application and ensure HTTPS is active.
+    - Why it's important: Provides a professional, secure, and memorable URL for users.
+- **End-to-End Application Testing on Railway:**
+    - What it does: Perform thorough testing of all user flows and features on the live Railway deployment to ensure everything is working as expected.
+    - Why it's important: Verifies the deployment was successful and the application is ready for use.
+</context>
+<PRD>
+# Deployment Architecture & Tools
+- **Platform:** Railway.
+- **Services on Railway:**
+    - PostgreSQL Database Service.
+    - FastAPI Backend Service (Dockerized).
+    - Next.js Frontend Service (Dockerized).
+- **Primary Management Tool:** Railway CLI (supplemented by Railway Dashboard as needed).
+- **Version Control & CI/CD:** GitHub repository linked to Railway for continuous deployment (configuration to be verified/enhanced).
+- **Monorepo Structure:** Existing `padel-app` monorepo with `pnpm` and `Turborepo`.
+
+# Deployment Roadmap (Sequence of Operations)
+1.  **Local Railway CLI Setup:**
+    - Install Railway CLI.
+    - Authenticate CLI with Railway account (`railway login`).
+    - Link local project directory (`padel-app`) to the existing Railway project (`railway link`).
+2.  **PostgreSQL Service Configuration:**
+    - Verify PostgreSQL service is running on Railway.
+    - Obtain the production `DATABASE_URL` from Railway.
+3.  **Backend Service Deployment (FastAPI):**
+    - Create/configure the backend service in Railway, pointing to the `apps/api` directory and its `Dockerfile`.
+    - Set all required environment variables in Railway for the backend service (`DATABASE_URL`, a strong `SECRET_KEY`, etc.).
+    - Trigger deployment and monitor logs, ensuring the `entrypoint.sh` script runs migrations successfully.
+    - Verify the backend's `/health` endpoint is reachable.
+4.  **Frontend Service Deployment (Next.js):**
+    - Create/configure the frontend service in Railway, pointing to the `apps/web` directory and its `Dockerfile` (ensuring build context is the monorepo root).
+    - Set the `NEXT_PUBLIC_API_URL` environment variable in Railway to the public URL of the deployed backend service.
+    - Set other necessary frontend environment variables.
+    - Trigger deployment and monitor logs.
+    - Verify the frontend application loads and can communicate with the backend.
+5.  **Database Seeding (Post-Deployment):**
+    - Execute the seed script against the deployed Railway PostgreSQL database. This might involve using Railway's CLI to run a one-off command in the context of the deployed backend service, or temporarily exposing the DB if secure.
+6.  **Custom Domain & HTTPS (If pursuing now):**
+    - Configure DNS records for the custom domain to point to the Railway frontend service.
+    - Add the custom domain in Railway settings and verify HTTPS.
+7.  **Comprehensive Testing:**
+    - Test all user flows: registration, login, profile updates (including image upload if a placeholder solution is viable on Railway's free tier storage or if you configure external storage), club/court discovery, booking, game creation, invitations, and joining public games.
+
+# Key Environment Variables to Configure on Railway
+- **For Backend Service (`apps/api`):**
+    - `DATABASE_URL`: (From Railway PostgreSQL service)
+    - `SECRET_KEY`: (Generate a new strong secret)
+    - `ALGORITHM`: "HS256" (or as defined in `core/config.py`)
+    - `ACCESS_TOKEN_EXPIRE_MINUTES`: (As defined in `core/config.py`)
+    - `REFRESH_TOKEN_EXPIRE_MINUTES`: (As defined in `core/config.py`)
+    - `PROJECT_NAME`: "PadelGo API" (or as desired)
+    - `API_V1_STR`: "/api/v1" (or as desired)
+- **For Frontend Service (`apps/web`):**
+    - `NEXT_PUBLIC_API_URL`: (Full public URL of the deployed backend service on Railway)
+    - Other Next.js specific build-time or run-time public variables if any.
+
+# Risks and Mitigations
+- **Railway CLI Issues:**
+    - **Risk:** Difficulties with CLI installation, login, or linking.
+    - **Mitigation:** Refer to official Railway CLI documentation. Use Railway dashboard as a fallback for initial service creation if CLI proves problematic for certain steps.
+- **Environment Variable Misconfiguration:**
+    - **Risk:** Incorrect or missing environment variables leading to service startup failures or runtime errors.
+    - **Mitigation:** Double-check all variable names and values in Railway service settings. Review application logs on Railway for errors related to configuration.
+- **Database Migration Failures in Deployed Environment:**
+    - **Risk:** Alembic migrations fail due to permission issues, incorrect `DATABASE_URL`, or schema conflicts.
+    - **Mitigation:** Test migrations thoroughly in a local environment mimicking production settings. Ensure the database user configured in `DATABASE_URL` has sufficient privileges. Review deployment logs carefully.
+- **Inter-Service Communication Issues on Railway:**
+    - **Risk:** Frontend cannot reach the backend API, or backend cannot reach the database.
+    - **Mitigation:** Verify service URLs are correct in environment variables. Check Railway network settings (though usually straightforward within a project). Use Railway logs to diagnose connectivity problems.
+- **Build Failures on Railway:**
+    - **Risk:** Docker builds fail due to issues in `Dockerfile` or missing dependencies not caught locally.
+    - **Mitigation:** Test Docker builds locally before pushing. Ensure Dockerfiles correctly handle the monorepo context and pnpm workspaces. Review Railway build logs.
+- **Database Seeding Challenges:**
+    - **Risk:** Difficulty running the Python seed script in the deployed environment.
+    - **Mitigation:** Explore Railway's options for running one-off tasks or connecting to the database remotely (if secure and temporary) for seeding. Alternatively, incorporate seeding into the backend's startup if appropriate for initial deployment.
+
+# Appendix
+- **Key Technologies for Deployment:** Railway, Docker, Railway CLI, Alembic.
+</PRD>
