@@ -6,6 +6,9 @@ COPY . .
 RUN pnpm install --frozen-lockfile
 RUN turbo run build --filter=web
 
+# After build, list the contents of the standalone directory for debugging
+RUN ls -R /app/apps/web/.next/standalone
+
 # Stage 2: Production Image
 FROM node:18-alpine AS production-runner
 
