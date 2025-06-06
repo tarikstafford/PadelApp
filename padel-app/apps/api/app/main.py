@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 # from fastapi.staticfiles import StaticFiles # No longer needed
 # from pathlib import Path # No longer needed
 
@@ -10,6 +11,18 @@ app = FastAPI(
     version="0.1.0",
     description="API for the PadelGo application to manage bookings, players, and games.",
     openapi_url=f"{settings.API_V1_STR}/openapi.json" # Standard practice to version OpenAPI spec
+)
+
+# CORS Middleware Configuration
+# This allows the frontend (running on a different domain) to communicate with the backend.
+# In a real production environment, you would want to restrict origins to your actual frontend URL.
+# For this project, allowing all origins is acceptable.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods
+    allow_headers=["*"], # Allows all headers
 )
 
 # Mount static files directory - REMOVED as it's not currently used
