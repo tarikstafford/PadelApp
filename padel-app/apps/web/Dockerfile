@@ -10,8 +10,10 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm install -g pnpm@10.4.1 turbo@2.4.2
 
 # Copy all monorepo manifest files from their specific locations
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json .npmrc ./
-# This assumes .npmrc exists at the monorepo root. If not, remove it.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY .npmrc ./.npmrc
+COPY tsconfig.json ./tsconfig.json
+COPY postcss.config.mjs ./postcss.config.mjs
 
 # Copy all source code
 COPY apps ./apps
@@ -30,9 +32,10 @@ WORKDIR /app
 ENV NODE_ENV production
 
 # Copy the static assets to the correct location
-COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./.next/static
 
 EXPOSE 3000
 
 # The command to run the Next.js standalone server
-CMD ["node", "apps/web/server.js"] 
+CMD ["node", "server.js"] 
