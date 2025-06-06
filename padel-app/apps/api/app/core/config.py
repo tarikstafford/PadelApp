@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
 class Settings(BaseSettings):
@@ -14,6 +14,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 1 # 1 day for access token
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30 # 30 days for refresh token
 
-    # model_config = SettingsConfigDict(env_file=".env", extra='ignore') # .env file not used in Docker/Railway
+    model_config = SettingsConfigDict(env_file=".env", extra='ignore')
 
 settings = Settings() 

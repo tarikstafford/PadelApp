@@ -26,5 +26,6 @@ EXPOSE 8000
 # Set the entrypoint script
 ENTRYPOINT ["./entrypoint.sh"]
 
-# Default command to pass to the entrypoint script
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", "--bind", "0.0.0.0:${PORT:-8000}"] 
+# The CMD now first writes the .env file from Railway's vars,
+# then executes gunicorn. The entrypoint will run migrations before this.
+CMD ["/bin/sh", "-c", "echo \"DATABASE_URL=${DATABASE_URL}\\nSECRET_KEY=${SECRET_KEY}\\nALGORITHM=${ALGORITHM:-HS256}\\nACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}\\nREFRESH_TOKEN_EXPIRE_MINUTES=${REFRESH_TOKEN_EXPIRE_MINUTES:-43200}\" > .env && gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:${PORT:-8000}"] 
