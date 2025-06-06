@@ -182,7 +182,7 @@ function BookingPageInternal() {
     setIsCreatingGame(true);
     setGameCreationError(null);
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/games/`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/games`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

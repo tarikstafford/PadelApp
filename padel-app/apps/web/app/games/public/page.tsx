@@ -69,7 +69,7 @@ function PublicGamesPageInternal() {
       if (selectedDate) {
         params.append('target_date', format(selectedDate, 'yyyy-MM-dd'));
       }
-      const response = await fetch(`${API_BASE_URL}/api/v1/games/public/?${params.toString()}`); 
+      const response = await fetch(`${API_BASE_URL}/api/v1/games/public?${params.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch public games" }));
         const errorMessage = typeof errorData.detail === 'string' ? errorData.detail : "Failed to fetch public games";
