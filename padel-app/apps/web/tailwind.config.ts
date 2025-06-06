@@ -1,13 +1,15 @@
-import type { Config } from "tailwindcss"
-import sharedConfig from "@workspace/ui/tailwind.config"
+import type { Config } from 'tailwindcss'
 
-const config: Pick<Config, "content" | "presets"> = {
+const config: Config = {
   content: [
-    "./app/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}",
-    "../../packages/ui/**/*.{js,ts,jsx,tsx}",
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    '../../packages/ui/components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  presets: [sharedConfig],
+  theme: {
+    extend: {},
+  },
+  plugins: [require("tailwindcss-animate")],
 }
 
 export default config 
