@@ -11,19 +11,16 @@ RUN ls -R /app/apps/web/.next/standalone
 
 # Stage 2: Production Image
 FROM node:18-alpine AS production-runner
-
-# Set a new working directory for the final application
-WORKDIR /app/padelgo-frontend
-
+WORKDIR /app
 ENV NODE_ENV production
 
-# Copy the standalone output from the builder stage into the new WORKDIR
+# Copy the entire standalone output into /app
 COPY --from=builder /app/apps/web/.next/standalone ./
 
-# Copy the static assets to the correct relative location
-COPY --from=builder /app/apps/web/.next/static ./.next/static
+# Copy the static assets to the correct location relative to where they will be served from
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 
 EXPOSE 3000
 
-# The command to run the Next.js standalone server
-CMD ["node", "server.js"] 
+# CORRECTED: Use the full, correct path to server.js inside the standalone output
+CMD ["node", "apps/web/server.js"] 
