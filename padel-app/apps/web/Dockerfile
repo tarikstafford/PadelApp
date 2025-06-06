@@ -1,71 +1,40 @@
-# Stage 1: Install dependencies and prepare for pruning
-FROM node:18-alpine AS deps_installer
-WORKDIR /app
-
-# Install pnpm globally (specific version from your package.json)
-RUN npm install -g pnpm@10.4.1
-
-# Copy manifest files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-# If you have a .npmrc at the root, copy it too:
-# COPY .npmrc ./ 
-
-# Install all monorepo dependencies. This allows turbo to correctly build the graph.
-RUN pnpm install --frozen-lockfile --prod=false # Ensure devDependencies like 'turbo' are available
-
-# Stage 2: Prune and build the specific application ('web')
+# Stage 1: Build the application
 FROM node:18-alpine AS builder
+
+# Set working directory to the root of the monorepo within the container
 WORKDIR /app
 
-# Install pnpm and turbo globally for the prune and build commands
-RUN npm install -g pnpm@10.4.1 turbo
+# Install pnpm and turbo globally (using the versions from your package.json)
+RUN npm install -g pnpm@10.4.1 turbo@2.4.2
 
-# Copy manifest files again (needed for turbo prune context)
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-# COPY .npmrc ./
-
-# Copy the fully installed node_modules from the previous stage.
-COPY --from=deps_installer /app/node_modules ./node_modules/
-
-# Copy all source code (respecting .dockerignore at the monorepo root)
+# Copy all source code, respecting the .dockerignore at the monorepo root
 COPY . .
 
-# Now prune. With all files and node_modules present, prune should understand the graph.
-RUN turbo prune web --docker
+# Install all monorepo dependencies
+RUN pnpm install --frozen-lockfile
 
-# Stage 3: Install dependencies for the PRUNED 'web' app
-FROM node:18-alpine AS installer
-WORKDIR /app
-RUN npm install -g pnpm@10.4.1
-COPY --from=builder /app/out/json/ ./ 
-COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install --frozen-lockfile --prod=false
-
-# Stage 4: Build the Next.js application (runner)
-FROM node:18-alpine AS runner
-WORKDIR /app
-RUN npm install -g pnpm@10.4.1 turbo
-ENV PATH /usr/local/lib/node_modules/.bin:/usr/local/bin:$PATH
-
-COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=installer /app/node_modules ./node_modules/
-COPY --from=installer /app/package.json ./package.json 
-COPY --from=builder /app/out/full/ ./
-
-RUN echo "--- RUNNER STAGE DEBUG ---" && \
-    echo "Current PATH: $PATH" && \
-    echo "Contents of /app:" && ls -la /app && \
-    echo "pnpm version:" && pnpm --version && \
-    echo "turbo version:" && turbo --version && \
-    echo "--- END RUNNER STAGE DEBUG ---"
-
+# Build the specific 'web' application
 RUN turbo run build --filter=web
 
-# Stage 5: Production Image
+# Stage 2: Production Image
+# Use a minimal Node.js image for the final production stage
 FROM node:18-alpine AS production-runner
+
 WORKDIR /app
+
+# Set the environment to production
 ENV NODE_ENV production
-COPY --from=runner /app/apps/web/.next/standalone ./ 
-COPY --from=runner /app/apps/web/.next/static ./apps/web/.next/static 
+
+# Copy the standalone Next.js server output from the builder stage
+COPY --from=builder /app/apps/web/.next/standalone ./
+
+# Copy the static assets from the builder stage
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+
+# The standalone output includes a copy of the 'public' folder, so we don't need a separate COPY for it.
+
+# Expose the port Next.js will run on
 EXPOSE 3000
+
+# The command to run the Next.js standalone server
 CMD ["node", "server.js"] 
