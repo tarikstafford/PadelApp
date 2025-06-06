@@ -34,6 +34,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true); // Start with loading true to check session
   const router = useRouter();
 
+  // DEBUG: Log the value of the environment variable at runtime
+  useEffect(() => {
+    console.log("NEXT_PUBLIC_API_URL as seen by client:", process.env.NEXT_PUBLIC_API_URL);
+  }, []);
+
   const fetchAndUpdateUser = async (token?: string) => {
     const currentToken = token || accessToken;
     if (!currentToken) {
