@@ -2,9 +2,9 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Declare the build argument
+# Per Railway docs, declare the ARG in the stage it is required.
 ARG NEXT_PUBLIC_API_URL
-# Expose it as an environment variable for the build stage
+# Expose the build argument as an environment variable for the build stage.
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Install pnpm and turbo globally
@@ -16,7 +16,7 @@ COPY . .
 # Install all monorepo dependencies
 RUN pnpm install --frozen-lockfile
 
-# Build the specific 'web' application
+# Build the specific 'web' application. This command now has access to the ARG.
 RUN turbo run build --filter=web
 
 # After build, list the contents of the standalone directory for debugging
