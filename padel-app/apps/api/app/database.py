@@ -1,13 +1,10 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 
-SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
-
-# For PostgreSQL, connect_args is typically not needed unless for specific SSL or other advanced settings.
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# Create the engine using the settings object directly.
+# This ensures that if settings are reloaded or patched during tests, the engine uses the new value.
+engine = create_engine(settings.DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
