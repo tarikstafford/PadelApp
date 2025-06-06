@@ -1,19 +1,21 @@
 """Initial migration with all models
 
 Revision ID: e1f59e29f633
-Revises: 'None'
-Create Date: 2025-06-06 14:35:27.178866
+Revises: 
+Create Date: 2025-06-06 04:10:49.278385
 
 """
+from typing import Sequence, Union
+
 from alembic import op
 import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'e1f59e29f633'
-down_revision = 'None'
-branch_labels = 'None'
-depends_on = 'None'
+revision: str = 'e1f59e29f633'
+down_revision: Union[str, None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
