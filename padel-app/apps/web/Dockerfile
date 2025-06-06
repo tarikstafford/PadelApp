@@ -9,15 +9,9 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 # Install pnpm and turbo globally
 RUN npm install -g pnpm@10.4.1 turbo@2.4.2
 
-# Copy all monorepo manifest files from their specific locations
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
-COPY .npmrc ./.npmrc
-COPY tsconfig.json ./tsconfig.json
-COPY postcss.config.mjs ./postcss.config.mjs
-
-# Copy all source code
-COPY apps ./apps
-COPY packages ./packages
+# Copy all source code from the build context
+# The .dockerignore file at the root will prevent copying node_modules, .turbo, .git, etc.
+COPY . .
 
 # Install all monorepo dependencies
 RUN pnpm install --frozen-lockfile
