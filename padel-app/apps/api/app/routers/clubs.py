@@ -7,7 +7,7 @@ from app.database import get_db
 
 router = APIRouter()
 
-@router.get("/", response_model=List[schemas.Club]) # GET /clubs (pluralized by prefix later)
+@router.get("", response_model=List[schemas.Club]) # GET /clubs (pluralized by prefix later)
 async def read_clubs(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0), 

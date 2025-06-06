@@ -11,7 +11,7 @@ from app.models.game import GameType # Import GameType for checking public games
 
 router = APIRouter()
 
-@router.post("/", response_model=schemas.GameResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=schemas.GameResponse, status_code=status.HTTP_201_CREATED)
 async def create_new_game(
     game_in: schemas.GameCreate,
     db: Session = Depends(get_db),
@@ -216,7 +216,7 @@ async def respond_to_game_invitation(
 
     return updated_game_player_orm 
 
-@router.get("/public/", response_model=List[schemas.GameResponse])
+@router.get("/public", response_model=List[schemas.GameResponse])
 async def read_public_games(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0),

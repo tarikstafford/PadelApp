@@ -11,7 +11,7 @@ from app.services import availability_service # For checking slot availability
 
 router = APIRouter()
 
-@router.post("/", response_model=schemas.Booking, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=schemas.Booking, status_code=status.HTTP_201_CREATED)
 async def create_new_booking(
     booking_in: schemas.BookingCreate,
     db: Session = Depends(get_db),
@@ -70,7 +70,7 @@ async def create_new_booking(
             detail="An error occurred while creating the booking."
         )
 
-@router.get("/", response_model=List[schemas.Booking])
+@router.get("", response_model=List[schemas.Booking])
 async def read_user_bookings(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_active_user),
