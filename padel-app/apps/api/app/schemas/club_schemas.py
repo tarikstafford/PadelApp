@@ -2,6 +2,7 @@ from typing import Optional, List
 from pydantic import BaseModel, EmailStr
 
 from .court_schemas import Court # Import Court schema for use in ClubWithCourts
+from .user_schemas import User as UserSchema # Import for nesting owner details
 
 # Shared properties
 class ClubBase(BaseModel):
@@ -28,6 +29,8 @@ class ClubUpdate(ClubBase):
 # Properties stored in DB
 class ClubInDBBase(ClubBase):
     id: int
+    owner_id: int
+    owner: Optional[UserSchema] = None # Include owner details in the response
     model_config = {"from_attributes": True}
 
 # Properties to return to client (basic club info)

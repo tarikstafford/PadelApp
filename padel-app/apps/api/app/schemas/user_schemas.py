@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, EmailStr
+from app.models.user_role import UserRole # Import the enum
 
 # Shared properties
 class UserBase(BaseModel):
@@ -32,6 +33,10 @@ class UserInDBBase(UserBase):
 # Schema for returning User data via API (omits hashed_password)
 class User(UserBase):
     id: int
+    profile_picture_url: Optional[str] = None
+    is_active: bool
+    is_admin: bool
+    role: UserRole # Add role to the main response schema
     # model_config needed here too if this schema is created from an ORM model instance
     model_config = {"from_attributes": True}
 

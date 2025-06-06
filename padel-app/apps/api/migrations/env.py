@@ -13,7 +13,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Add the 'app' directory to the Python path to find models
+# Add the 'app' directory to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.abspath(os.path.join(current_dir, '..'))
 if app_dir not in sys.path:
@@ -23,36 +23,30 @@ if app_dir not in sys.path:
 from app.models import Base
 target_metadata = Base.metadata
 
+def get_url():
+    from app.core.config import settings
+    return settings.DATABASE_URL
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
-    This is for 'alembic revision --autogenerate'
-    """
-    url = config.get_main_option("sqlalchemy.url")
+    """Run migrations in 'offline' mode."""
+    url = get_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
+
     with context.begin_transaction():
         context.run_migrations()
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-    This is for 'alembic upgrade'
-    """
-    # Get the database URL from our Pydantic settings, which reads from the environment
-    from app.core.config import settings
-    
-    # Create a configuration dictionary from the .ini file
+    """Run migrations in 'online' mode."""
     configuration = config.get_section(config.config_ini_section)
-    # And override the URL with the one from our environment settings
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL
-    
+    configuration['sqlalchemy.url'] = get_url()
     connectable = engine_from_config(
-        configuration,
+        config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
@@ -61,6 +55,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection, target_metadata=target_metadata
         )
+
         with context.begin_transaction():
             context.run_migrations()
 
