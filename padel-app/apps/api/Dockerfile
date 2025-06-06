@@ -23,8 +23,9 @@ COPY apps/api/app ./app
 # Expose the port the app runs on
 EXPOSE 8000
 
-# Set the entrypoint script
+# Set the entrypoint
 ENTRYPOINT ["./entrypoint.sh"]
 
 # Default command to pass to the entrypoint script
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", "--bind", "0.0.0.0:${PORT:-8000}"] 
+# Using shell form to allow environment variable substitution for ${PORT}
+CMD gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:${PORT:-8000} 
