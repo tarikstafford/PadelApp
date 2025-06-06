@@ -196,7 +196,15 @@ function BookingPageInternal() {
         });
         const data = await response.json();
         if (!response.ok) {
-            const errorMessage = typeof data.detail === 'string' ? data.detail : "Failed to create game.";
+            console.error("Game creation failed. Server response:", data);
+            let errorMessage = "Failed to create game.";
+            if (response.status === 422 && data.detail) {
+                if (Array.isArray(data.detail)) {
+                    errorMessage = data.detail.map((err: { loc: any[]; msg: any; }) => `${err.loc.join(' > ')}: ${err.msg}`).join('; ');
+                } else if (typeof data.detail === 'string') {
+                    errorMessage = data.detail;
+                }
+            }
             throw new Error(errorMessage);
         }
         toast.success("Game created successfully! Now invite players.");
