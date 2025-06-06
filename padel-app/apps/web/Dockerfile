@@ -6,7 +6,7 @@ WORKDIR /app
 # Install pnpm and turbo globally
 RUN npm install -g pnpm@10.4.1 turbo@2.4.2
 
-# Copy all source code from the build context (which should be the monorepo root)
+# Copy all source code from the build context
 # The .dockerignore file at the root will prevent copying node_modules, .turbo, .git, etc.
 COPY . .
 
@@ -22,11 +22,14 @@ WORKDIR /app
 ENV NODE_ENV production
 
 # Copy the standalone Next.js server output from the builder stage
+# This includes the server.js and a node_modules folder.
 COPY --from=builder /app/apps/web/.next/standalone ./
 
-# Copy the static assets from the builder stage
-COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+# Copy the static assets from the builder stage to the correct location
+# where the standalone server expects them.
+COPY --from=builder /app/apps/web/.next/static ./.next/static
 
+# Expose the port Next.js will run on
 EXPOSE 3000
 
 # The command to run the Next.js standalone server
