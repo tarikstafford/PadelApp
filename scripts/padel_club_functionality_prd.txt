@@ -1,0 +1,73 @@
+<context>
+# Overview
+This document outlines the requirements for a "Club Admin Portal" for the PadelGo application. This portal will be a dedicated, self-service web application for Padel club owners or managers to register their club, manage its profile information (including photos), add and edit their courts, and view bookings. It will be a separate application from the main user-facing app and will be accessible via a dedicated subdomain.
+
+# Core Features
+- **Club Admin Onboarding & Authentication:**
+    - A new registration flow specifically for club owners.
+    - Upon registration, a new `User` is created with a `CLUB_ADMIN` role.
+    - A new `Club` record is created and linked to this user.
+    - Club admins will log in through a dedicated login page on the admin portal.
+- **Club Profile Management:**
+    - A dashboard where the authenticated club admin can view and edit their club's details (name, address, city, description, amenities, etc.).
+    - Functionality to upload or change the club's main profile photo.
+- **Court Management (CRUD):**
+    - An interface within the admin portal for club admins to Create, Read, Update, and Delete courts associated with their club.
+    - Admins can set court details like name, surface type, and indoor/outdoor status.
+- **Booking Viewer:**
+    - A read-only view for club admins to see all upcoming and past bookings for all courts at their club. This helps with their daily operations.
+
+</context>
+<PRD>
+# Technical Architecture
+- **Monorepo Structure:** We will add a new application to the existing `padel-app` monorepo.
+
+- **Frontend (New Application):**
+    - **Name:** `club-admin`
+    - **Location:** `padel-app/apps/club-admin`
+    - **Framework:** Next.js with TypeScript.
+    - **UI:** Will utilize the existing shared UI package (`packages/ui`) for consistency.
+    - **Authentication:** Will use the same JWT-based authentication context as the main `web` app, but will have logic to protect routes for `CLUB_ADMIN` users only.
+
+- **Backend (Enhancements to Existing API):**
+    - **Database Schema Changes:**
+        - **`User` model:** Add a `role` field (e.g., an Enum with values `PLAYER` and `CLUB_ADMIN`).
+        - **`Club` model:** Add an `owner_id` foreign key that links to the `User` table.
+    - **API Routers:**
+        - Create a new API router, e.g., `/api/v1/admin/clubs`, to handle all actions a club admin can perform.
+        - This router will contain endpoints for `GET /my-club`, `PUT /my-club`, `POST /my-club/courts`, `PUT /my-club/courts/{court_id}`, etc.
+    - **Security:**
+        - The new admin router will be protected by a dependency that verifies the JWT and ensures the user has the `CLUB_ADMIN` role.
+        - The image upload service will be reused, with authorization checks to ensure the user owns the club they are uploading a photo for.
+
+- **Deployment:**
+    - A new service will be added to the existing Railway project for the `club-admin` application.
+    - A new `Dockerfile` will be created inside `padel-app/apps/club-admin`.
+    - A new custom domain (e.g., `club.yourdomain.com` or `admin.yourdomain.com`) will be configured to point to this new service.
+
+# Development Roadmap (Club Portal MVP)
+1.  **Backend Foundation:**
+    -   Update the `User` and `Club` models in the database schema.
+    -   Generate and apply a new database migration.
+    -   Create a new user role system (`PLAYER`, `CLUB_ADMIN`).
+    -   Implement the new protected `/api/v1/admin/clubs` router.
+2.  **Club Admin Authentication:**
+    -   Create a new registration endpoint (e.g., `/api/v1/auth/register-club`) that creates a `User` with the `CLUB_ADMIN` role and a corresponding `Club`.
+    -   The existing `/api/v1/auth/login` endpoint will be used, returning the user's role along with the token.
+3.  **Frontend Scaffolding (`club-admin` app):**
+    -   Set up a new Next.js application at `apps/club-admin`.
+    -   Configure it to use the shared UI package and set up basic layout and routing.
+    -   Implement the new registration and login pages.
+4.  **Club & Court Management UI:**
+    -   Build the main dashboard page for logged-in club admins.
+    -   Create the form for creating and editing club profile details (including photo upload).
+    -   Build the interface for adding, viewing, and editing courts for their club.
+5.  **Deployment:**
+    -   Create the `Dockerfile` for the `club-admin` app.
+    -   Add and configure the new service on Railway.
+    -   Configure the subdomain to point to the new service.
+
+# Risks and Mitigations
+- **Authentication Complexity:** Managing different user roles (`PLAYER` vs. `CLUB_ADMIN`) and protecting routes accordingly requires careful implementation on both the frontend and backend. **Mitigation:** Implement a clear, reusable dependency in FastAPI for role-checking and a robust HOC or context logic in Next.js to protect admin pages.
+- **Monorepo Build Configuration:** Adding a new application will require updates to the root `package.json` workspaces and potentially the `turbo.json` configuration to ensure build processes work correctly. **Mitigation:** Follow existing patterns from the `web` app and test the build pipeline locally before deploying.
+</PRD>
