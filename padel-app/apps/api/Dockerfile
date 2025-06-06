@@ -4,17 +4,20 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Copy dependency definition and entrypoint script from their specific location
-# within the monorepo context
+# Copy all necessary configuration files, scripts, and directories
+# from their specific locations within the monorepo context.
 COPY apps/api/pyproject.toml ./
+COPY apps/api/alembic.ini ./
 COPY apps/api/entrypoint.sh ./
+COPY apps/api/migrations ./migrations
+
 RUN chmod +x ./entrypoint.sh
 
 # Install dependencies
 RUN pip install --no-cache-dir -U pip setuptools wheel
 RUN pip install --no-cache-dir .
 
-# Copy the application code from its specific location
+# Copy the application code
 COPY apps/api/app ./app
 
 # Expose the port the app runs on
