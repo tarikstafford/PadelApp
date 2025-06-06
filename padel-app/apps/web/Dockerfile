@@ -28,13 +28,13 @@ FROM node:18-alpine AS production-runner
 WORKDIR /app
 ENV NODE_ENV production
 
-# Copy the standalone Next.js server output from the builder stage
+# Copy the entire standalone output into /app
 COPY --from=builder /app/apps/web/.next/standalone ./
 
-# Copy the static assets from the builder stage
-COPY --from=builder /app/apps/web/.next/static ./.next/static
+# Copy the static assets to the correct location
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 
 EXPOSE 3000
 
-# The command to run the Next.js standalone server
-CMD ["node", "server.js"] 
+# CORRECTED: Use the full, correct path to server.js inside the standalone output
+CMD ["node", "apps/web/server.js"] 
