@@ -97,7 +97,7 @@ function BookingPageInternal() {
     setSelectedTimeSlot(null);
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      const response = await fetch(`${API_BASE_URL}/api/v1/courts/${courtId}/availability?date=${formattedDate}`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/courts/${courtId}/availability?target_date=${formattedDate}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch time slots" }));
         const errorMessage = typeof errorData.detail === 'string' ? errorData.detail : "Failed to fetch time slots";
