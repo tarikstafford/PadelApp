@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles # Import StaticFiles
-from pathlib import Path # Import Path
+# from fastapi.staticfiles import StaticFiles # No longer needed
+# from pathlib import Path # No longer needed
 
 from app.core.config import settings
 from app.routers import auth_router, clubs_router, courts_router, bookings_router, games_router, users_router # Import users_router
@@ -12,11 +12,11 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json" # Standard practice to version OpenAPI spec
 )
 
-# Mount static files directory
+# Mount static files directory - REMOVED as it's not currently used
 # This assumes your main.py is in app/ and you want to serve a top-level static/ directory
 # relative to the api app's root (padel-app/apps/api/app/static)
-static_files_path = Path(__file__).parent / "static"
-app.mount("/static", StaticFiles(directory=static_files_path), name="static")
+# static_files_path = Path(__file__).parent / "static"
+# app.mount("/static", StaticFiles(directory=static_files_path), name="static")
 
 # Include the authentication router
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
