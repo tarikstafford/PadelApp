@@ -4,12 +4,6 @@ from pydantic import BaseModel, EmailStr
 from .court_schemas import Court # Import Court schema for use in ClubWithCourts
 from .user_schemas import User as UserSchema # Import for nesting owner details
 
-# Properties for club and admin registration
-class ClubRegistrationSchema(ClubBase):
-    admin_email: EmailStr
-    admin_name: Optional[str] = None
-    admin_password: str
-
 # Shared properties
 class ClubBase(BaseModel):
     name: str
@@ -22,6 +16,12 @@ class ClubBase(BaseModel):
     opening_hours: Optional[str] = None
     amenities: Optional[str] = None
     image_url: Optional[str] = None
+
+# Properties for club and admin registration
+class ClubRegistrationSchema(ClubBase):
+    admin_email: EmailStr
+    admin_name: Optional[str] = None
+    admin_password: str
 
 # Properties to receive on club creation
 class ClubCreate(ClubBase):
