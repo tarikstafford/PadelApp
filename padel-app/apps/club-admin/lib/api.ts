@@ -1,7 +1,7 @@
 import { getCookie } from 'cookies-next';
 
 const getApiUrl = () => {
-  return process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
+  return process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 };
 
 const getAuthHeaders = (): HeadersInit => {
