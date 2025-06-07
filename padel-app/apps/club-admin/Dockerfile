@@ -15,7 +15,7 @@ RUN npm install -g pnpm@10.4.1 turbo@2.4.2
 COPY ../.. .
 
 # Install all monorepo dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install -r --frozen-lockfile
 
 # Build the specific 'club-admin' application
 RUN turbo run build --filter=club-admin
