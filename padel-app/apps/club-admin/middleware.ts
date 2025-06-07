@@ -3,9 +3,14 @@ import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value
+  const role = request.cookies.get('role')?.value
 
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  if (role !== 'CLUB_ADMIN') {
+    return NextResponse.redirect(new URL('/unauthorized', request.url))
   }
 
   return NextResponse.next()
@@ -13,14 +18,9 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - login (the login page)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|login).*)',
+    '/dashboard',
+    '/courts/:path*',
+    '/bookings/:path*',
+    '/profile/:path*',
   ],
 } 

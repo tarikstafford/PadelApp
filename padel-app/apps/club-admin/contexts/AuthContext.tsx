@@ -12,6 +12,7 @@ interface AuthContextType {
   login: (data: any) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => void;
+  hasRole: (role: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (data: any) => {
     const response = await apiClient.post<{ access_token: string; role: string }>("/auth/login", data);
     setCookie("token", response.access_token);
+    setCookie("role", response.role);
     const userData = await apiClient.get<User>("/auth/users/me");
     setUser(userData);
     setIsAuthenticated(true);
@@ -50,6 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (data: any) => {
     const response = await apiClient.post<{ access_token: string; role: string }>("/auth/register-club", data);
     setCookie("token", response.access_token);
+    setCookie("role", response.role);
     const userData = await apiClient.get<User>("/auth/users/me");
     setUser(userData);
     setIsAuthenticated(true);
@@ -57,11 +60,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     deleteCookie("token");
+    deleteCookie("role");
     setUser(null);
     setIsAuthenticated(false);
   };
 
-  const value = { user, isAuthenticated, isLoading, login, register, logout };
+  const hasRole = (role: string) => {
+    return user?.role === role;
+  };
+
+  const value = { user, isAuthenticated, isLoading, login, register, logout, hasRole };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

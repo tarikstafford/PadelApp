@@ -8,18 +8,15 @@ from app.database import get_db
 from app.models import User, UserRole, BookingStatus
 from app.core.security import get_current_active_user
 from app.services import file_service
+from app.core.dependencies import RoleChecker
 
 router = APIRouter(
     prefix="/admin",
     tags=["admin"],
+    dependencies=[Depends(RoleChecker([UserRole.CLUB_ADMIN]))],
 )
 
 async def get_current_admin_user(current_user: User = Depends(get_current_active_user)):
-    if current_user.role != UserRole.CLUB_ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges"
-        )
     return current_user
 
 # Example of a protected route
