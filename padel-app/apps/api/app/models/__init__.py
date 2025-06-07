@@ -5,6 +5,7 @@ from app.database import Base
 
 # Import all model classes and enums to make them easily accessible
 from .user import User
+from .user_role import UserRole
 from .club import Club
 from .court import Court
 from .booking import Booking, BookingStatus
@@ -15,6 +16,7 @@ from .game_player import GamePlayer, GamePlayerStatus
 __all__ = [
     "Base",
     "User",
+    "UserRole",
     "Club",
     "Court",
     "Booking",

@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     profile_picture_url: Optional[str] = None
     is_active: Optional[bool] = True
     is_admin: Optional[bool] = False
+    role: Optional[UserRole] = UserRole.PLAYER
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):

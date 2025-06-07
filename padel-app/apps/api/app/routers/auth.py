@@ -9,6 +9,57 @@ from app.services import file_service # Import file_service
 
 router = APIRouter()
 
+@router.post("/register-club", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
+async def register_club(
+    club_in: schemas.ClubRegistrationSchema, 
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new club and a club admin user.
+    """
+    db_user = crud.user_crud.get_user_by_email(db, email=club_in.admin_email)
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered",
+        )
+    
+    user_in = schemas.UserCreate(
+        email=club_in.admin_email,
+        password=club_in.admin_password,
+        name=club_in.admin_name,
+        role=models.UserRole.CLUB_ADMIN
+    )
+    new_user = crud.user_crud.create_user(db=db, user=user_in)
+
+    club_create_in = schemas.ClubCreate(
+        name=club_in.name,
+        address=club_in.address,
+        city=club_in.city,
+        postal_code=club_in.postal_code,
+        phone=club_in.phone,
+        email=club_in.email,
+        description=club_in.description,
+        opening_hours=club_in.opening_hours,
+        amenities=club_in.amenities,
+        image_url=club_in.image_url
+    )
+    
+    new_club = crud.club_crud.create_club(db=db, club=club_create_in, owner_id=new_user.id)
+    
+    access_token = security.create_access_token(
+        subject=new_user.email
+    )
+    refresh_token = security.create_refresh_token(
+        subject=new_user.email
+    )
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "role": new_user.role,
+    }
+
 @router.post("/register", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 async def register_new_user(
     user_in: schemas.UserCreate, 
@@ -56,7 +107,8 @@ async def login_for_access_token(
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "role": user.role,
     }
 
 @router.post("/refresh-token", response_model=schemas.Token)

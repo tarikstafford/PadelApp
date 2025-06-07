@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc # For sorting
 
 from app.models.club import Club as ClubModel
-# from app.schemas.club_schemas import ClubCreate, ClubUpdate # For future C/U operations
+from app.schemas.club_schemas import ClubCreate, ClubUpdate # For future C/U operations
 
 def get_club(db: Session, club_id: int) -> Optional[ClubModel]:
     """Retrieve a single club by its ID."""
@@ -42,19 +42,19 @@ def get_clubs(
     return query.offset(skip).limit(limit).all()
 
 # Placeholder for create_club
-# def create_club(db: Session, club: ClubCreate) -> ClubModel:
-#     db_club = ClubModel(**club.model_dump())
-#     db.add(db_club)
-#     db.commit()
-#     db.refresh(db_club)
-#     return db_club
+def create_club(db: Session, club: ClubCreate) -> ClubModel:
+    db_club = ClubModel(**club.model_dump())
+    db.add(db_club)
+    db.commit()
+    db.refresh(db_club)
+    return db_club
 
 # Placeholder for update_club
-# def update_club(db: Session, db_club: ClubModel, club_in: ClubUpdate) -> ClubModel:
-#     update_data = club_in.model_dump(exclude_unset=True)
-#     for key, value in update_data.items():
-#         setattr(db_club, key, value)
-#     db.add(db_club)
-#     db.commit()
-#     db.refresh(db_club)
-#     return db_club 
+def update_club(db: Session, db_club: ClubModel, club_in: ClubUpdate) -> ClubModel:
+    update_data = club_in.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_club, key, value)
+    db.add(db_club)
+    db.commit()
+    db.refresh(db_club)
+    return db_club 

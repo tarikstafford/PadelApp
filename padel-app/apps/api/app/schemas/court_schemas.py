@@ -14,6 +14,9 @@ class CourtBase(BaseModel):
 class CourtCreate(CourtBase):
     club_id: int # Must be specified on creation
 
+class CourtCreateForAdmin(CourtBase):
+    pass # club_id will be derived from the authenticated admin's club
+
 # Properties to receive on court update
 class CourtUpdate(CourtBase):
     name: Optional[str] = None # All fields optional for update

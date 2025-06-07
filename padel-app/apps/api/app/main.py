@@ -1,10 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-# from fastapi.staticfiles import StaticFiles # No longer needed
-# from pathlib import Path # No longer needed
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from app.core.config import settings
-from app.routers import auth_router, clubs_router, courts_router, bookings_router, games_router, users_router # Import users_router
+from app.routers import (
+    auth_router,
+    clubs_router,
+    courts_router,
+    bookings_router,
+    games_router,
+    users_router,
+    admin_router,
+)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -25,11 +33,9 @@ app.add_middleware(
     allow_headers=["*"], # Allows all headers
 )
 
-# Mount static files directory - REMOVED as it's not currently used
-# This assumes your main.py is in app/ and you want to serve a top-level static/ directory
-# relative to the api app's root (padel-app/apps/api/app/static)
-# static_files_path = Path(__file__).parent / "static"
-# app.mount("/static", StaticFiles(directory=static_files_path), name="static")
+# Mount static files directory
+static_files_path = Path(__file__).parent.parent / "static"
+app.mount("/static", StaticFiles(directory=static_files_path), name="static")
 
 # Include the authentication router
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
@@ -38,6 +44,7 @@ app.include_router(courts_router, prefix=f"{settings.API_V1_STR}/courts", tags=[
 app.include_router(bookings_router, prefix=f"{settings.API_V1_STR}/bookings", tags=["Bookings"]) # Added bookings_router
 app.include_router(games_router, prefix=f"{settings.API_V1_STR}/games", tags=["Games"]) # Added games_router
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"]) # Added users_router
+app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
 
 @app.get("/")
 async def read_root():
