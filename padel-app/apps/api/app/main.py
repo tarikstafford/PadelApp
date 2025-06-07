@@ -34,7 +34,7 @@ app.add_middleware(
 )
 
 # Mount static files directory
-static_files_path = Path(__file__).parent.parent / "static"
+static_files_path = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=static_files_path), name="static")
 
 # Include the authentication router
