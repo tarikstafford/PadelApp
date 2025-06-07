@@ -20,6 +20,10 @@ RUN pip install --no-cache-dir .
 # Copy the application code
 COPY apps/api/app ./app
 
+# Create static directories
+RUN mkdir -p app/static/profile_pics
+RUN mkdir -p app/static/club_pics
+
 # Expose the port the app runs on
 EXPOSE 8000
 
