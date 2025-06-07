@@ -1,5 +1,6 @@
 # Stage 1: Build the application
 FROM node:18-alpine AS builder
+# Set the working directory to the monorepo root
 WORKDIR /app
 
 # Per Railway docs, declare the ARG in the stage it is required.
@@ -11,14 +12,12 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm install -g pnpm@10.4.1 turbo@2.4.2
 
 # Copy all source code from the build context
-# The .dockerignore file at the root will prevent copying node_modules, .turbo, .git, etc.
-COPY . .
+COPY ../.. .
 
 # Install all monorepo dependencies
 RUN pnpm install --frozen-lockfile
 
 # Build the specific 'club-admin' application
-# This command needs the full monorepo context to work correctly
 RUN turbo run build --filter=club-admin
 
 # Stage 2: Production Image
@@ -27,12 +26,13 @@ WORKDIR /app
 ENV NODE_ENV production
 
 # Copy the standalone Next.js server output from the builder stage
+# The source path is now relative to the monorepo root inside the builder
 COPY --from=builder /app/apps/club-admin/.next/standalone ./
 
 # Copy the static assets from the builder stage
-COPY --from=builder /app/apps/club-admin/.next/static ./apps/club-admin/.next/static
+COPY --from=builder /app/apps/club-admin/.next/static ./.next/static
 
 EXPOSE 3000
 
-# CORRECTED: Use the full, correct path to server.js inside the standalone output
-CMD ["node", "apps/club-admin/server.js"] 
+# The start command is now just 'node server.js' because we are in the standalone directory
+CMD ["node", "server.js"] 
