@@ -12,6 +12,7 @@ class SurfaceType(str, enum.Enum):
     ARTIFICIAL_GRASS_PRO = "Artificial Grass Pro"
     PANORAMIC_GLASS = "Panoramic Glass"
     CONCRETE_TEXTURED = "ConcreteTextured"
+    CUSHIONED_HARD_COURT = "Cushioned Hard Court"
 
 class CourtAvailabilityStatus(str, enum.Enum):
     AVAILABLE = "Available"

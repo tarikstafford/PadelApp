@@ -101,6 +101,7 @@ export default function EditCourtPage() {
                     <SelectItem value="Artificial Grass Pro">Artificial Grass Pro</SelectItem>
                     <SelectItem value="Panoramic Glass">Panoramic Glass</SelectItem>
                     <SelectItem value="ConcreteTextured">Concrete Textured</SelectItem>
+                    <SelectItem value="Cushioned Hard Court">Cushioned Hard Court</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
