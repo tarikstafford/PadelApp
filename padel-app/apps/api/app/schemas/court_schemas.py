@@ -1,14 +1,15 @@
 from typing import Optional, List
 from pydantic import BaseModel
 from decimal import Decimal # For price_per_hour
+from app.models.court import SurfaceType, CourtAvailabilityStatus
 
 # Shared properties
 class CourtBase(BaseModel):
     name: str
-    surface_type: Optional[str] = None
+    surface_type: Optional[SurfaceType] = None
     is_indoor: Optional[bool] = False
     price_per_hour: Optional[Decimal] = None
-    default_availability_status: Optional[str] = "Available"
+    default_availability_status: Optional[CourtAvailabilityStatus] = CourtAvailabilityStatus.AVAILABLE
 
 # Properties to receive on court creation
 class CourtCreate(CourtBase):

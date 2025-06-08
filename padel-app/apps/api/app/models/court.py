@@ -1,18 +1,30 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric
+import enum
+from sqlalchemy import Column, Integer, String, Boolean, Numeric, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+
+class SurfaceType(str, enum.Enum):
+    CLAY = "Clay"
+    HARD = "Hard"
+    GRASS = "Grass"
+    ARTIFICIAL_GRASS = "Artificial Grass"
+
+class CourtAvailabilityStatus(str, enum.Enum):
+    AVAILABLE = "Available"
+    UNAVAILABLE = "Unavailable"
+    MAINTENANCE = "Maintenance"
 
 class Court(Base):
     __tablename__ = "courts"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True, nullable=False) # e.g., "Court 1", "Center Court"
+    name = Column(String, nullable=False, index=True) # e.g., "Court 1", "Center Court"
     club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False)
-    surface_type = Column(String, nullable=True) # e.g., "Artificial Grass", "Concrete"
+    surface_type = Column(Enum(SurfaceType), nullable=True)
     is_indoor = Column(Boolean, default=False)
     price_per_hour = Column(Numeric(10, 2), nullable=True) # e.g., 25.00
-    default_availability_status = Column(String, nullable=True, default="Available") # e.g., "Available", "Maintenance"
+    default_availability_status = Column(Enum(CourtAvailabilityStatus), default=CourtAvailabilityStatus.AVAILABLE)
 
     # Relationship to Club model
     club = relationship("Club", back_populates="courts")
