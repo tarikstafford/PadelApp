@@ -1,14 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { Button } from "@workspace/ui/components/button";
-import Link from "next/link";
 import { Badge } from "@workspace/ui/components/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
-import HeroSection from "@/components/landing/HeroSection";
-import FeaturesSection from "@/components/landing/FeaturesSection";
-import Footer from "@/components/landing/Footer";
 
 const features = [
   {
@@ -26,14 +19,26 @@ const features = [
   },
 ];
 
-export default function LandingPage() {
+export default function FeaturesSection() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <main className="flex-1">
-        <HeroSection />
-        <FeaturesSection />
-      </main>
-      <Footer />
-    </div>
+    <section id="features" className="w-full py-12 md:py-24 lg:py-32">
+      <div className="container px-4 md:px-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => (
+            <Card key={feature.title}>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  {feature.title}
+                  {feature.comingSoon && <Badge>Coming Soon</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{feature.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 } 
