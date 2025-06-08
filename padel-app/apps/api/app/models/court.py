@@ -9,6 +9,7 @@ class SurfaceType(str, enum.Enum):
     HARD = "Hard"
     GRASS = "Grass"
     ARTIFICIAL_GRASS = "Artificial Grass"
+    ARTIFICIAL_GRASS_PRO = "Artificial Grass Pro"
 
 class CourtAvailabilityStatus(str, enum.Enum):
     AVAILABLE = "Available"

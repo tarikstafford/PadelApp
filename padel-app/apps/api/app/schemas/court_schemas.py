@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel
-from decimal import Decimal # For price_per_hour
+from decimal import Decimal
 from app.models.court import SurfaceType, CourtAvailabilityStatus
 
 # Shared properties
@@ -13,16 +13,15 @@ class CourtBase(BaseModel):
 
 # Properties to receive on court creation
 class CourtCreate(CourtBase):
-    club_id: int # Must be specified on creation
+    club_id: int
 
 class CourtCreateForAdmin(CourtBase):
-    pass # club_id will be derived from the authenticated admin's club
+    pass
 
 # Properties to receive on court update
 class CourtUpdate(CourtBase):
-    name: Optional[str] = None # All fields optional for update
+    name: Optional[str] = None
     club_id: Optional[int] = None
-    # Other fields inherit optionality from CourtBase
 
 # Properties stored in DB
 class CourtInDBBase(CourtBase):
@@ -32,7 +31,7 @@ class CourtInDBBase(CourtBase):
 
 # Properties to return to client
 class Court(CourtInDBBase):
-    pass # Inherits all from CourtInDBBase
+    pass
 
 # Properties stored in DB
 class CourtInDB(CourtInDBBase):

@@ -26,9 +26,9 @@ export type Club = {
 export type Court = {
   id: number;
   name: string;
-  surface_type?: string;
+  surface_type?: "Clay" | "Hard" | "Grass" | "Artificial Grass" | "Artificial Grass Pro";
   is_indoor?: boolean;
   price_per_hour?: number;
-  default_availability_status?: string;
+  default_availability_status?: "Available" | "Unavailable" | "Maintenance";
   club_id: number;
 }; 

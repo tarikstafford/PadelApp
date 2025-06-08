@@ -16,8 +16,10 @@ import { Input } from "@workspace/ui/components/input";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
+import { useEffect } from "react";
 import { apiClient } from "@/lib/api";
+import { Court } from "@/lib/types";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -28,35 +30,42 @@ const formSchema = z.object({
   default_availability_status: z.string().optional(),
 });
 
-export default function NewCourtPage() {
+export default function EditCourtPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const params = useParams();
+  const { id } = params;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      surface_type: "",
-      is_indoor: false,
-      price_per_hour: 0,
-      default_availability_status: "Available",
-    },
   });
+
+  useEffect(() => {
+    if (user && id) {
+      apiClient.get<Court>(`/admin/my-club/courts/${id}`)
+        .then(data => {
+          form.reset(data);
+        })
+        .catch(error => {
+          console.error("Failed to fetch court data", error);
+        });
+    }
+  }, [user, id, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await apiClient.post("/admin/my-club/courts", values);
-      toast.success("Court created successfully!");
+      await apiClient.put(`/admin/my-club/courts/${id}`, values);
+      toast.success("Court updated successfully!");
       router.push("/courts");
     } catch (error) {
-      toast.error("Failed to create court. Please try again.");
-      console.error("Create court failed", error);
+      toast.error("Failed to update court. Please try again.");
+      console.error("Update court failed", error);
     }
   }
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Add New Court</h1>
+      <h1 className="text-2xl font-bold mb-4">Edit Court</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -150,7 +159,7 @@ export default function NewCourtPage() {
               </FormItem>
             )}
           />
-          <Button type="submit">Create Court</Button>
+          <Button type="submit">Save Changes</Button>
         </form>
       </Form>
     </div>
