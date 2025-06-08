@@ -1,21 +1,22 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { publicRoutes } from './lib/constants'
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value
   const role = request.cookies.get('role')?.value
+  const { pathname } = request.nextUrl
 
-  const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname)
-
-  if (isPublicRoute) {
-    return NextResponse.next()
+  // If trying to access login or register page while authenticated, redirect to dashboard
+  if (token && (pathname === '/login' || pathname === '/register')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  // If trying to access a protected route without a token, redirect to login
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // If trying to access a protected route without the correct role, redirect to unauthorized
   if (role !== 'CLUB_ADMIN') {
     return NextResponse.redirect(new URL('/unauthorized', request.url))
   }
@@ -25,13 +26,11 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/dashboard/:path*',
+    '/courts/:path*',
+    '/bookings/:path*',
+    '/profile/:path*',
+    '/login',
+    '/register',
   ],
 } 

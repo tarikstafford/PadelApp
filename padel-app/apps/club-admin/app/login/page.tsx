@@ -35,7 +35,7 @@ export default function LoginPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       await login(values);
-      router.push("/");
+      router.push("/dashboard");
     } catch (error) {
       // Handle login error (e.g., show a toast notification)
       console.error("Login failed", error);

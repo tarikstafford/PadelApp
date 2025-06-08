@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient } from "@/lib/api";
 import { Club } from "@/lib/types"; // Assuming a Club type is defined in types.ts
-import { withRoleProtection } from "@/components/withRoleProtection";
 
-function DashboardPage() {
+export default function DashboardPage() {
   const { user } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +42,4 @@ function DashboardPage() {
       <p>{club.description}</p>
     </div>
   );
-}
-
-export default withRoleProtection(DashboardPage, ["CLUB_ADMIN"]); 
+} 
