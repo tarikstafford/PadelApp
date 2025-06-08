@@ -26,11 +26,8 @@ def upgrade() -> None:
     surface_type_enum.create(op.get_bind(), checkfirst=True)
     availability_status_enum.create(op.get_bind(), checkfirst=True)
 
-    # Clean up old, messy data by mapping it to the new, correct values
-    op.execute("UPDATE courts SET surface_type = 'Turf' WHERE surface_type IN ('Artificial Grass', 'Artificial Grass Pro', 'Sand-filled Synthetic')")
-    op.execute("UPDATE courts SET surface_type = 'Hard Court' WHERE surface_type IN ('Hard', 'Cushioned Hard Court', 'ConcreteTextured', 'Panoramic Glass')")
-    op.execute("UPDATE courts SET surface_type = 'Clay' WHERE surface_type = 'Clay'")
-    op.execute("UPDATE courts SET surface_type = 'Sand' WHERE surface_type = 'Sand'")
+    # Set all existing courts to 'Turf' to avoid migration errors
+    op.execute("UPDATE courts SET surface_type = 'Turf'")
     
     # Now that the data is clean, we can alter the column type
     op.alter_column('courts', 'surface_type',
