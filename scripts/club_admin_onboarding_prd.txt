@@ -1,0 +1,43 @@
+<context>
+# Overview
+This document outlines the requirements for the second phase of the PadelGo Club Admin Portal. Building on the core functionality already implemented, this phase focuses on creating a public-facing landing page to attract new users and enhancing the registration process into a more user-friendly, multi-step onboarding flow.
+
+# Core Features
+- **Public Landing Page**
+    - A new, professionally designed, and publicly accessible landing page will be created to serve as the main entry point for potential club admins.
+    - **Hero Section:** A strong headline, a benefit-oriented tagline, and a prominent "Sign Up for Free" CTA button.
+    - **Features Section:** A section highlighting key benefits, including "Effortless Booking Management," "Unified Player Directory," and "Streamlined Payments (Coming Soon)." The payments feature should be visually marked as "Coming Soon."
+    - **Footer:** A simple footer with placeholder links for Terms of Service and Privacy Policy.
+
+- **Enhanced Onboarding: Multi-Step Registration**
+    - The existing single-page registration will be converted into a guided, multi-step process.
+    - **Step 1: Create Your Admin Account:** Collects admin's name, email, and password.
+    - **Step 2: Tell Us About Your Club:** Collects club name, address, and city.
+    - **Step 3: Confirmation & Finalize:** Displays a summary for review and a final submission button. Upon success, the user is logged in and redirected to their dashboard.
+</context>
+<PRD>
+# Technical Architecture
+- **Frontend (`club-admin` app):**
+    - The root `/` page will be repurposed as the new public landing page.
+    - The `/register` route will be refactored to house the new multi-step onboarding flow.
+    - New components will be created for the landing page sections and each step of the onboarding form.
+    - `middleware.ts` will be updated to make the landing page (`/`) and registration (`/register`) public. The redirect from the root page will be removed.
+
+- **Backend (API):**
+    - No changes are required. The existing `/api/v1/auth/register-club` endpoint will handle the final submission from the multi-step form.
+
+# Development Roadmap
+1.  **UI/UX for Landing Page:**
+    -   Update the root `page.tsx` in the `club-admin` app to become the landing page.
+    -   Build the Hero, Features, and Footer sections using `shadcn/ui` components.
+    -   Update `middleware.ts` to make the root route public and remove the redirect.
+2.  **Multi-Step Form Implementation:**
+    -   Refactor the existing `/register/page.tsx` to host a parent `MultiStepForm` component.
+    -   Implement state management to handle data across steps.
+    -   Create the individual UI components for each step of the registration process.
+    -   Connect the final submission to the `register` function in the `AuthContext`.
+
+# Risks and Mitigations
+- **State Management in Multi-Step Form:** Managing user input across several component steps can be complex.
+    - **Mitigation:** Use React's Context API combined with `useState` to create a simple, localized state management solution for the form.
+</PRD>

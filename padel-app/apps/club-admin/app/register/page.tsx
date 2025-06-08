@@ -1,149 +1,45 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@workspace/ui/components/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@workspace/ui/components/form";
-import { Input } from "@workspace/ui/components/input";
-import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-
-const formSchema = z.object({
-  admin_name: z.string().min(1, { message: "Name is required" }),
-  admin_email: z.string().email(),
-  admin_password: z.string().min(8, { message: "Password must be at least 8 characters" }),
-  name: z.string().min(1, { message: "Club name is required" }),
-  address: z.string().optional(),
-  city: z.string().optional(),
-});
+import { useState } from "react";
+import Step1Account from "@/components/onboarding/Step1Account";
+import Step2ClubInfo from "@/components/onboarding/Step2ClubInfo";
+import Step3Confirm from "@/components/onboarding/Step3Confirm";
 
 export default function RegisterPage() {
-  const { register } = useAuth();
-  const router = useRouter();
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      admin_name: "",
-      admin_email: "",
-      admin_password: "",
-      name: "",
-      address: "",
-      city: "",
-    },
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    admin_name: "",
+    admin_email: "",
+    admin_password: "",
+    name: "",
+    address: "",
+    city: "",
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      await register(values);
-      router.push("/");
-    } catch (error) {
-      // Handle register error (e.g., show a toast notification)
-      console.error("Registration failed", error);
+  const nextStep = () => setStep((prev) => prev + 1);
+  const prevStep = () => setStep((prev) => prev - 1);
+
+  const updateFormData = (data: any) => {
+    setFormData((prev) => ({ ...prev, ...data }));
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return <Step1Account nextStep={nextStep} updateFormData={updateFormData} formData={formData} />;
+      case 2:
+        return <Step2ClubInfo nextStep={nextStep} prevStep={prevStep} updateFormData={updateFormData} formData={formData} />;
+      case 3:
+        return <Step3Confirm prevStep={prevStep} formData={formData} />;
+      default:
+        return <Step1Account nextStep={nextStep} updateFormData={updateFormData} formData={formData} />;
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-8">Register Club</h1>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="admin_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="admin_email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="email@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="admin_password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Club Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Padel Club" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="123 Padel St" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Padelville" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full">Register</Button>
-          </form>
-        </Form>
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Already have an account?{" "}
-          <Link href="/login" className="text-blue-500 hover:underline">
-            Login
-          </Link>
-        </p>
+        {renderStep()}
       </div>
     </div>
   );
