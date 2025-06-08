@@ -85,14 +85,10 @@ export default function NewCourtPage() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value="Turf">Turf</SelectItem>
                     <SelectItem value="Clay">Clay</SelectItem>
-                    <SelectItem value="Hard">Hard</SelectItem>
-                    <SelectItem value="Grass">Grass</SelectItem>
-                    <SelectItem value="Artificial Grass">Artificial Grass</SelectItem>
-                    <SelectItem value="Artificial Grass Pro">Artificial Grass Pro</SelectItem>
-                    <SelectItem value="Panoramic Glass">Panoramic Glass</SelectItem>
-                    <SelectItem value="ConcreteTextured">Concrete Textured</SelectItem>
-                    <SelectItem value="Cushioned Hard Court">Cushioned Hard Court</SelectItem>
+                    <SelectItem value="Hard Court">Hard Court</SelectItem>
+                    <SelectItem value="Sand">Sand</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
