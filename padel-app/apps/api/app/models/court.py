@@ -5,14 +5,10 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 class SurfaceType(str, enum.Enum):
+    TURF = "Turf"
     CLAY = "Clay"
-    HARD = "Hard"
-    GRASS = "Grass"
-    ARTIFICIAL_GRASS = "Artificial Grass"
-    ARTIFICIAL_GRASS_PRO = "Artificial Grass Pro"
-    PANORAMIC_GLASS = "Panoramic Glass"
-    CONCRETE_TEXTURED = "ConcreteTextured"
-    CUSHIONED_HARD_COURT = "Cushioned Hard Court"
+    HARD_COURT = "Hard Court"
+    SAND = "Sand"
 
 class CourtAvailabilityStatus(str, enum.Enum):
     AVAILABLE = "Available"
