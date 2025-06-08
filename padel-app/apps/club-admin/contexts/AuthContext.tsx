@@ -50,6 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const register = async (data: any) => {
+    console.log("Registering with data:", data);
     const response = await apiClient.post<{ access_token: string; role: string }>("/auth/register-club", data);
     setCookie("token", response.access_token);
     setCookie("role", response.role);
