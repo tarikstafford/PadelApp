@@ -41,7 +41,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (data: any) => {
-    const response = await apiClient.post<{ access_token: string; role: string }>("/auth/login", data);
+    const body = new URLSearchParams();
+    body.append('username', data.email);
+    body.append('password', data.password);
+
+    const response = await apiClient.post<{ access_token: string; role: string }>(
+      "/auth/login",
+      body,
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    );
     setCookie("token", response.access_token);
     setCookie("role", response.role);
     const userData = await apiClient.get<User>("/auth/users/me");

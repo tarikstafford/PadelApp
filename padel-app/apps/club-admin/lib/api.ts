@@ -26,11 +26,11 @@ export const apiClient = {
     return response.json() as Promise<T>;
   },
 
-  post: async <T>(path: string, body: any): Promise<T> => {
+  post: async <T>(path: string, body: any, options?: { headers?: Record<string, string> }): Promise<T> => {
     const response = await fetch(`${getApiUrl()}${path}`, {
       method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(body),
+      headers: options?.headers || getAuthHeaders(),
+      body: options?.headers ? body : JSON.stringify(body),
     });
     if (!response.ok) {
       throw new Error(response.statusText);
