@@ -15,6 +15,9 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { formatErrorMessage, ErrorDetails } from "@/lib/errorHandler";
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -24,6 +27,8 @@ const formSchema = z.object({
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const [apiError, setApiError] = useState<ErrorDetails | null>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,11 +39,11 @@ export default function LoginPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
+      setApiError(null);
       await login(values);
       router.push("/dashboard");
     } catch (error) {
-      // Handle login error (e.g., show a toast notification)
-      console.error("Login failed", error);
+      setApiError(formatErrorMessage(error));
     }
   }
 
@@ -74,6 +79,7 @@ export default function LoginPage() {
               )}
             />
             <Button type="submit">Submit</Button>
+            {apiError && <ErrorMessage error={apiError} className="mt-4" />}
           </form>
         </Form>
       </div>

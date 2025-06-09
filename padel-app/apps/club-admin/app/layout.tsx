@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers"
 import Layout from "@/components/layout/Layout"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { Toaster } from "@workspace/ui/components/sonner"
+import ErrorBoundary from "@/components/ErrorBoundary"
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -26,12 +27,14 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
       >
-        <Providers>
-          <AuthProvider>
-            <Layout>{children}</Layout>
-            <Toaster richColors position="top-right" />
-          </AuthProvider>
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            <AuthProvider>
+              <Layout>{children}</Layout>
+              <Toaster richColors position="top-right" />
+            </AuthProvider>
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   )
