@@ -15,4 +15,5 @@ export * from "./toggle.js";
 export * from "./toggle-group.js";
 export * from "./table.js";
 export * from "./checkbox.js";
-export * from "./alert.js"; 
+export * from "./alert.js";
+export * from "./alert-dialog.js"; 

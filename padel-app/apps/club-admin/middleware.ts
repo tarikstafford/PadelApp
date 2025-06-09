@@ -1,26 +1,26 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const protectedRoutes = ['/dashboard', '/courts', '/bookings', '/profile'];
+const publicRoutes = ['/login', '/register', '/'];
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value
-  const role = request.cookies.get('role')?.value
   const { pathname } = request.nextUrl
 
-  const isPublicRoute = pathname === '/login' || pathname === '/register' || pathname === '/'
-
-  if (isPublicRoute) {
-    if (token) {
+  // If the user is logged in
+  if (token) {
+    // And tries to access a public-only route (like login), redirect to dashboard
+    if (publicRoutes.includes(pathname)) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
-    return NextResponse.next()
-  }
-
-  if (!token) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  if (role !== 'CLUB_ADMIN') {
-    return NextResponse.redirect(new URL('/unauthorized', request.url))
+  } 
+  // If the user is not logged in
+  else {
+    // And tries to access a protected route, redirect to login
+    if (protectedRoutes.some(prefix => pathname.startsWith(prefix))) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
   }
 
   return NextResponse.next()

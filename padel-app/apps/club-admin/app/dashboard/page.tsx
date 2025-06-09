@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient } from "@/lib/api";
 import { Club } from "@/lib/types"; // Assuming a Club type is defined in types.ts
+import { Button } from "@workspace/ui/components/button";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -29,7 +31,15 @@ export default function DashboardPage() {
   }
 
   if (!club) {
-    return <div>No club found for this admin.</div>;
+    return (
+      <div className="flex flex-col items-center justify-center text-center p-8">
+        <h2 className="text-2xl font-bold mb-2">Welcome to Your Dashboard!</h2>
+        <p className="mb-4 text-gray-600">It looks like you haven't created a club yet. Let's get started.</p>
+        <Button asChild>
+          <Link href="/profile">Create Your Club Profile</Link>
+        </Button>
+      </div>
+    );
   }
 
   return (
