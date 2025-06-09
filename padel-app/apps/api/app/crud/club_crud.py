@@ -42,8 +42,8 @@ def get_clubs(
     return query.offset(skip).limit(limit).all()
 
 # Placeholder for create_club
-def create_club(db: Session, club: ClubCreate) -> ClubModel:
-    db_club = ClubModel(**club.model_dump())
+def create_club(db: Session, club: ClubCreate, owner_id: int) -> ClubModel:
+    db_club = ClubModel(**club.model_dump(), owner_id=owner_id)
     db.add(db_club)
     db.commit()
     db.refresh(db_club)
