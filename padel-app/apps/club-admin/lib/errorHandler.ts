@@ -8,6 +8,25 @@ export interface ErrorDetails {
 }
 
 export const formatErrorMessage = (error: any): ErrorDetails => {
+  // Handle FastAPI validation errors
+  if (error.detail) {
+    const detail = Array.isArray(error.detail) ? error.detail[0].msg : error.detail;
+    if (typeof detail === 'string' && detail.includes("Email already registered")) {
+      return {
+        type: 'form',
+        message: 'This email address is already in use.',
+        actionable: 'Please try a different email or log in.',
+        code: 'AUTH-REG-001'
+      };
+    }
+    return {
+      type: 'server',
+      message: detail,
+      actionable: 'Please check the details and try again.',
+      code: 'SRV-DETAIL'
+    };
+  }
+
   if (error.response) {
     const status = error.response.status;
     if (status === 401 || status === 403) {
