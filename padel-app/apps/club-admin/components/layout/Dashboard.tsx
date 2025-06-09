@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Button } from "@workspace/ui/components/button";
 import AuthStatus from "../auth/AuthStatus";
-import LogoutButton from "../auth/LogoutButton";
 import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
+import { Button } from "@workspace/ui/components/button";
+import { usePathname } from "next/navigation";
+import LogoutButton from "../auth/LogoutButton";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -15,7 +14,30 @@ const navItems = [
   { href: "/profile", label: "Profile" },
 ];
 
-export default function Sidebar() {
+export function DashboardPage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-screen">
+      <DashboardSidebar />
+      <div className="flex flex-col flex-1">
+        <DashboardHeader />
+        <main className="flex-1 p-8">{children}</main>
+      </div>
+    </div>
+  );
+}
+
+export function DashboardHeader() {
+  return (
+    <header className="flex items-center justify-between h-16 px-4 border-b">
+      <div>{/* Add any header content here */}</div>
+      <div>
+        <AuthStatus />
+      </div>
+    </header>
+  );
+}
+
+export function DashboardSidebar() {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
 
@@ -26,7 +48,6 @@ export default function Sidebar() {
           Club Admin
         </Link>
       </div>
-      <AuthStatus />
       <nav className="flex-grow">
         <ul className="space-y-2">
           {isAuthenticated && navItems.map((item) => (
@@ -50,4 +71,12 @@ export default function Sidebar() {
       )}
     </aside>
   );
+}
+
+export function DashboardContent({ children }: { children: React.ReactNode }) {
+  return <div className="flex-1 p-8">{children}</div>;
+}
+
+export function DashboardNav({ children }: { children: React.ReactNode }) {
+    return <nav className="flex-grow">{children}</nav>;
 } 

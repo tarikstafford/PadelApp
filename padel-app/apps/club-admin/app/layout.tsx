@@ -2,10 +2,10 @@ import { Geist, Geist_Mono } from "next/font/google"
 
 import "@workspace/ui/globals.css"
 import { Providers } from "@/components/providers"
-import Layout from "@/components/layout/Layout"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { Toaster } from "@workspace/ui/components/sonner"
 import ErrorBoundary from "@/components/ErrorBoundary"
+import { DashboardPage } from "@/components/layout/Dashboard"
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -30,7 +30,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <AuthProvider>
-              <Layout>{children}</Layout>
+              <DashboardPage>{children}</DashboardPage>
               <Toaster richColors position="top-right" />
             </AuthProvider>
           </Providers>
