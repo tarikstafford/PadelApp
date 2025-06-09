@@ -242,4 +242,22 @@ async def upload_club_profile_picture(
     except IOError as e:
         raise HTTPException(status_code=500, detail=f"Could not save club picture: {e}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred during club picture upload: {e}") 
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred during club picture upload: {e}")
+
+@router.post("/my-club", response_model=schemas.Club, status_code=status.HTTP_201_CREATED)
+async def create_my_club(
+    club_in: schemas.ClubCreateForAdmin,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user),
+):
+    """
+    Create a new club for the current admin user.
+    """
+    if current_admin.owned_club:
+        raise HTTPException(
+            status_code=400,
+            detail="This admin already owns a club.",
+        )
+    
+    new_club = crud.club_crud.create_club(db=db, club=club_in, owner_id=current_admin.id)
+    return new_club 

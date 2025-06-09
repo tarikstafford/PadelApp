@@ -20,6 +20,8 @@ export type Club = {
   opening_hours?: string;
   amenities?: string;
   image_url?: string;
+  website?: string;
+  operationalHours?: any;
   owner_id: number;
 };
 

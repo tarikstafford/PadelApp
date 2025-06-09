@@ -12,6 +12,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@workspace
 import { OperationalHoursSelector } from "@/components/shared/OperationalHoursSelector";
 import { ImageUploader } from "@/components/shared/ImageUploader";
 import { toast } from "sonner";
+import { apiClient } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 const clubFormSchema = z.object({
   name: z.string().min(2, "Club name must be at least 2 characters"),
@@ -28,45 +30,37 @@ const clubFormSchema = z.object({
 
 type ClubFormValues = z.infer<typeof clubFormSchema>;
 
-interface ClubOnboardingFlowProps {
-  initialData?: Partial<ClubFormValues>;
-  onSubmit: (data: ClubFormValues) => Promise<void>;
-  isEdit?: boolean;
-}
-
-export function ClubOnboardingFlow({ 
-  initialData = {}, 
-  onSubmit,
-  isEdit = false
-}: ClubOnboardingFlowProps) {
+export function CreateClubForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
   
   const form = useForm<ClubFormValues>({
     resolver: zodResolver(clubFormSchema),
     defaultValues: {
-      name: initialData.name || "",
-      description: initialData.description || "",
-      address: initialData.address || "",
-      city: initialData.city || "",
-      postal_code: initialData.postal_code || "",
-      phone: initialData.phone || "",
-      email: initialData.email || "",
-      website: initialData.website || "",
-      operationalHours: initialData.operationalHours || {
+      name: "",
+      description: "",
+      address: "",
+      city: "",
+      postal_code: "",
+      phone: "",
+      email: "",
+      website: "",
+      operationalHours: {
         monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
       },
-      imageUrl: initialData.imageUrl || null,
+      imageUrl: null,
     },
   });
   
   const handleSubmit = async (values: ClubFormValues) => {
     setIsSubmitting(true);
     try {
-      await onSubmit(values);
-      toast.success(isEdit ? "Club updated successfully" : "Club created successfully");
+      await apiClient.post("/admin/my-club", values);
+      toast.success("Club created successfully!");
+      router.push("/dashboard");
     } catch (error) {
-      console.error("Error submitting club data:", error);
-      toast.error("There was a problem saving your club information");
+      console.error("Error creating club:", error);
+      toast.error("There was a problem creating your club");
     } finally {
       setIsSubmitting(false);
     }
@@ -75,7 +69,7 @@ export function ClubOnboardingFlow({
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
-        <CardTitle>{isEdit ? "Edit Club" : "Add New Club"}</CardTitle>
+        <CardTitle>Create Your Club</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -229,7 +223,7 @@ export function ClubOnboardingFlow({
             />
             <CardFooter className="px-0 pt-4">
               <Button type="submit" disabled={isSubmitting} className="ml-auto">
-                {isSubmitting ? "Saving..." : isEdit ? "Update Club" : "Create Club"}
+                {isSubmitting ? "Creating..." : "Create Club"}
               </Button>
             </CardFooter>
           </form>
