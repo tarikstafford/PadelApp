@@ -2,16 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app import crud, models, schemas # schemas will have User, UserCreate, Token, UserUpdate
+from app.schemas import user_schemas, token_schemas, club_schemas
+from app import crud, models
 from app.core import security
 from app.database import get_db
-from app.services import file_service # Import file_service
+from app.services import file_service
 
 router = APIRouter()
 
-@router.post("/register-club", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
+@router.post("/register-club", response_model=token_schemas.Token, status_code=status.HTTP_201_CREATED)
 async def register_club(
-    club_in: schemas.ClubRegistrationSchema, 
+    club_in: club_schemas.ClubRegistrationSchema, 
     db: Session = Depends(get_db)
 ):
     """
@@ -24,7 +25,7 @@ async def register_club(
             detail="Email already registered",
         )
     
-    user_in = schemas.UserCreate(
+    user_in = user_schemas.UserCreate(
         email=club_in.admin_email,
         password=club_in.admin_password,
         name=club_in.admin_name,
@@ -32,7 +33,7 @@ async def register_club(
     )
     new_user = crud.user_crud.create_user(db=db, user=user_in)
 
-    club_create_in = schemas.ClubCreate(
+    club_create_in = club_schemas.ClubCreate(
         name=club_in.name,
         address=club_in.address,
         city=club_in.city,
@@ -60,9 +61,9 @@ async def register_club(
         "role": new_user.role,
     }
 
-@router.post("/register", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=user_schemas.User, status_code=status.HTTP_201_CREATED)
 async def register_new_user(
-    user_in: schemas.UserCreate, 
+    user_in: user_schemas.UserCreate, 
     db: Session = Depends(get_db)
 ):
     """
@@ -77,7 +78,7 @@ async def register_new_user(
     created_user = crud.user_crud.create_user(db=db, user=user_in)
     return created_user
 
-@router.post("/login", response_model=schemas.Token)
+@router.post("/login", response_model=token_schemas.Token)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), 
     db: Session = Depends(get_db)
@@ -111,9 +112,9 @@ async def login_for_access_token(
         "role": user.role,
     }
 
-@router.post("/refresh-token", response_model=schemas.Token)
+@router.post("/refresh-token", response_model=token_schemas.Token)
 async def refresh_access_token(
-    token_request: schemas.RefreshTokenRequest,
+    token_request: token_schemas.RefreshTokenRequest,
     # db: Session = Depends(get_db) # Not strictly needed if refresh token is self-contained and not stored/revoked in DB
 ):
     """
@@ -153,7 +154,7 @@ async def refresh_access_token(
             detail=f"Error processing refresh token: {str(e)}",
         ) 
 
-@router.get("/users/me", response_model=schemas.User)
+@router.get("/users/me", response_model=user_schemas.User)
 async def read_users_me(
     current_user: models.User = Depends(security.get_current_active_user)
 ):
@@ -162,9 +163,9 @@ async def read_users_me(
     """
     return current_user
 
-@router.put("/users/me", response_model=schemas.User)
+@router.put("/users/me", response_model=user_schemas.User)
 async def update_user_me(
-    user_in: schemas.UserUpdate,
+    user_in: user_schemas.UserUpdate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_active_user)
 ):
@@ -180,7 +181,7 @@ async def update_user_me(
         )
     return updated_user
 
-@router.post("/users/me/profile-picture", response_model=schemas.User)
+@router.post("/users/me/profile-picture", response_model=user_schemas.User)
 async def upload_profile_picture(
     current_user: models.User = Depends(security.get_current_active_user),
     db: Session = Depends(get_db),
@@ -196,7 +197,7 @@ async def upload_profile_picture(
         file_url = file_service.save_profile_picture(file=file, user_id=current_user.id)
         
         # Create UserUpdate schema instance with the new profile picture URL
-        user_update_data = schemas.UserUpdate(profile_picture_url=file_url)
+        user_update_data = user_schemas.UserUpdate(profile_picture_url=file_url)
         
         # Update the user in the database
         updated_user = crud.user_crud.update_user(db=db, db_user=current_user, user_in=user_update_data)
