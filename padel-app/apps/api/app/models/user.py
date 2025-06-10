@@ -12,8 +12,8 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     profile_picture_url = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True)
-    is_admin = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True, nullable=False, server_default='true')
+    is_admin = Column(Boolean, default=False, nullable=False, server_default='false')
     
     # New role field
     role = Column(Enum(UserRole), nullable=False, default=UserRole.PLAYER, server_default=UserRole.PLAYER.value)
