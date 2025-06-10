@@ -35,8 +35,8 @@ class UserInDBBase(UserBase):
 class User(UserBase):
     id: int
     profile_picture_url: Optional[str] = None
-    is_active: bool
-    is_admin: bool
+    is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
     role: UserRole # Add role to the main response schema
     # model_config needed here too if this schema is created from an ORM model instance
     model_config = {"from_attributes": True}
