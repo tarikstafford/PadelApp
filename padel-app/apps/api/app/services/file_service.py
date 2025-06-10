@@ -2,6 +2,7 @@ import os
 import shutil
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
+from fastapi.concurrency import run_in_threadpool
 import secrets # For generating unique filenames
 import cloudinary
 import cloudinary.uploader
@@ -46,7 +47,8 @@ async def save_profile_picture(file: UploadFile, user_id: int) -> str:
     try:
         public_id = f"profile_pics/{user_id}/{uuid.uuid4()}"
         
-        result = cloudinary.uploader.upload(
+        result = await run_in_threadpool(
+            cloudinary.uploader.upload,
             file.file,
             public_id=public_id,
             overwrite=True,
@@ -56,8 +58,6 @@ async def save_profile_picture(file: UploadFile, user_id: int) -> str:
         return result['secure_url']
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
-    finally:
-        file.file.close()
 
 async def save_club_picture(file: UploadFile, club_id: int) -> str:
     """
@@ -68,7 +68,8 @@ async def save_club_picture(file: UploadFile, club_id: int) -> str:
     try:
         public_id = f"club_pics/{club_id}/{uuid.uuid4()}"
         
-        result = cloudinary.uploader.upload(
+        result = await run_in_threadpool(
+            cloudinary.uploader.upload,
             file.file,
             public_id=public_id,
             overwrite=True,
@@ -77,6 +78,4 @@ async def save_club_picture(file: UploadFile, club_id: int) -> str:
         
         return result['secure_url']
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
-    finally:
-        file.file.close() 
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}") 
