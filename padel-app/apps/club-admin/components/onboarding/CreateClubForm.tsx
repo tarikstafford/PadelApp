@@ -26,14 +26,31 @@ const clubFormSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email("Invalid email address").optional(),
   website: z.string().url("Invalid website URL").optional(),
-  operationalHours: z.any(),
 });
 
 type ClubFormValues = z.infer<typeof clubFormSchema>;
 
+interface DayHours {
+  open: string;
+  close: string;
+}
+
+interface OperationalHours {
+  monday: DayHours | null;
+  tuesday: DayHours | null;
+  wednesday: DayHours | null;
+  thursday: DayHours | null;
+  friday: DayHours | null;
+  saturday: DayHours | null;
+  sunday: DayHours | null;
+}
+
 export function CreateClubForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [operationalHours, setOperationalHours] = useState<OperationalHours>({
+    monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
+  });
   const router = useRouter();
   
   const form = useForm<ClubFormValues>({
@@ -47,9 +64,6 @@ export function CreateClubForm() {
       phone: "",
       email: "",
       website: "",
-      operationalHours: {
-        monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
-      },
     },
   });
   
@@ -57,7 +71,8 @@ export function CreateClubForm() {
     setIsSubmitting(true);
     try {
       // Step 1: Create the club with text data
-      const newClub = await apiClient.post<Club>("/admin/my-club", values);
+      const newClubPayload = { ...values, operationalHours };
+      const newClub = await apiClient.post<Club>("/admin/my-club", newClubPayload);
       toast.success("Club details saved successfully!");
 
       // Step 2: If there's an image, upload it
@@ -216,22 +231,10 @@ export function CreateClubForm() {
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="operationalHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <OperationalHoursSelector 
-                      value={field.value || {
-                        monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
-                      }} 
-                      onChange={field.onChange} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            
+            <OperationalHoursSelector
+              value={operationalHours}
+              onChange={setOperationalHours}
             />
             
             <FormItem>

@@ -26,13 +26,32 @@ const clubFormSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email("Invalid email address").optional(),
   website: z.string().url("Invalid website URL").optional(),
-  operationalHours: z.any(),
 });
 
 type ClubFormValues = z.infer<typeof clubFormSchema>;
 
+interface DayHours {
+  open: string;
+  close: string;
+}
+
+interface OperationalHours {
+  monday: DayHours | null;
+  tuesday: DayHours | null;
+  wednesday: DayHours | null;
+  thursday: DayHours | null;
+  friday: DayHours | null;
+  saturday: DayHours | null;
+  sunday: DayHours | null;
+}
+
 export function EditClubForm({ club }: { club: Club }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [operationalHours, setOperationalHours] = useState<OperationalHours>(
+    club.operationalHours || {
+      monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
+    }
+  );
   const router = useRouter();
 
   const form = useForm<ClubFormValues>({
@@ -46,9 +65,6 @@ export function EditClubForm({ club }: { club: Club }) {
       phone: club.phone || "",
       email: club.email || "",
       website: club.website || "",
-      operationalHours: club.operationalHours || {
-        monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
-      },
     },
   });
 
@@ -72,7 +88,6 @@ export function EditClubForm({ club }: { club: Club }) {
       if (!response.ok) throw new Error(data.detail || "Image upload failed.");
       
       toast.success("Image updated successfully!");
-      // Force a reload to show the new image
       router.refresh();
 
     } catch (error: any) {
@@ -84,7 +99,8 @@ export function EditClubForm({ club }: { club: Club }) {
   const handleSubmit = async (values: ClubFormValues) => {
     setIsSubmitting(true);
     try {
-      await apiClient.put("/admin/my-club", values);
+      const updatedClubData = { ...values, operationalHours };
+      await apiClient.put("/admin/my-club", updatedClubData);
       toast.success("Club updated successfully!");
     } catch (error) {
       console.error("Error updating club:", error);
@@ -230,25 +246,12 @@ export function EditClubForm({ club }: { club: Club }) {
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="operationalHours"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <OperationalHoursSelector 
-                        value={field.value || {
-                          monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
-                        }} 
-                        onChange={field.onChange} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            
+            <OperationalHoursSelector 
+              value={operationalHours}
+              onChange={setOperationalHours} 
+            />
+
             <CardFooter className="px-0 pt-4">
               <Button type="submit" disabled={isSubmitting} className="ml-auto">
                 {isSubmitting ? "Saving..." : "Update Club"}
