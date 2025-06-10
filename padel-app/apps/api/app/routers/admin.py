@@ -240,7 +240,7 @@ async def read_club_bookings(
     )
     return bookings
 
-@router.get("/bookings/{booking_id}/game", response_model=game_schemas.Game, dependencies=[Depends(BookingAdminChecker())])
+@router.get("/bookings/{booking_id}/game", response_model=game_schemas.GameResponse, dependencies=[Depends(BookingAdminChecker())])
 async def read_game_for_booking(
     booking_id: int,
     db: Session = Depends(get_db),
