@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, desc, asc
 from datetime import date, datetime, time, timedelta
 
@@ -43,12 +43,22 @@ def create_booking(db: Session, booking_in: BookingCreate, user_id: int) -> Book
         user_id=user_id,
         start_time=booking_in.start_time,
         end_time=end_time,
-        status=BookingStatus.CONFIRMED # Default to CONFIRMED for now, or could be PENDING
+        status=BookingStatus.CONFIRMED
     )
     db.add(db_booking)
     db.commit()
     db.refresh(db_booking)
-    return db_booking
+
+    # Re-fetch the booking with relationships loaded to return the full object
+    return (
+        db.query(BookingModel)
+        .options(
+            joinedload(BookingModel.user),
+            joinedload(BookingModel.court)
+        )
+        .filter(BookingModel.id == db_booking.id)
+        .first()
+    )
 
 def get_booking(db: Session, booking_id: int) -> Optional[BookingModel]:
     """Retrieve a single booking by its ID."""
@@ -66,6 +76,7 @@ def get_bookings_by_user(
 ) -> List[BookingModel]:
     """Retrieve bookings for a specific user with pagination, date filtering, and sorting."""
     query = db.query(BookingModel).filter(BookingModel.user_id == user_id)
+    query = query.options(joinedload(BookingModel.court))
 
     if start_date_filter:
         start_datetime_filter = datetime.combine(start_date_filter, time.min)
@@ -106,6 +117,10 @@ def get_bookings_by_club(
         db.query(BookingModel)
         .join(CourtModel)
         .filter(CourtModel.club_id == club_id)
+        .options(
+            joinedload(BookingModel.user), 
+            joinedload(BookingModel.court)
+        )
     )
 
     if start_date_filter:

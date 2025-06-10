@@ -2,6 +2,9 @@ from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
 
+from .user_schemas import User
+from .court_schemas import Court
+
 # Import BookingStatus enum from the ORM model
 # This assumes no circular dependency issues. If there are, 
 # the enum might need to be defined in a common types module or duplicated.
@@ -23,6 +26,8 @@ class Booking(BookingBase):
     user_id: int
     end_time: datetime
     status: BookingStatus # Use the enum from the model
+    user: User
+    court: Court
 
     model_config = {"from_attributes": True}
 
