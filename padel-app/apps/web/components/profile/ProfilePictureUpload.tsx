@@ -61,7 +61,8 @@ export default function ProfilePictureUpload({ onUploadSuccess }: ProfilePicture
     formData.append("file", selectedFile);
 
     try {
-      const response = await fetch("/api/v1/auth/users/me/profile-picture", {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/v1/auth/users/me/profile-picture`, {
         method: "POST",
         headers: { 'Authorization': `Bearer ${accessToken}` }, // No Content-Type for FormData, browser sets it
         body: formData,
