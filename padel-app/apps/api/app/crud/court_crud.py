@@ -2,7 +2,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 
 from app.models.court import Court as CourtModel
-from app.schemas.court_schemas import CourtCreate, CourtUpdate # For future C/U operations
+from app.schemas.court_schemas import CourtCreate, CourtCreateForAdmin, CourtUpdate # For future C/U operations
 
 def get_court(db: Session, court_id: int) -> Optional[CourtModel]:
     """Retrieve a single court by its ID."""
@@ -24,9 +24,9 @@ def get_courts_by_club(
         .all()
     )
 
-# Placeholder for create_court
-def create_court(db: Session, court: CourtCreate, club_id: int) -> CourtModel:
-    db_court = CourtModel(**court.model_dump(), club_id=club_id)
+def create_court(db: Session, court_in: CourtCreateForAdmin, club_id: int) -> CourtModel:
+    """Creates a new court for a given club."""
+    db_court = CourtModel(**court_in.model_dump(), club_id=club_id)
     db.add(db_court)
     db.commit()
     db.refresh(db_court)
