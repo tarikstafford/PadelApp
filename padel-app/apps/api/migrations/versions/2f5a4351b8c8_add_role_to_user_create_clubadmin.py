@@ -34,43 +34,49 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_club_admins_id'), 'club_admins', ['id'], unique=False)
 
-    # Update UserRole enum
-    # First, let's rename the old enum to avoid conflicts
-    op.execute("ALTER TYPE userrole RENAME TO userrole_old")
+    # --- Start of Correct Enum Migration ---
+
+    # 1. Alter column to VARCHAR to allow for arbitrary string values temporarily
+    op.alter_column('users', 'role',
+               type_=sa.VARCHAR(50),
+               postgresql_using='role::varchar')
+
+    # 2. Update the data to the new values
+    op.execute("UPDATE users SET role = 'admin' WHERE role = 'CLUB_ADMIN'")
+    op.execute("UPDATE users SET role = 'player' WHERE role = 'PLAYER'")
     
-    # Create the new enum
+    # 3. Drop the old enum type
+    op.execute("DROP TYPE userrole_old") # Assuming it was renamed in a previous failed migration attempt
+    op.execute("DROP TYPE IF EXISTS userrole") # Drop the original if it exists
+    
+    # 4. Create the new enum type
     user_role_new = postgresql.ENUM('player', 'admin', 'super-admin', name='userrole')
     user_role_new.create(op.get_bind())
 
-    # Update existing data to match new enum values before altering the column
-    op.execute("UPDATE users SET role = 'admin' WHERE role = 'CLUB_ADMIN'")
-    op.execute("UPDATE users SET role = 'player' WHERE role = 'PLAYER'")
+    # 5. Alter the column back to the new ENUM type
+    op.alter_column('users', 'role',
+               type_=user_role_new,
+               postgresql_using='role::userrole')
 
-    # Update the column to use the new enum
-    # We need to do this using a temporary column because we can't cast directly
-    op.execute("ALTER TABLE users ALTER COLUMN role TYPE userrole USING role::text::userrole")
-    
-    # Drop the old enum
-    op.execute("DROP TYPE userrole_old")
+    # --- End of Correct Enum Migration ---
 
     # Add index to role column
     op.create_index(op.f('ix_users_role'), 'users', ['role'], unique=False)
 
 
 def downgrade() -> None:
-    # Drop index from role column
+    # This downgrade is simplified and assumes a fresh state.
+    # A fully robust downgrade would need to handle the reverse data mapping.
+    
     op.drop_index(op.f('ix_users_role'), table_name='users')
-
-    # Revert UserRole enum
-    op.execute("ALTER TYPE userrole RENAME TO userrole_new")
-    user_role_old = postgresql.ENUM('PLAYER', 'CLUB_ADMIN', name='userrole')
-    user_role_old.create(op.get_bind())
-    op.execute("ALTER TABLE users ALTER COLUMN role TYPE userrole USING role::text::userrole")
-    op.execute("DROP TYPE userrole_new")
-
-    # Drop club_admins table
     op.drop_index(op.f('ix_club_admins_id'), table_name='club_admins')
     op.drop_table('club_admins')
 
-    # Add back is_admin column
+    op.alter_column('users', 'role', type_=sa.VARCHAR(50))
+    op.execute("DROP TYPE userrole")
+
+    user_role_old = postgresql.ENUM('PLAYER', 'CLUB_ADMIN', name='userrole')
+    user_role_old.create(op.get_bind())
+    op.alter_column('users', 'role', type_=user_role_old, postgresql_using='role::userrole')
+    
     op.add_column('users', sa.Column('is_admin', sa.BOOLEAN(), server_default=sa.text('false'), autoincrement=False, nullable=False)) 
