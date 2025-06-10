@@ -143,6 +143,7 @@ export default function BookingsPage() {
           <Select
             value={statusFilter || ""}
             onValueChange={(value) => setStatusFilter(value || null)}
+            data-testid="status-filter"
           >
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="All Statuses" />

@@ -1,0 +1,21 @@
+{
+  "bookings": [
+    {
+      "id": 1,
+      "start_time": "2023-10-28T10:00:00Z",
+      "end_time": "2023-10-28T11:00:00Z",
+      "status": "CONFIRMED",
+      "court": { "id": 1, "name": "Court 1" },
+      "user": { "id": 101, "name": "John Doe" }
+    },
+    {
+      "id": 2,
+      "start_time": "2023-10-28T12:00:00Z",
+      "end_time": "2023-10-28T13:00:00Z",
+      "status": "PENDING",
+      "court": { "id": 2, "name": "Court 2" },
+      "user": { "id": 102, "name": "Jane Smith" }
+    }
+  ],
+  "pageCount": 5
+} 

@@ -1,0 +1,16 @@
+{
+  "total_bookings_today": 25,
+  "occupancy_rate_percent": 65.5,
+  "recent_activity": [
+    {
+      "game_id": 101,
+      "player_count": 4,
+      "created_at": "2023-10-27T10:00:00Z"
+    },
+    {
+      "game_id": 102,
+      "player_count": 2,
+      "created_at": "2023-10-27T11:30:00Z"
+    }
+  ]
+} 

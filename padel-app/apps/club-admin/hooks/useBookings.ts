@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchBookings } from "@/lib/api";
 import { DateRange } from "react-day-picker";
+import { keepPreviousData } from "@tanstack/react-query";
 
 export function useBookings({
   clubId,
@@ -32,6 +33,8 @@ export function useBookings({
         pageSize,
       }),
     enabled: !!clubId,
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   return { data, isLoading, error };

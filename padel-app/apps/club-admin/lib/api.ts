@@ -6,7 +6,8 @@ import {
   Booking,
   BookingDetails,
   Game,
-  Court
+  Court,
+  Club,
 } from './types';
 
 const getApiUrl = () => {
@@ -143,4 +144,18 @@ export const fetchCourtSchedule = async (clubId: number, date: string): Promise<
     throw new Error("Club ID is required to fetch schedule.");
   }
   return apiClient.get(`/admin/club/${clubId}/schedule`, { date });
+};
+
+export const fetchClubDetails = async (clubId: number): Promise<Club> => {
+  if (!clubId) {
+    throw new Error("Club ID is required to fetch club details.");
+  }
+  return apiClient.get<Club>(`/admin/club/${clubId}`);
+};
+
+export const updateClub = async (clubId: number, data: Partial<Club>): Promise<Club> => {
+  if (!clubId) {
+    throw new Error("Club ID is required to update club details.");
+  }
+  return apiClient.put<Club>(`/admin/club/${clubId}`, data);
 }; 

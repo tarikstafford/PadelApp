@@ -13,6 +13,7 @@ import { BarChart, Calendar, Users, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
+import { ClubProfileWidget } from "@/components/admin/club/club-profile-widget";
 
 export default function AdminDashboardPage() {
   const clubId = 1;
@@ -71,23 +72,8 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Club Profile</CardTitle>
-              <CardDescription>Manage your club details</CardDescription>
-            </div>
-            <Users className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/admin/club"
-              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-            >
-              View Details
-            </Link>
-          </CardContent>
-        </Card>
+        {/* Club Profile Widget */}
+        <ClubProfileWidget />
       </div>
 
       {/* Recent Activity Section */}

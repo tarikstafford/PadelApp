@@ -66,6 +66,22 @@ async def update_club(
     club = crud.club_crud.update_club(db=db, db_obj=club, obj_in=club_in)
     return club
 
+@router.get("/club/{club_id}", response_model=club_schemas.Club, dependencies=[Depends(ClubAdminChecker())])
+async def read_club(
+    club_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve a club's details.
+    """
+    club = crud.club_crud.get_club(db=db, club_id=club_id)
+    if not club:
+        raise HTTPException(
+            status_code=404,
+            detail="Club not found.",
+        )
+    return club
+
 @router.get("/club/{club_id}/courts", response_model=List[court_schemas.Court], dependencies=[Depends(ClubAdminChecker())])
 async def read_club_courts(
     club_id: int,
