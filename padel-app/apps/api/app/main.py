@@ -27,7 +27,11 @@ app = FastAPI(
 # For this project, allowing all origins is acceptable.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://club-admin-production.up.railway.app", "http://localhost:3000"],
+    allow_origins=[
+        "https://club-admin-production.up.railway.app", 
+        "http://localhost:3000",
+        "https://padelgo-frontend-production.up.railway.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"], # Allows all methods
     allow_headers=["*"], # Allows all headers
