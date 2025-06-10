@@ -33,4 +33,21 @@ export type Court = {
   price_per_hour?: number;
   default_availability_status?: "Available" | "Unavailable" | "Maintenance";
   club_id: number;
+};
+
+export type Booking = {
+  id: number;
+  start_time: string;
+  end_time: string;
+  total_price: number;
+  status: "CONFIRMED" | "PENDING" | "CANCELLED";
+  notes?: string;
+  court_id: number;
+  user_id: number;
+  court: Court;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  }
 }; 
