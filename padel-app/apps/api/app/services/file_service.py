@@ -7,6 +7,11 @@ import secrets # For generating unique filenames
 import cloudinary
 import cloudinary.uploader
 import uuid
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Define the base directory for uploads within the API app structure
 # This path is relative to the root of the `api` app (padel-app/apps/api)
@@ -42,10 +47,12 @@ async def save_profile_picture(file: UploadFile, user_id: int) -> str:
     """
     Upload a profile picture to Cloudinary and return the secure URL.
     """
+    logger.info(f"Attempting to upload profile picture for user_id: {user_id}")
     validate_image_file(file)
     
     try:
         public_id = f"profile_pics/{user_id}/{uuid.uuid4()}"
+        logger.info(f"Generated public_id: {public_id}")
         
         result = await run_in_threadpool(
             cloudinary.uploader.upload,
@@ -55,18 +62,22 @@ async def save_profile_picture(file: UploadFile, user_id: int) -> str:
             resource_type="image"
         )
         
+        logger.info(f"Successfully uploaded image. Result: {result.get('secure_url')}")
         return result['secure_url']
     except Exception as e:
+        logger.error(f"Failed to upload image for user_id: {user_id}. Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
 async def save_club_picture(file: UploadFile, club_id: int) -> str:
     """
     Saves an uploaded club picture to Cloudinary and returns its relative URL path.
     """
+    logger.info(f"Attempting to upload club picture for club_id: {club_id}")
     validate_image_file(file)
     
     try:
         public_id = f"club_pics/{club_id}/{uuid.uuid4()}"
+        logger.info(f"Generated public_id: {public_id}")
         
         result = await run_in_threadpool(
             cloudinary.uploader.upload,
@@ -76,6 +87,8 @@ async def save_club_picture(file: UploadFile, club_id: int) -> str:
             resource_type="image"
         )
         
+        logger.info(f"Successfully uploaded image for club. Result: {result.get('secure_url')}")
         return result['secure_url']
     except Exception as e:
+        logger.error(f"Failed to upload image for club_id: {club_id}. Error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}") 
