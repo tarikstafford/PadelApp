@@ -77,7 +77,7 @@ export function EditClubForm({ club }: { club: Club }) {
     formData.append("file", file);
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiBaseUrl}/api/v1/admin/my-club/profile-picture`, {
         method: "POST",
         headers: { 'Authorization': `Bearer ${token}` },
@@ -121,7 +121,7 @@ export function EditClubForm({ club }: { club: Club }) {
             {club.image_url && (
               <div className="w-full h-48 rounded-md overflow-hidden bg-muted">
                   <img 
-                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${club.image_url}`}
+                    src={`${process.env.NEXT_PUBLIC_API_URL}${club.image_url}`}
                     alt="Current club image" 
                     className="w-full h-full object-cover"
                   />
