@@ -10,9 +10,12 @@ import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { OperationalHoursSelector } from "@/components/shared/OperationalHoursSelector";
+import { ImageUploader } from "@/components/shared/ImageUploader";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { getCookie } from "cookies-next";
+import { Club } from "@/lib/types";
 
 const clubFormSchema = z.object({
   name: z.string().min(2, "Club name must be at least 2 characters"),
@@ -30,6 +33,7 @@ type ClubFormValues = z.infer<typeof clubFormSchema>;
 
 export function CreateClubForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const router = useRouter();
   
   const form = useForm<ClubFormValues>({
@@ -52,12 +56,39 @@ export function CreateClubForm() {
   const handleSubmit = async (values: ClubFormValues) => {
     setIsSubmitting(true);
     try {
-      await apiClient.post("/admin/my-club", values);
-      toast.success("Club created successfully! You can now add more details and an image.");
+      // Step 1: Create the club with text data
+      const newClub = await apiClient.post<Club>("/admin/my-club", values);
+      toast.success("Club details saved successfully!");
+
+      // Step 2: If there's an image, upload it
+      if (selectedImage) {
+        toast.info("Uploading club image...");
+        const token = getCookie("token");
+        const formData = new FormData();
+        formData.append("file", selectedImage);
+        
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiBaseUrl}/api/v1/admin/my-club/profile-picture`, {
+          method: "POST",
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "Image upload failed.");
+        }
+        toast.success("Image uploaded successfully!");
+      }
+      
+      // Step 3: Redirect to the profile/edit page
       router.push("/profile");
+
     } catch (error) {
       console.error("Error creating club:", error);
-      toast.error("There was a problem creating your club");
+      toast.error("There was a problem creating your club. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -202,6 +233,18 @@ export function CreateClubForm() {
                 </FormItem>
               )}
             />
+            
+            <FormItem>
+              <FormLabel>Club Image</FormLabel>
+              <FormControl>
+                <ImageUploader 
+                  onFileSelect={setSelectedImage}
+                  label=""
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+
             <CardFooter className="px-0 pt-4">
               <Button type="submit" disabled={isSubmitting} className="ml-auto">
                 {isSubmitting ? "Creating..." : "Create Club"}

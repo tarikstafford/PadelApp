@@ -4,88 +4,60 @@ import { useState } from "react";
 import { Upload, X } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { toast } from "sonner";
-import { getCookie } from "cookies-next";
 
 interface ImageUploaderProps {
-  value: string | null | undefined;
-  onChange: (url: string | null) => void;
+  onFileSelect: (file: File | null) => void;
   label?: string;
   maxSizeMB?: number;
 }
 
 export function ImageUploader({ 
-  value, 
-  onChange, 
+  onFileSelect, 
   label = "Upload Image", 
-  maxSizeMB = 5,
+  maxSizeMB = 5 
 }: ImageUploaderProps) {
-  const [isUploading, setIsUploading] = useState(false);
-  
+  const [preview, setPreview] = useState<string | null>(null);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      onFileSelect(null);
+      setPreview(null);
+      return;
+    }
     
     if (file.size > maxSizeMB * 1024 * 1024) {
       toast.error(`File too large. Maximum file size is ${maxSizeMB}MB`);
+      onFileSelect(null);
+      setPreview(null);
       return;
     }
     
     if (!file.type.startsWith('image/')) {
       toast.error("Invalid file type. Please upload an image file");
-      return;
-    }
-
-    const token = getCookie("token");
-    if (!token) {
-      toast.error("Authentication token not found. Please log in again.");
+      onFileSelect(null);
+      setPreview(null);
       return;
     }
     
-    setIsUploading(true);
-    
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiBaseUrl}/api/v1/admin/my-club/profile-picture`, {
-        method: "POST",
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Upload failed.");
-      }
-      
-      // The backend returns the full club schema, which includes the new image_url
-      onChange(data.image_url);
-      toast.success("Image uploaded successfully");
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      toast.error(error.message || "Upload failed. There was an error uploading your image");
-    } finally {
-      setIsUploading(false);
-    }
+    onFileSelect(file);
+    setPreview(URL.createObjectURL(file));
   };
   
   const handleRemove = () => {
-    onChange(null);
+    onFileSelect(null);
+    setPreview(null);
   };
   
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">{label}</p>
       
-      {value ? (
+      {preview ? (
         <div className="relative w-full h-48 bg-muted rounded-md overflow-hidden">
           <img 
-            src={value} 
-            alt="Uploaded image" 
+            src={preview} 
+            alt="Uploaded image preview" 
             className="w-full h-full object-cover"
           />
           <Button
@@ -113,15 +85,8 @@ export function ImageUploader({
             className="hidden"
             accept="image/*"
             onChange={handleFileChange}
-            disabled={isUploading}
           />
         </label>
-      )}
-      
-      {isUploading && (
-        <div className="w-full bg-muted rounded-full h-2.5">
-          <div className="bg-primary h-2.5 rounded-full animate-pulse w-full"></div>
-        </div>
       )}
     </div>
   );

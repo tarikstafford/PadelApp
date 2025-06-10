@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,6 +14,8 @@ import { ImageUploader } from "@/components/shared/ImageUploader";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { Club } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { getCookie } from "cookies-next";
 
 const clubFormSchema = z.object({
   name: z.string().min(2, "Club name must be at least 2 characters"),
@@ -25,14 +27,14 @@ const clubFormSchema = z.object({
   email: z.string().email("Invalid email address").optional(),
   website: z.string().url("Invalid website URL").optional(),
   operationalHours: z.any(),
-  imageUrl: z.string().nullable(),
 });
 
 type ClubFormValues = z.infer<typeof clubFormSchema>;
 
 export function EditClubForm({ club }: { club: Club }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const router = useRouter();
+
   const form = useForm<ClubFormValues>({
     resolver: zodResolver(clubFormSchema),
     defaultValues: {
@@ -47,9 +49,37 @@ export function EditClubForm({ club }: { club: Club }) {
       operationalHours: club.operationalHours || {
         monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
       },
-      imageUrl: club.image_url || null,
     },
   });
+
+  const handleImageUpload = async (file: File | null) => {
+    if (!file) return;
+
+    toast.info("Uploading new image...");
+    const token = getCookie("token");
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/v1/admin/my-club/profile-picture`, {
+        method: "POST",
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Image upload failed.");
+      
+      toast.success("Image updated successfully!");
+      // Force a reload to show the new image
+      router.refresh();
+
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload image.");
+      console.error(error);
+    }
+  };
   
   const handleSubmit = async (values: ClubFormValues) => {
     setIsSubmitting(true);
@@ -70,6 +100,20 @@ export function EditClubForm({ club }: { club: Club }) {
         <CardTitle>Edit Your Club</CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="space-y-4 mb-8">
+            <FormLabel>Club Image</FormLabel>
+            {club.image_url && (
+              <div className="w-full h-48 rounded-md overflow-hidden bg-muted">
+                  <img 
+                    src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${club.image_url}`}
+                    alt="Current club image" 
+                    className="w-full h-full object-cover"
+                  />
+              </div>
+            )}
+            <ImageUploader onFileSelect={handleImageUpload} label="Upload New Image" />
+        </div>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -197,22 +241,6 @@ export function EditClubForm({ club }: { club: Club }) {
                         monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
                       }} 
                       onChange={field.onChange} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <ImageUploader 
-                      value={field.value} 
-                      onChange={field.onChange}
-                      label="Club Image" 
                     />
                   </FormControl>
                   <FormMessage />
