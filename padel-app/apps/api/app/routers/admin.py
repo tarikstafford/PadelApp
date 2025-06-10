@@ -108,7 +108,7 @@ async def create_owned_club_court(
             status_code=404,
             detail="The current admin does not own a club.",
         )
-    court = crud.court_crud.create_court(db=db, court=court_in, club_id=club.id)
+    court = crud.court_crud.create_court(db=db, court_in=court_in, club_id=club.id)
     return court
 
 @router.put("/my-club/courts/{court_id}", response_model=court_schemas.Court)
