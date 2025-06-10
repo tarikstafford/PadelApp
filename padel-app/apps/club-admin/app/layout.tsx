@@ -27,7 +27,7 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
       >
-        <ErrorBoundary>
+        <ErrorBoundary fallback={<div>Something went wrong</div>}>
           <Providers>
             <AuthProvider>
               <DashboardPage>{children}</DashboardPage>
