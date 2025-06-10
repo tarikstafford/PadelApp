@@ -11,7 +11,6 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/courts", label: "Courts" },
   { href: "/bookings", label: "Bookings" },
-  { href: "/profile", label: "Profile" },
 ];
 
 export function DashboardPage({ children }: { children: React.ReactNode }) {

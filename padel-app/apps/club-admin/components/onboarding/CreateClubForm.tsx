@@ -98,8 +98,8 @@ export function CreateClubForm() {
         toast.success("Image uploaded successfully!");
       }
       
-      // Step 3: Redirect to the profile/edit page
-      router.push("/profile");
+      // Step 3: Redirect to the dashboard page
+      router.push("/dashboard");
 
     } catch (error) {
       console.error("Error creating club:", error);
