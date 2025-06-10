@@ -34,20 +34,20 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_club_admins_id'), 'club_admins', ['id'], unique=False)
 
-    # --- Start of Correct Enum Migration ---
+    # --- Start of Definitive Enum Migration ---
 
     # 1. Alter column to VARCHAR to allow for arbitrary string values temporarily
     op.alter_column('users', 'role',
                type_=sa.VARCHAR(50),
-               postgresql_using='role::varchar')
+               postgresql_using='role::text::varchar')
 
     # 2. Update the data to the new values
     op.execute("UPDATE users SET role = 'admin' WHERE role = 'CLUB_ADMIN'")
     op.execute("UPDATE users SET role = 'player' WHERE role = 'PLAYER'")
     
-    # 3. Drop the old enum type
-    op.execute("DROP TYPE IF EXISTS userrole_old") # Use IF EXISTS for safety
-    op.execute("DROP TYPE IF EXISTS userrole") # Drop the original if it exists
+    # 3. Clean up all old enum types safely
+    op.execute("DROP TYPE IF EXISTS userrole_old")
+    op.execute("DROP TYPE IF EXISTS userrole")
     
     # 4. Create the new enum type
     user_role_new = postgresql.ENUM('player', 'admin', 'super-admin', name='userrole')
@@ -58,25 +58,17 @@ def upgrade() -> None:
                type_=user_role_new,
                postgresql_using='role::userrole')
 
-    # --- End of Correct Enum Migration ---
+    # --- End of Definitive Enum Migration ---
 
     # Add index to role column
     op.create_index(op.f('ix_users_role'), 'users', ['role'], unique=False)
 
 
 def downgrade() -> None:
-    # This downgrade is simplified and assumes a fresh state.
-    # A fully robust downgrade would need to handle the reverse data mapping.
-    
+    # Simplified downgrade. A full production downgrade would need to be more careful.
     op.drop_index(op.f('ix_users_role'), table_name='users')
     op.drop_index(op.f('ix_club_admins_id'), table_name='club_admins')
     op.drop_table('club_admins')
-
-    op.alter_column('users', 'role', type_=sa.VARCHAR(50))
-    op.execute("DROP TYPE userrole")
-
-    user_role_old = postgresql.ENUM('PLAYER', 'CLUB_ADMIN', name='userrole')
-    user_role_old.create(op.get_bind())
-    op.alter_column('users', 'role', type_=user_role_old, postgresql_using='role::userrole')
-    
-    op.add_column('users', sa.Column('is_admin', sa.BOOLEAN(), server_default=sa.text('false'), autoincrement=False, nullable=False)) 
+    op.execute("DROP TYPE IF EXISTS userrole")
+    op.add_column('users', sa.Column('is_admin', sa.BOOLEAN(), server_default=sa.text('false'), autoincrement=False, nullable=False))
+    # Note: Downgrading the role column and its data is complex and omitted here. 
