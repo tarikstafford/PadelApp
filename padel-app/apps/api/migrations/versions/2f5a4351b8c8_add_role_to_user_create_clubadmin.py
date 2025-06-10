@@ -42,6 +42,10 @@ def upgrade() -> None:
     user_role_new = postgresql.ENUM('player', 'admin', 'super-admin', name='userrole')
     user_role_new.create(op.get_bind())
 
+    # Update existing data to match new enum values before altering the column
+    op.execute("UPDATE users SET role = 'admin' WHERE role = 'CLUB_ADMIN'")
+    op.execute("UPDATE users SET role = 'player' WHERE role = 'PLAYER'")
+
     # Update the column to use the new enum
     # We need to do this using a temporary column because we can't cast directly
     op.execute("ALTER TABLE users ALTER COLUMN role TYPE userrole USING role::text::userrole")
