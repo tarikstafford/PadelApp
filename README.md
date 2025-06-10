@@ -28,4 +28,14 @@ To get started with the development environment, you will need to have Node.js, 
 
 4.  **Set up the frontend:**
     *   **Web App:** `pnpm --filter web run dev`
-    *   **Club Admin App:** `pnpm --filter club-admin run dev` 
+    *   **Club Admin App:** `pnpm --filter club-admin run dev`
+
+## Environment Variables
+
+To run the backend service, you will need to create a `.env` file in the `padel-app/apps/api` directory and add the following environment variables:
+
+- `DATABASE_URL`: The connection string for your PostgreSQL database.
+- `SECRET_KEY`: A secret key for signing JWT tokens.
+- `CLOUDINARY_CLOUD_NAME`: Your Cloudinary cloud name.
+- `CLOUDINARY_API_KEY`: Your Cloudinary API key.
+- `CLOUDINARY_API_SECRET`: Your Cloudinary API secret. 

@@ -194,7 +194,7 @@ async def upload_profile_picture(
         raise HTTPException(status_code=400, detail="Invalid file type. Only images are allowed.")
 
     try:
-        file_url = file_service.save_profile_picture(file=file, user_id=current_user.id)
+        file_url = await file_service.save_profile_picture(file=file, user_id=current_user.id)
         
         # Create UserUpdate schema instance with the new profile picture URL
         user_update_data = user_schemas.UserUpdate(profile_picture_url=file_url)

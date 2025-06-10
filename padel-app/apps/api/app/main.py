@@ -1,3 +1,4 @@
+import cloudinary
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -49,6 +50,16 @@ app.include_router(bookings_router, prefix=f"{settings.API_V1_STR}/bookings", ta
 app.include_router(games_router, prefix=f"{settings.API_V1_STR}/games", tags=["Games"]) # Added games_router
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"]) # Added users_router
 app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
+
+@app.on_event("startup")
+async def startup_event():
+    """Initializes Cloudinary configuration on application startup."""
+    cloudinary.config(
+        cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+        api_key=settings.CLOUDINARY_API_KEY,
+        api_secret=settings.CLOUDINARY_API_SECRET,
+        secure=True,
+    )
 
 @app.get("/")
 async def read_root():

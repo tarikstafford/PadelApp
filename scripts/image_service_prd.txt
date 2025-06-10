@@ -1,0 +1,55 @@
+# Overview
+This document outlines the requirements for migrating the PadelGo application's image handling from a temporary local storage solution to a professional, cloud-based service using Cloudinary. This change addresses critical issues of data persistence and scalability. The primary goal is to ensure that all user-uploaded images (profile pictures, club photos) are stored reliably and served efficiently.
+
+# Core Features
+- **Cloudinary Image Upload & Storage:**
+    - What it does: Replaces the practice of saving images to the local server filesystem with direct uploads to the Cloudinary cloud service.
+    - Why it's important: Provides a persistent, scalable, and reliable storage solution, fixing the critical bug where images are deleted on every server redeployment. It also decouples image storage from the application server, improving performance and maintainability.
+    - How it works: The backend `file_service.py` will be refactored to use the official Cloudinary Python SDK. When a file is uploaded to the API, the service will stream it directly to Cloudinary, which will then return a secure, permanent URL. This URL will be saved in the database.
+
+# User Experience
+- **Key User Flows:**
+    - **Club Admin Onboarding:** An admin creating a new club profile can upload a club image. This image is seamlessly uploaded to Cloudinary in the background, and the permanent URL is associated with the club. The experience is identical to the user, but the result is persistent.
+    - **Player Profile Update:** A player uploads a new profile picture. The file is sent to Cloudinary, and the new URL is saved to their user profile, replacing the old one.
+- **UI/UX Considerations:**
+    - The user-facing UI for uploading images will not change.
+    - Image URLs in the application will now point to Cloudinary's domain (e.g., `res.cloudinary.com`), which may require frontend configuration updates.
+
+# Technical Architecture
+- **Frontend:**
+    - **Framework:** Next.js (no change).
+    - **Configuration:** The `next.config.mjs` files in both the `web` and `club-admin` applications will need to be updated. The `images.remotePatterns` array must be configured to allow the `res.cloudinary.com` hostname to enable Next.js Image optimization for Cloudinary URLs.
+- **Backend:**
+    - **Framework:** FastAPI (no change).
+    - **New Dependency:** The `cloudinary` Python library must be added to the API's dependencies in `pyproject.toml`.
+    - **Refactor:** The `file_service.py` module will be significantly refactored. The `save_profile_picture` and `save_club_picture` functions will be rewritten to use the Cloudinary SDK's `uploader` methods.
+    - **Configuration:** The backend will be configured to use Cloudinary credentials.
+- **APIs:** No changes to the API endpoint signatures are required. They will simply return different (Cloudinary) URLs in their responses.
+- **Deployment:**
+    - **Configuration:** The production environment (e.g., on Railway) must be updated with the new required environment variables.
+
+# Development Roadmap
+- **MVP Requirements:**
+    1.  Add the `cloudinary` package to the backend's `pyproject.toml`.
+    2.  Set up environment variables for Cloudinary credentials (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`).
+    3.  Create a new configuration module in the backend to initialize the Cloudinary SDK on startup.
+    4.  Refactor `file_service.py` to upload files to Cloudinary and return the secure URL. Use separate folders within Cloudinary (`profile_pics`, `club_pics`) for organization.
+    5.  Update the `next.config.mjs` files in both frontend apps.
+    6.  Thoroughly test the user profile and club image upload flows end-to-end.
+- **Future Considerations:**
+    - Implement a mechanism to delete images from Cloudinary when a user or club is deleted to avoid orphaned files.
+    - Leverage Cloudinary's API for on-the-fly image transformations (e.g., creating thumbnails, applying effects) to improve performance and user experience.
+
+# Logical Dependency Chain (MVP Focus)
+1.  **Backend Setup:** Add the `cloudinary` dependency and configure the required environment variables.
+2.  **Core Logic:** Refactor the `file_service.py` to integrate the Cloudinary Upload API.
+3.  **Frontend Config:** Update `next.config.mjs` in both frontend apps to trust Cloudinary URLs.
+4.  **Testing:** Perform end-to-end testing to verify that image uploads are successful and that the new URLs are correctly stored and displayed.
+
+# Risks and Mitigations
+- **Credential Management:**
+    - **Risk:** Accidentally exposing Cloudinary API keys and secrets in version control.
+    - **Mitigation:** Strictly use environment variables for all credentials. Ensure any local `.env` files are included in `.gitignore` and that production secrets are managed securely in the deployment environment (e.g., Railway's variable management).
+- **API Integration:**
+    - **Risk:** The Cloudinary upload API might have specific requirements for file streams, timeouts, or error handling that differ from the current implementation.
+    - **Mitigation:** Carefully review the official `cloudinary` Python SDK documentation before starting the implementation. Implement robust error handling for upload failures. 

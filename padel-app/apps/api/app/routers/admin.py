@@ -232,7 +232,7 @@ async def upload_club_profile_picture(
         raise HTTPException(status_code=400, detail="Invalid file type. Only images are allowed.")
 
     try:
-        file_url = file_service.save_club_picture(file=file, club_id=club.id)
+        file_url = await file_service.save_club_picture(file=file, club_id=club.id)
         
         club_update_data = club_schemas.ClubUpdate(image_url=file_url)
         
