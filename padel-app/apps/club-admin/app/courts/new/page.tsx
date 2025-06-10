@@ -36,7 +36,7 @@ export default function NewCourtPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      surface_type: "",
+      surface_type: "turf",
       is_indoor: false,
       price_per_hour: 0,
       default_availability_status: "available",
