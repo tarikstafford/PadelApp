@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Upload, X } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { toast } from "sonner";
+import { getCookie } from "cookies-next";
 
 interface ImageUploaderProps {
   value: string | null | undefined;
@@ -16,7 +17,7 @@ export function ImageUploader({
   value, 
   onChange, 
   label = "Upload Image", 
-  maxSizeMB = 5 
+  maxSizeMB = 5,
 }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   
@@ -33,21 +34,40 @@ export function ImageUploader({
       toast.error("Invalid file type. Please upload an image file");
       return;
     }
+
+    const token = getCookie("token");
+    if (!token) {
+      toast.error("Authentication token not found. Please log in again.");
+      return;
+    }
     
     setIsUploading(true);
     
+    const formData = new FormData();
+    formData.append("file", file);
+
     try {
-      // TODO: Implement S3 upload logic here
-      console.log("Uploading file:", file.name);
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/v1/admin/my-club/profile-picture`, {
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Upload failed.");
+      }
       
-      // For now, we'll just simulate a successful upload
-      // and return a placeholder URL.
-      const placeholderUrl = "https://via.placeholder.com/400x300";
-      onChange(placeholderUrl);
+      // The backend returns the full club schema, which includes the new image_url
+      onChange(data.image_url);
       toast.success("Image uploaded successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error("Upload failed. There was an error uploading your image");
+      toast.error(error.message || "Upload failed. There was an error uploading your image");
     } finally {
       setIsUploading(false);
     }

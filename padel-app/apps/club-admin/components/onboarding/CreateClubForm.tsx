@@ -10,7 +10,6 @@ import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { OperationalHoursSelector } from "@/components/shared/OperationalHoursSelector";
-import { ImageUploader } from "@/components/shared/ImageUploader";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { useRouter } from "next/navigation";
@@ -25,7 +24,6 @@ const clubFormSchema = z.object({
   email: z.string().email("Invalid email address").optional(),
   website: z.string().url("Invalid website URL").optional(),
   operationalHours: z.any(),
-  imageUrl: z.string().nullable(),
 });
 
 type ClubFormValues = z.infer<typeof clubFormSchema>;
@@ -48,7 +46,6 @@ export function CreateClubForm() {
       operationalHours: {
         monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
       },
-      imageUrl: null,
     },
   });
   
@@ -56,8 +53,8 @@ export function CreateClubForm() {
     setIsSubmitting(true);
     try {
       await apiClient.post("/admin/my-club", values);
-      toast.success("Club created successfully!");
-      router.push("/dashboard");
+      toast.success("Club created successfully! You can now add more details and an image.");
+      router.push("/profile");
     } catch (error) {
       console.error("Error creating club:", error);
       toast.error("There was a problem creating your club");
@@ -199,22 +196,6 @@ export function CreateClubForm() {
                         monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
                       }} 
                       onChange={field.onChange} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <ImageUploader 
-                      value={field.value} 
-                      onChange={field.onChange}
-                      label="Club Image" 
                     />
                   </FormControl>
                   <FormMessage />
