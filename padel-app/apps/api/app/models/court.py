@@ -5,15 +5,15 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 
 class SurfaceType(str, enum.Enum):
-    TURF = "turf"
-    CLAY = "clay"
-    HARD_COURT = "hard_court"
-    SAND = "sand"
+    TURF = "Turf"
+    CLAY = "Clay"
+    HARD_COURT = "Hard Court"
+    SAND = "Sand"
 
 class CourtAvailabilityStatus(str, enum.Enum):
-    AVAILABLE = "available"
-    UNAVAILABLE = "unavailable"
-    MAINTENANCE = "maintenance"
+    AVAILABLE = "Available"
+    UNAVAILABLE = "Unavailable"
+    MAINTENANCE = "Maintenance"
 
 class Court(Base):
     __tablename__ = "courts"
@@ -33,4 +33,4 @@ class Court(Base):
     bookings = relationship("Booking", back_populates="court", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Court(id={self.id}, name='{self.name}', club_id={self.club_id})>" 
+        return f"<Court(id={self.id}, name='{self.name}', club_id={self.id})>" 
