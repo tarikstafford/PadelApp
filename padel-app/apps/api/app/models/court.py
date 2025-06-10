@@ -21,10 +21,10 @@ class Court(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, index=True) # e.g., "Court 1", "Center Court"
     club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False)
-    surface_type = Column(Enum(SurfaceType), nullable=True)
+    surface_type = Column(Enum(SurfaceType, values_callable=lambda obj: [e.value for e in obj]), nullable=True)
     is_indoor = Column(Boolean, default=False)
     price_per_hour = Column(Numeric(10, 2), nullable=True) # e.g., 25.00
-    default_availability_status = Column(Enum(CourtAvailabilityStatus), default=CourtAvailabilityStatus.AVAILABLE)
+    default_availability_status = Column(Enum(CourtAvailabilityStatus, values_callable=lambda obj: [e.value for e in obj]), default=CourtAvailabilityStatus.AVAILABLE)
 
     # Relationship to Club model
     club = relationship("Club", back_populates="courts")
