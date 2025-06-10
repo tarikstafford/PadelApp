@@ -46,7 +46,7 @@ def upgrade() -> None:
     op.execute("UPDATE users SET role = 'player' WHERE role = 'PLAYER'")
     
     # 3. Drop the old enum type
-    op.execute("DROP TYPE userrole_old") # Assuming it was renamed in a previous failed migration attempt
+    op.execute("DROP TYPE IF EXISTS userrole_old") # Use IF EXISTS for safety
     op.execute("DROP TYPE IF EXISTS userrole") # Drop the original if it exists
     
     # 4. Create the new enum type
