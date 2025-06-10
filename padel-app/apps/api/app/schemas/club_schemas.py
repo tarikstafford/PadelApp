@@ -27,6 +27,9 @@ class ClubRegistrationSchema(ClubBase):
 class ClubCreate(ClubBase):
     pass # All fields from ClubBase are needed/optional as defined there
 
+# Alias for creating a club via the admin route, where owner_id is derived
+ClubCreateForAdmin = ClubCreate
+
 # Properties to receive on club update
 class ClubUpdate(ClubBase):
     name: Optional[str] = None # All fields optional for update
