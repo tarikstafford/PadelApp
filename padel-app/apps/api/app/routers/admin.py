@@ -12,7 +12,6 @@ from app.services import file_service
 from app.core.dependencies import RoleChecker
 
 router = APIRouter(
-    prefix="/admin",
     tags=["admin"],
     dependencies=[Depends(RoleChecker([UserRole.CLUB_ADMIN]))],
 )
