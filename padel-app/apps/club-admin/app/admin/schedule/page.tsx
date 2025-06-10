@@ -43,7 +43,9 @@ function findBookingForTimeSlot(courtId: number, timeSlot: string, bookings: Boo
 function parseTimeString(timeStr: string): Date {
   const [hours, minutes] = timeStr.split(':').map(Number);
   const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
+  if (typeof hours === 'number' && typeof minutes === 'number' && !isNaN(hours) && !isNaN(minutes)) {
+    date.setHours(hours, minutes, 0, 0);
+  }
   return date;
 }
 
