@@ -13,10 +13,9 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     profile_picture_url = Column(String, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False, server_default='true')
-    is_admin = Column(Boolean, default=False, nullable=False, server_default='false')
     
     # New role field
-    role = Column(Enum(UserRole), nullable=False, default=UserRole.PLAYER, server_default=UserRole.PLAYER.value)
+    role = Column(Enum(UserRole), nullable=False, default=UserRole.PLAYER, server_default=UserRole.PLAYER.value, index=True)
 
     # Relationship to Bookings (one-to-many)
     bookings = relationship("Booking", back_populates="user")
@@ -26,6 +25,9 @@ class User(Base):
 
     # New relationship to Club (one-to-one)
     owned_club = relationship("Club", back_populates="owner", uselist=False, cascade="all, delete-orphan")
+
+    # Relationship to ClubAdmin entries
+    club_admin_entries = relationship("ClubAdmin", back_populates="user", cascade="all, delete-orphan")
 
     # Optional: If we want a direct list of games created by the user,
     # (assuming a creator_id is added to the Game model or derived differently)

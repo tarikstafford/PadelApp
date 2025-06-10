@@ -151,6 +151,22 @@ def get_bookings_by_club(
     
     return query.offset(skip).limit(limit).all()
 
+def get_bookings_by_club_and_date(db: Session, club_id: int, target_date: date) -> List[BookingModel]:
+    """Get all bookings for a specific club on a given date."""
+    start_datetime = datetime.combine(target_date, time.min)
+    end_datetime = datetime.combine(target_date, time.max)
+    
+    return (
+        db.query(BookingModel)
+        .join(CourtModel)
+        .filter(
+            CourtModel.club_id == club_id,
+            BookingModel.start_time >= start_datetime,
+            BookingModel.start_time <= end_datetime
+        )
+        .all()
+    )
+
 # Placeholder for get_booking
 # def get_booking(db: Session, booking_id: int) -> Optional[BookingModel]:
 #     ... 

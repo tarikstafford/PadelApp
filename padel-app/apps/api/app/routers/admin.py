@@ -1,27 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import date
+from datetime import date, datetime
 
-from app.schemas import court_schemas, club_schemas, booking_schemas, user_schemas
+from app.schemas import court_schemas, club_schemas, booking_schemas, user_schemas, game_schemas
 from app import crud
 from app.database import get_db
-from app.models import User, UserRole, BookingStatus
+from app.models import User, UserRole, BookingStatus, Booking, Court, Game
 from app.core.security import get_current_active_user
 from app.services import file_service
-from app.core.dependencies import RoleChecker
+from app.core.dependencies import RoleChecker, ClubAdminChecker, BookingAdminChecker
 
 router = APIRouter(
     tags=["admin"],
-    dependencies=[Depends(RoleChecker([UserRole.CLUB_ADMIN]))],
+    dependencies=[Depends(RoleChecker([UserRole.ADMIN, UserRole.SUPER_ADMIN]))],
 )
-
-async def get_current_admin_user(current_user: User = Depends(get_current_active_user)):
-    return current_user
 
 # Example of a protected route
 @router.get("/test", response_model=user_schemas.User)
-async def test_admin_route(current_admin: User = Depends(get_current_admin_user)):
+async def test_admin_route(current_admin: User = Depends(get_current_active_user)):
     """
     Test route to verify that the admin authentication is working.
     
@@ -32,7 +29,7 @@ async def test_admin_route(current_admin: User = Depends(get_current_admin_user)
 
 @router.get("/my-club", response_model=club_schemas.Club)
 async def read_owned_club(
-    current_admin: User = Depends(get_current_admin_user)
+    current_admin: User = Depends(get_current_active_user)
 ):
     """
     Retrieve the club owned by the current admin user.
@@ -47,32 +44,55 @@ async def read_owned_club(
         )
     return current_admin.owned_club
 
-@router.put("/my-club", response_model=club_schemas.Club)
-async def update_owned_club(
+@router.put("/club/{club_id}", response_model=club_schemas.Club, dependencies=[Depends(ClubAdminChecker())])
+async def update_club(
     *,
+    club_id: int,
     db: Session = Depends(get_db),
     club_in: club_schemas.ClubUpdate,
-    current_admin: User = Depends(get_current_admin_user),
 ):
     """
-    Update the club owned by the current admin user.
+    Update a club's details.
     
     This endpoint allows an admin to update the details of their own club.
     The request body should contain the fields to be updated.
-    If the admin does not own a club, it returns a 404 error.
     """
-    club = current_admin.owned_club
+    club = crud.club_crud.get_club(db=db, club_id=club_id)
     if not club:
         raise HTTPException(
             status_code=404,
-            detail="The current admin does not own a club to update.",
+            detail="Club not found.",
         )
     club = crud.club_crud.update_club(db=db, db_obj=club, obj_in=club_in)
     return club
 
+@router.get("/club/{club_id}/courts", response_model=List[court_schemas.Court], dependencies=[Depends(ClubAdminChecker())])
+async def read_club_courts(
+    club_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve the courts for a specific club.
+    """
+    courts = crud.court_crud.get_courts_by_club(db=db, club_id=club_id)
+    return courts
+
+@router.get("/club/{club_id}/schedule", dependencies=[Depends(ClubAdminChecker())])
+async def read_club_schedule(
+    club_id: int,
+    date: date,
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve the courts and bookings for a specific club on a given date.
+    """
+    courts = crud.court_crud.get_courts_by_club(db=db, club_id=club_id)
+    bookings = crud.booking_crud.get_bookings_by_club_and_date(db, club_id=club_id, target_date=date)
+    return {"courts": courts, "bookings": bookings}
+
 @router.get("/my-club/courts", response_model=List[court_schemas.Court])
 async def read_owned_club_courts(
-    current_admin: User = Depends(get_current_admin_user),
+    current_admin: User = Depends(get_current_active_user),
 ):
     """
     Retrieve the courts for the club owned by the current admin user.
@@ -93,7 +113,7 @@ async def create_owned_club_court(
     *,
     db: Session = Depends(get_db),
     court_in: court_schemas.CourtCreateForAdmin,
-    current_admin: User = Depends(get_current_admin_user),
+    current_admin: User = Depends(get_current_active_user),
 ):
     """
     Create a new court for the club owned by the current admin user.
@@ -111,13 +131,13 @@ async def create_owned_club_court(
     court = crud.court_crud.create_court(db=db, court_in=court_in, club_id=club.id)
     return court
 
-@router.put("/my-club/courts/{court_id}", response_model=court_schemas.Court)
+@router.put("/my-club/courts/{court_id}", response_model=court_schemas.Court, dependencies=[Depends(ClubAdminChecker())])
 async def update_owned_club_court(
     *,
     db: Session = Depends(get_db),
     court_id: int,
     court_in: court_schemas.CourtUpdate,
-    current_admin: User = Depends(get_current_admin_user),
+    current_admin: User = Depends(get_current_active_user),
 ):
     """
     Update a court for the club owned by the current admin user.
@@ -143,12 +163,12 @@ async def update_owned_club_court(
     court = crud.court_crud.update_court(db=db, db_obj=court, obj_in=court_in)
     return court
 
-@router.delete("/my-club/courts/{court_id}", response_model=court_schemas.Court)
+@router.delete("/my-club/courts/{court_id}", response_model=court_schemas.Court, dependencies=[Depends(ClubAdminChecker())])
 async def delete_owned_club_court(
     *,
     db: Session = Depends(get_db),
     court_id: int,
-    current_admin: User = Depends(get_current_admin_user),
+    current_admin: User = Depends(get_current_active_user),
 ):
     """
     Delete a court from the club owned by the current admin user.
@@ -174,9 +194,10 @@ async def delete_owned_club_court(
     court = crud.court_crud.remove_court(db=db, court_id=court_id)
     return court
 
-@router.get("/my-club/bookings", response_model=List[booking_schemas.Booking])
-async def read_owned_club_bookings(
+@router.get("/club/{club_id}/bookings", response_model=List[booking_schemas.Booking], dependencies=[Depends(ClubAdminChecker())])
+async def read_club_bookings(
     *,
+    club_id: int,
     db: Session = Depends(get_db),
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
@@ -184,25 +205,16 @@ async def read_owned_club_bookings(
     status: Optional[BookingStatus] = None,
     skip: int = 0,
     limit: int = 100,
-    current_admin: User = Depends(get_current_admin_user),
 ):
     """
-    Retrieve bookings for the club owned by the current admin user.
+    Retrieve bookings for a specific club.
     
-    This endpoint returns a list of bookings for the admin's club, with optional filtering.
+    This endpoint returns a list of bookings for a club, with optional filtering.
     Admins can filter bookings by date range, court, and status.
-    If the admin does not own a club, it returns a 404 error.
     """
-    club = current_admin.owned_club
-    if not club:
-        raise HTTPException(
-            status_code=404,
-            detail="The current admin does not own a club.",
-        )
-    
     bookings = crud.booking_crud.get_bookings_by_club(
         db,
-        club_id=club.id,
+        club_id=club_id,
         skip=skip,
         limit=limit,
         start_date_filter=start_date,
@@ -212,9 +224,22 @@ async def read_owned_club_bookings(
     )
     return bookings
 
+@router.get("/bookings/{booking_id}/game", response_model=game_schemas.Game, dependencies=[Depends(BookingAdminChecker())])
+async def read_game_for_booking(
+    booking_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve the game associated with a specific booking.
+    """
+    game = crud.game_crud.get_game_by_booking(db, booking_id=booking_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found for this booking")
+    return game
+
 @router.post("/my-club/profile-picture", response_model=club_schemas.Club)
 async def upload_club_profile_picture(
-    current_admin: User = Depends(get_current_admin_user),
+    current_admin: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
     file: UploadFile = File(...)
 ):
@@ -248,7 +273,7 @@ async def upload_club_profile_picture(
 async def create_my_club(
     club_in: club_schemas.ClubCreateForAdmin,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(get_current_admin_user),
+    current_admin: User = Depends(get_current_active_user),
 ):
     """
     Create a new club for the current admin user.
@@ -260,4 +285,33 @@ async def create_my_club(
         )
     
     new_club = crud.club_crud.create_club(db=db, club=club_in, owner_id=current_admin.id)
-    return new_club 
+    return new_club
+
+@router.get("/club/{club_id}/dashboard-summary", dependencies=[Depends(ClubAdminChecker())])
+async def get_dashboard_summary(
+    club_id: int,
+    db: Session = Depends(get_db),
+    summary_date: Optional[date] = Query(None, alias="date"),
+):
+    """
+    Get a summary of dashboard metrics for a specific club.
+    """
+    target_date = summary_date or datetime.utcnow().date()
+    
+    # Get total bookings for the day
+    bookings_count = crud.booking_crud.get_bookings_count_by_club_and_date(db, club_id=club_id, target_date=target_date)
+    
+    # Get court occupancy
+    courts = crud.court_crud.get_courts_by_club(db, club_id=club_id)
+    total_slots = len(courts) * 24  # Assuming 1-hour slots
+    occupied_slots = bookings_count
+    occupancy_rate = (occupied_slots / total_slots) * 100 if total_slots > 0 else 0
+    
+    # Get recent player activity (e.g., last 5 games)
+    recent_games = crud.game_crud.get_recent_games_by_club(db, club_id=club_id, limit=5)
+    
+    return {
+        "total_bookings_today": bookings_count,
+        "occupancy_rate_percent": round(occupancy_rate, 2),
+        "recent_activity": recent_games
+    } 

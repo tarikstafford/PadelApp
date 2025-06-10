@@ -22,7 +22,6 @@ def create_user(db: Session, user: UserCreate) -> UserModel:
         hashed_password=hashed_password,
         name=user.name,
         is_active=user.is_active if user.is_active is not None else True,
-        is_admin=user.is_admin if user.is_admin is not None else False,
         role=user.role
     )
     db.add(db_user)

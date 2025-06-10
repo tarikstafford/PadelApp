@@ -6,6 +6,7 @@ from . import court_crud
 from . import booking_crud
 from . import game_crud
 from . import game_player_crud
+from . import club_admin_crud
 # Import other CRUD modules here as they are created
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     "court_crud", 
     "booking_crud", 
     "game_crud", 
-    "game_player_crud"
+    "game_player_crud",
+    "club_admin_crud"
 ] 

@@ -25,5 +25,8 @@ class Club(Base):
     # Relationship to Court model
     courts = relationship("Court", back_populates="club", cascade="all, delete-orphan")
 
+    # Relationship to ClubAdmin model
+    admins = relationship("ClubAdmin", back_populates="club", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Club(id={self.id}, name='{self.name}')>" 

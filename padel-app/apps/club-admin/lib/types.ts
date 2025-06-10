@@ -1,11 +1,16 @@
+export enum UserRole {
+  PLAYER = "player",
+  ADMIN = "admin",
+  SUPER_ADMIN = "super-admin",
+}
+
 export type User = {
   id: number;
   email: string;
   name?: string;
   profile_picture_url?: string;
   is_active: boolean;
-  is_admin: boolean;
-  role: "PLAYER" | "CLUB_ADMIN";
+  role: UserRole;
 };
 
 export type Club = {
@@ -50,4 +55,31 @@ export type Booking = {
     name: string;
     email: string;
   }
+};
+
+export type DashboardSummary = {
+  total_bookings_today: number;
+  occupancy_rate_percent: number;
+  recent_activity: {
+    game_id: number;
+    player_count: number;
+    created_at: string;
+  }[];
+};
+
+export type GamePlayer = {
+  id: number;
+  status: "invited" | "accepted";
+  user: User;
+};
+
+export type Game = {
+  id: number;
+  created_at: string;
+  players: GamePlayer[];
+};
+
+export type BookingDetails = {
+  booking: Booking;
+  game?: Game;
 }; 

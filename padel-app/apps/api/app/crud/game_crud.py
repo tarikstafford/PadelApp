@@ -87,6 +87,32 @@ def get_public_games(
     )
     return games
 
+def get_recent_games_by_club(db: Session, club_id: int, limit: int = 5) -> List[GameModel]:
+    """Get the most recent games for a specific club."""
+    return (
+        db.query(GameModel)
+        .join(GameModel.booking)
+        .join(BookingModel.court)
+        .filter(CourtModel.club_id == club_id)
+        .order_by(GameModel.created_at.desc())
+        .limit(limit)
+        .options(
+            selectinload(GameModel.players).selectinload(GamePlayerModel.player)
+        )
+        .all()
+    )
+
+def get_game_by_booking(db: Session, booking_id: int) -> Optional[GameModel]:
+    """Get a game by its booking ID."""
+    return (
+        db.query(GameModel)
+        .filter(GameModel.booking_id == booking_id)
+        .options(
+            selectinload(GameModel.players).selectinload(GamePlayerModel.player)
+        )
+        .first()
+    )
+
 # Placeholder for other game CRUD operations if needed later
 # def update_game(...)
 # def delete_game(...) 

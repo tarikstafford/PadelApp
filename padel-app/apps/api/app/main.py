@@ -14,6 +14,7 @@ from app.routers import (
     users_router,
     admin_router,
 )
+from app.middleware.auth import AuthenticationMiddleware
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -21,6 +22,9 @@ app = FastAPI(
     description="API for the PadelGo application to manage bookings, players, and games.",
     openapi_url=f"{settings.API_V1_STR}/openapi.json" # Standard practice to version OpenAPI spec
 )
+
+# Add Authentication Middleware
+app.add_middleware(AuthenticationMiddleware)
 
 # CORS Middleware Configuration
 # This allows the frontend (running on a different domain) to communicate with the backend.

@@ -8,7 +8,6 @@ class UserBase(BaseModel):
     name: Optional[str] = None
     profile_picture_url: Optional[str] = None
     is_active: Optional[bool] = True
-    is_admin: Optional[bool] = False
     role: Optional[UserRole] = UserRole.PLAYER
 
 # Properties to receive via API on creation
@@ -22,7 +21,6 @@ class UserUpdate(UserBase):
     name: Optional[str] = None
     profile_picture_url: Optional[str] = None
     is_active: Optional[bool] = None
-    is_admin: Optional[bool] = None
 
 class UserInDBBase(UserBase):
     id: int
@@ -36,7 +34,6 @@ class User(UserBase):
     id: int
     profile_picture_url: Optional[str] = None
     is_active: Optional[bool] = None
-    is_admin: Optional[bool] = None
     role: UserRole # Add role to the main response schema
     # model_config needed here too if this schema is created from an ORM model instance
     model_config = {"from_attributes": True}

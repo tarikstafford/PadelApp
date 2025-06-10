@@ -1,6 +1,13 @@
 import { getCookie } from 'cookies-next';
 import { formatErrorMessage } from './errorHandler';
 import { showErrorToast } from './notifications';
+import {
+  DashboardSummary,
+  Booking,
+  BookingDetails,
+  Game,
+  Court
+} from './types';
 
 const getApiUrl = () => {
   return process.env.NEXT_PUBLIC_API_URL || '/api/v1';
@@ -90,4 +97,50 @@ export const apiClient = {
       throw formattedError;
     }
   },
+};
+
+export const fetchDashboardSummary = async (clubId: number): Promise<DashboardSummary> => {
+  if (!clubId) {
+    throw new Error("Club ID is required to fetch dashboard summary.");
+  }
+  return apiClient.get(`/admin/club/${clubId}/dashboard-summary`);
+};
+
+export const fetchBookings = async (
+  clubId: number,
+  params: {
+    start_date?: string;
+    end_date?: string;
+    court_id?: number;
+    status?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }
+): Promise<{ bookings: Booking[]; pageCount: number }> => {
+  if (!clubId) {
+    throw new Error("Club ID is required to fetch bookings.");
+  }
+  return apiClient.get(`/admin/club/${clubId}/bookings`, params);
+};
+
+export const fetchGameDetails = async (bookingId: number): Promise<Game> => {
+  if (!bookingId) {
+    throw new Error("Booking ID is required to fetch game details.");
+  }
+  return apiClient.get<Game>(`/admin/bookings/${bookingId}/game`);
+};
+
+export const fetchCourts = async (clubId: number): Promise<Court[]> => {
+  if (!clubId) {
+    throw new Error("Club ID is required to fetch courts.");
+  }
+  return apiClient.get<Court[]>(`/admin/club/${clubId}/courts`);
+};
+
+export const fetchCourtSchedule = async (clubId: number, date: string): Promise<{ courts: Court[]; bookings: Booking[] }> => {
+  if (!clubId) {
+    throw new Error("Club ID is required to fetch schedule.");
+  }
+  return apiClient.get(`/admin/club/${clubId}/schedule`, { date });
 }; 

@@ -1,0 +1,86 @@
+# Overview
+This document outlines the requirements for the "PadelGo Club Admin Dashboard." This dashboard is a dedicated interface for Padel club administrators to manage their club's operations, including bookings, court availability, and public-facing club information. It aims to provide a powerful yet intuitive set of tools to streamline the daily management of a Padel club.
+
+# Core Features
+- **Admin Dashboard Hub:**
+    - What it does: A central landing page for club administrators after logging in. It will feature widgets for at-a-glance information, such as today's total bookings, court occupancy rates, and recent player activity.
+    - Why it's important: Provides an immediate, high-level overview of the club's status, enabling quick decisions.
+    - How it works: A modular dashboard built with shadcn `Card` components for each widget. Key metrics will be fetched and displayed upon loading.
+
+- **Comprehensive Booking Management:**
+    - What it does: Admins can view a detailed list of all bookings for their club. The view will be searchable and filterable by date, court, and game status.
+    - Why it's important: Allows for full visibility and control over the club's schedule.
+    - How it works: A shadcn `DataTable` will be used to display booking information, including date, time, court, and the player who made the booking.
+
+- **Booking & Game Details View:**
+    - What it does: When an admin clicks on a specific booking from the list or calendar, a detailed view will appear, showing information about the associated game, including the list of players (invited, accepted).
+    - Why it's important: Gives administrators insight into who is playing at their facility at any given time.
+    - How it works: Clicking a booking will trigger a shadcn `Dialog` (modal) or slide-over panel displaying game details and player profiles.
+
+- **Club Profile & Details Page:**
+    - What it does: A widget on the dashboard will display a summary of the club's profile. Clicking this widget will navigate to the **existing** club details page, allowing admins to edit information like name, address, contact info, etc.
+    - Why it's important: Enables admins to easily keep their club's public information accurate and up-to-date for players, leveraging existing functionality.
+    - How it works: A `Card` widget on the dashboard provides a high-level summary and a direct link to the pre-existing club details and edit form.
+
+- **Visual Court Schedule Overview:**
+    - What it does: A visual, calendar-style layout that displays all bookings organized by court and time. This gives a clear overview of court utilization for a day or week.
+    - Why it's important: Helps admins quickly identify peak times, open slots, and manage court allocation efficiently.
+    - How it works: This will likely be a custom-built component, possibly using a table-based grid structure styled to look like a calendar. Each row could represent a court, and columns represent time slots (e.g., in 30-minute intervals). Bookings will be displayed as colored blocks within this grid. shadcn's `Calendar` component can be used for date selection to navigate between days/weeks.
+
+# User Experience
+- **User Persona:**
+    - **Club Administrator (David):** Owns a busy Padel club. David needs an efficient way to see the daily schedule, manage bookings, and update club information without hassle. He is moderately tech-savvy and appreciates a clean, modern interface.
+- **Key User Flows:**
+    - **View Daily Schedule:** David logs in -> Lands on the dashboard -> Checks the "Today's Bookings" widget and the visual court schedule to see the day's activity.
+    - **Check a Specific Booking:** David sees a booking in the list -> Clicks on it -> A dialog appears showing the four players in that game.
+    - **Update Club Info:** David needs to change the club's contact email -> He clicks the "Club Profile" widget on the dashboard -> Navigates to the details page -> Updates the email field -> Clicks "Save."
+    - **Plan for the Week:** David wants to see next week's availability -> He navigates to the visual schedule -> Uses the date picker to select a day next week -> Reviews the court utilization.
+- **UI/UX Considerations:**
+    - The entire dashboard will be built using shadcn UI components and Tailwind CSS to ensure a consistent, modern, and responsive design.
+    - Navigation will be clear and intuitive, with a dedicated sidebar for accessing different sections (Dashboard, Bookings, Schedule).
+    - Interactive elements will provide clear feedback (e.g., loading spinners, success notifications).
+
+# Technical Architecture
+- **Frontend:**
+    - The dashboard will be a new section within the existing Next.js application (`padel-app/apps/web`).
+    - It will be protected by an authentication layer that checks for an "admin" user role.
+- **Backend:**
+    - New API endpoints will be added to the FastAPI backend to support the dashboard's data requirements.
+    - Endpoints will be secured to ensure only authenticated admins of a specific club can access or modify its data.
+- **Key Data Model Updates:**
+    - `User`: An `enum` role field will be added (`player`, `admin`, `super-admin`).
+    - `ClubAdmin` (New Table): A linking table to create a many-to-many relationship between `User` and `Club`, establishing admin privileges. (Fields: `user_id`, `club_id`).
+- **APIs:**
+    - `GET /api/admin/club/{club_id}/dashboard-summary`: Fetches data for dashboard widgets.
+    - `GET /api/admin/club/{club_id}/bookings`: Fetches bookings with filtering options.
+    - `GET /api/admin/bookings/{booking_id}/game`: Fetches game and player details for a booking.
+    - `PUT /api/admin/club/{club_id}`: Updates club details.
+
+# Logical Dependency Chain
+1.  **Foundation & Authentication:**
+    - Backend: Update `User` model to include roles. Create `ClubAdmin` schema.
+    - Backend: Implement logic to assign admin roles and associate admins with clubs.
+    - Backend: Secure admin-specific API endpoints based on user role and club ownership.
+    - Frontend: Create a protected routing system for the `/admin` section of the app.
+2.  **API Development:**
+    - Backend: Develop all necessary API endpoints to provide data for the dashboard, booking list, game details, and club profile.
+3.  **Dashboard UI Implementation:**
+    - Frontend: Build the main dashboard layout with a sidebar.
+    - Frontend: Create the dashboard hub with `Card`-based widgets.
+    - Frontend: Implement the filterable `DataTable` for the booking management page.
+    - Frontend: Implement the `Dialog` for viewing game and player details.
+4.  **Club Profile Management:**
+    - Frontend: Integrate the **existing** club details page into the admin dashboard. This involves creating the dashboard widget and ensuring seamless navigation to the edit form.
+5.  **Visual Schedule Implementation:**
+    - Frontend: Design and build the custom calendar/grid component for the visual court schedule. This is the final and most complex UI piece.
+
+# Risks and Mitigations
+- **Component Complexity:**
+    - **Risk:** The visual court schedule is not a standard component and could be complex and time-consuming to build from scratch.
+    - **Mitigation:** For the MVP, a simpler table-based timeline could be implemented first. Alternatively, research third-party libraries that are compatible with React/Next.js and can be styled to fit the shadcn theme.
+- **Role-Based Access Control (RBAC):**
+    - **Risk:** Improperly implemented RBAC could lead to security vulnerabilities, allowing unauthorized users to access admin functions.
+    - **Mitigation:** Implement rigorous testing for all protected endpoints and frontend routes. The logic should be centralized and consistently applied.
+- **Data Load Performance:**
+    - **Risk:** Loading all bookings for a club on a single screen could be slow if not handled correctly.
+    - **Mitigation:** Implement pagination and server-side filtering for the bookings `DataTable`. The visual schedule should fetch data for a limited time range (e.g., one week at a time). 
