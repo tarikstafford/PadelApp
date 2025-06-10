@@ -230,23 +230,25 @@ export function EditClubForm({ club }: { club: Club }) {
                 )}
               />
             </div>
-            <FormField
-              control={form.control}
-              name="operationalHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <OperationalHoursSelector 
-                      value={field.value || {
-                        monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
-                      }} 
-                      onChange={field.onChange} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="operationalHours"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <OperationalHoursSelector 
+                        value={field.value || {
+                          monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
+                        }} 
+                        onChange={field.onChange} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <CardFooter className="px-0 pt-4">
               <Button type="submit" disabled={isSubmitting} className="ml-auto">
                 {isSubmitting ? "Saving..." : "Update Club"}

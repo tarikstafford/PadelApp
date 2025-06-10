@@ -8,25 +8,35 @@ import { CreateClubForm } from "@/components/onboarding/CreateClubForm";
 import { EditClubForm } from "@/components/onboarding/EditClubForm";
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
+      setLoading(true);
       apiClient.get<Club>("/admin/my-club")
         .then(data => {
           setClub(data);
-          setLoading(false);
         })
         .catch(error => {
-          console.error("Failed to fetch club data", error);
+          // If the error is a 404, it just means the club doesn't exist yet.
+          // We can safely assume we should show the create form.
+          if (error?.status !== 404) {
+             console.error("Failed to fetch club data", error);
+          }
+          setClub(null);
+        })
+        .finally(() => {
           setLoading(false);
         });
+    } else if (!isAuthLoading) {
+      // If there's no user and auth is not loading, we can stop loading.
+      setLoading(false);
     }
-  }, [user]);
+  }, [user, isAuthLoading]);
 
-  if (loading) {
+  if (loading || isAuthLoading) {
     return <div>Loading...</div>;
   }
 
