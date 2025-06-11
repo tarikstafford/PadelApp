@@ -12,10 +12,12 @@ echo "ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}" >> .env
 echo "REFRESH_TOKEN_EXPIRE_MINUTES=${REFRESH_TOKEN_EXPIRE_MINUTES:-43200}" >> .env
 echo ".env file created."
 
-# Run database migrations
-# This command ensures that the database schema is up-to-date with the models.
+# Run database migrations with explicit error handling
 echo "Running database migrations..."
-alembic upgrade head
+if ! alembic upgrade head; then
+    echo "!!! DATABASE MIGRATION FAILED !!!"
+    exit 1
+fi
 echo "Database migrations complete."
 
 # Now, execute the command passed to this script (e.g., uvicorn, gunicorn)
