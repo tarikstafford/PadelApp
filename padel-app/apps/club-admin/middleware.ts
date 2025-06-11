@@ -28,12 +28,12 @@ export function middleware(request: NextRequest) {
 
       // Handle the specific case of a club admin during onboarding
       if (decodedToken.role === 'club_admin' && !clubId) {
-        // If they are onboarding, they should only be on the register page
-        if (pathname !== '/register') {
-          return NextResponse.redirect(new URL('/register', request.url));
+        // If they are on the register page, let them continue.
+        if (pathname === '/register') {
+          return NextResponse.next();
         }
-        // If they are on the register page, let them stay
-        return NextResponse.next();
+        // If they are anywhere else, force them to the register page.
+        return NextResponse.redirect(new URL('/register', request.url));
       }
 
       // For all other logged-in users (or fully onboarded admins),
