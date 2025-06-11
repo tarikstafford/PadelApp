@@ -22,7 +22,7 @@ def create_user(db: Session, user: UserCreate) -> UserModel:
         hashed_password=hashed_password,
         full_name=user.full_name,
         is_active=user.is_active if user.is_active is not None else True,
-        role=user.role
+        role=user.role.value if user.role else None
     )
     db.add(db_user)
     db.commit()
@@ -38,6 +38,9 @@ def update_user(db: Session, db_user: UserModel, user_in: UserUpdate) -> UserMod
         db_user.hashed_password = hashed_password
         del update_data["password"] # Avoid setting it directly via setattr
     
+    if "role" in update_data and update_data["role"]:
+        update_data["role"] = update_data["role"].value
+
     # Prevent changing email to one that already exists by another user
     if "email" in update_data and update_data["email"] != db_user.email:
         existing_user = get_user_by_email(db, email=update_data["email"])
