@@ -219,7 +219,7 @@ function BookingPageInternal() {
             },
             body: JSON.stringify({
                 booking_id: createdBookingDetails.id,
-                game_type: gameType.toLowerCase() as GameTypeOption,
+                game_type: gameType,
                 skill_level: skillLevel || null,
             }),
         });
