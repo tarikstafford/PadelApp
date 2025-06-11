@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from datetime import datetime # Though not directly in these schemas, good for context
 
 # Import enums from models if they are to be used directly in schemas
@@ -26,11 +26,15 @@ class GamePlayerResponse(BaseModel):
 # --- Game Schemas ---
 class GameBase(BaseModel):
     # booking_id: int # booking_id is part of the Game model, but GameResponse will have full Booking object
-    game_type: GameType = GameType.PRIVATE
+    game_type: Optional[GameType] = GameType.PRIVATE
     skill_level: Optional[str] = None
 
-class GameCreate(GameBase): # No longer inherits from GameBase
+class GameCreate(GameBase):
     booking_id: int
+    
+    @validator("game_type", pre=True, always=True)
+    def set_game_type_default(cls, v):
+        return v or GameType.PRIVATE
     
 
 class GameResponse(GameBase):
