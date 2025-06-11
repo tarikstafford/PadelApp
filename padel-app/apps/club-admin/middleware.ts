@@ -9,45 +9,42 @@ interface DecodedToken {
 }
 
 const protectedRoutes = ['/dashboard', '/courts', '/bookings', '/profile', '/admin'];
-const publicRoutes = ['/login', '/register', '/'];
+const authRoutes = ['/login', '/register'];
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const clubId = request.cookies.get('clubId')?.value;
   const { pathname } = request.nextUrl;
 
-  // If the user is not logged in and tries to access a protected route
+  // If user is not logged in and trying to access a protected route, redirect to login
   if (!token && protectedRoutes.some(prefix => pathname.startsWith(prefix))) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // If the user is logged in
+  // If user is logged in
   if (token) {
-    // If they try to access a public route (like login), redirect to dashboard
-    if (publicRoutes.includes(pathname)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
     try {
       const decodedToken: DecodedToken = jwtDecode(token);
 
-      // Special handling for CLUB_ADMIN role
-      if (decodedToken.role === 'club_admin') {
-        // If they are a club admin but haven't created a club yet
-        if (!clubId && pathname !== '/register') {
-          // Force them to the onboarding flow
+      // Handle the specific case of a club admin during onboarding
+      if (decodedToken.role === 'club_admin' && !clubId) {
+        // If they are onboarding, they should only be on the register page
+        if (pathname !== '/register') {
           return NextResponse.redirect(new URL('/register', request.url));
         }
-        // If they have created a club and try to go to the register page
-        if (clubId && pathname === '/register') {
-          // Redirect them to their dashboard
-          return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
+        // If they are on the register page, let them stay
+        return NextResponse.next();
       }
+
+      // For all other logged-in users (or fully onboarded admins),
+      // if they try to access an auth route, redirect them to the dashboard.
+      if (authRoutes.includes(pathname)) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+
     } catch (error) {
-      // Invalid token, redirect to login
+      // Invalid token, redirect to login and clear cookies
       console.error("Invalid token:", error);
-      // Clear cookies and redirect
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('token');
       response.cookies.delete('clubId');
@@ -55,6 +52,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // For any other case, allow the request to proceed
   return NextResponse.next();
 }
 
