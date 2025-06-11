@@ -18,30 +18,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create the ENUM type for game_type
-    game_type_enum = postgresql.ENUM('public', 'private', name='gametype')
-    game_type_enum.create(op.get_bind(), checkfirst=True)
-
-    # Add columns to games table
-    op.add_column('games', sa.Column('booking_id', sa.Integer(), nullable=False))
-    op.add_column('games', sa.Column('game_type', game_type_enum, nullable=False, server_default='private'))
-    op.add_column('games', sa.Column('skill_level', sa.String(), nullable=True))
-    
-    op.create_foreign_key(
-        'fk_games_booking_id',
-        'games', 'bookings',
-        ['booking_id'], ['id']
-    )
-    op.create_unique_constraint('uq_games_booking_id', 'games', ['booking_id'])
+    pass
 
 
 def downgrade() -> None:
-    op.drop_constraint('uq_games_booking_id', 'games', type_='unique')
-    op.drop_constraint('fk_games_booking_id', 'games', type_='foreignkey')
-    op.drop_column('games', 'skill_level')
-    op.drop_column('games', 'game_type')
-    op.drop_column('games', 'booking_id')
-    
-    # Drop the ENUM type
-    game_type_enum = postgresql.ENUM('public', 'private', name='gametype')
-    game_type_enum.drop(op.get_bind(), checkfirst=True) 
+    pass 
