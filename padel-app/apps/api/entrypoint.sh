@@ -12,6 +12,15 @@ echo "ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}" >> .env
 echo "REFRESH_TOKEN_EXPIRE_MINUTES=${REFRESH_TOKEN_EXPIRE_MINUTES:-43200}" >> .env
 echo ".env file created."
 
+# --- DIAGNOSTICS ---
+echo "--- Running Alembic Diagnostics ---"
+echo "--- Alembic History: ---"
+alembic history --verbose
+echo "--- Alembic Current Revision: ---"
+alembic current
+echo "--- End Alembic Diagnostics ---"
+# --- END DIAGNOSTICS ---
+
 # Run database migrations with explicit error handling
 echo "Running database migrations..."
 if ! alembic upgrade head; then
