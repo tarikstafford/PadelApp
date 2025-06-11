@@ -27,17 +27,16 @@ def upgrade() -> None:
     # ### Role Migration ###
     op.drop_column('users', 'is_admin')
 
-    # Update data first, assuming the column is VARCHAR now after manual fix
-    op.execute("UPDATE users SET role = 'admin' WHERE role = 'CLUB_ADMIN'")
-    op.execute("UPDATE users SET role = 'player' WHERE role = 'PLAYER'")
+    # Data is now handled in the previous migration, so these are not needed.
+    # op.execute("UPDATE users SET role = 'admin' WHERE role = 'CLUB_ADMIN'")
+    # op.execute("UPDATE users SET role = 'player' WHERE role = 'PLAYER'")
 
-    # Create the new userrole enum
-    user_role_new.create(op.get_bind(), checkfirst=True)
-    
-    # Alter the column to use the new ENUM type
+    # The userrole enum is created in the previous migration.
+    # We just need to ensure the column type is correct.
     op.alter_column('users', 'role',
                type_=user_role_new,
-               postgresql_using='role::userrole')
+               postgresql_using='role::userrole',
+               existing_type=sa.VARCHAR(50)) # Assuming it might be varchar after manual fix
     
     op.create_index(op.f('ix_users_role'), 'users', ['role'], unique=False)
     
