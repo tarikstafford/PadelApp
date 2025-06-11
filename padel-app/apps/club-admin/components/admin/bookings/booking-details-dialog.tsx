@@ -11,6 +11,12 @@ import { Badge } from "@workspace/ui/components/badge";
 import { useGameDetails } from "@/hooks/useGameDetails";
 import { Booking } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip";
 
 interface BookingDetailsDialogProps {
   booking: Booking | null;
@@ -89,18 +95,25 @@ export function BookingDetailsDialog({
                         key={player.id}
                         className="flex items-center justify-between border-b pb-2"
                       >
-                        <div className="flex items-center gap-2">
-                          <Avatar>
-                            <AvatarImage src={player.user.profile_picture_url} />
-                            <AvatarFallback>
-                              {player.user.name?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
+                        <div className="flex items-center space-x-4">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Avatar>
+                                  <AvatarImage src={player.user.profile_picture_url} />
+                                  <AvatarFallback>
+                                    {player.user.full_name?.charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{player.user.full_name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                           <div>
-                            <p className="font-medium">{player.user.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {player.user.email}
-                            </p>
+                            <p className="font-medium">{player.user.full_name}</p>
+                            <p className="text-sm text-gray-500">{player.user.email}</p>
                           </div>
                         </div>
                         <Badge
