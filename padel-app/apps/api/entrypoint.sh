@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
@@ -12,11 +12,11 @@ echo "ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}" >> .env
 echo "REFRESH_TOKEN_EXPIRE_MINUTES=${REFRESH_TOKEN_EXPIRE_MINUTES:-43200}" >> .env
 echo ".env file created."
 
-# Now, run database migrations. Alembic will pick up the .env file via config.py.
+# Run database migrations
+# This command ensures that the database schema is up-to-date with the models.
 echo "Running database migrations..."
 alembic upgrade head
 echo "Database migrations complete."
 
-# Execute the main command (passed as arguments to this script)
-echo "Starting application server..."
+# Now, execute the command passed to this script (e.g., uvicorn, gunicorn)
 exec "$@" 
