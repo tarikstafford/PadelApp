@@ -1,0 +1,45 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Database & Alembic Migration Rules
+
+- **Primary Source of Truth:** The SQLAlchemy models in `app/models/` are the single source of truth for the database schema. All migrations should aim to align the database state with these models.
+
+- **Idempotency is Key:** Every migration script must be "idempotent"—it should be runnable multiple times without causing errors. Always use `checkfirst=True` for creating ENUM types and `if_not_exists=True` for creating tables and indexes.
+
+- **One Logical Change Per Migration:** Each migration file should represent a single, logical change (e.g., "Add ClubAdmin relationship," "Add Court surfacing options"). Avoid combining unrelated changes.
+
+---
+
+### **Handling ENUM Migrations**
+
+PostgreSQL ENUMs require special care with Alembic.
+
+#### Creating a New ENUM
+
+- **Always use `checkfirst=True`**.
+- Define the enum and create it *before* the `op.create_table` or `op.add_column` call that uses it.
+
+```python
+# ✅ DO:
+booking_status_enum = postgresql.ENUM('PENDING', 'CONFIRMED', name='bookingstatus')
+booking_status_enum.create(op.get_bind(), checkfirst=True)
+
+op.create_table('bookings',
+    sa.Column('status', booking_status_enum, nullable=False)
+    # ... other columns
+)
+```
+
+#### Changing an Existing ENUM (The "Right Way")
+
+- **Never `autogenerate` an enum change.** This is the most common source of errors.
+- Follow this robust, manual process:
+
+  1.  **Alter Column to `VARCHAR`:** Change the column using the enum to a `VARCHAR`. This breaks the dependency and allows data modification.
+  2.  **Update Data:** Write `op.execute()` statements to convert the old string values to the new ones.
+  3.  **Drop Old ENUM:** Safely drop the old enum type using `op.execute("DROP TYPE IF EXISTS your_enum_name")`.
+  4.  **Create New ENUM:** Define the new enum and create it with `checkfirst=True`.
+  5.  **Alter Column to New ENUM:** Change the `VARCHAR` column back to the new enum type.
