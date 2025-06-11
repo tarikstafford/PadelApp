@@ -82,4 +82,30 @@ export type Game = {
 export type BookingDetails = {
   booking: Booking;
   game?: Game;
+};
+
+export type AdminRegistrationData = {
+  full_name: string;
+  email: string;
+  password: string;
+};
+
+export type AuthResponse = {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  role: string;
+};
+
+export type ClubData = {
+  name: string;
+  address?: string;
+  city?: string;
+  postal_code?: string;
+  phone?: string;
+  email?: string;
+  description?: string;
+  opening_hours?: string;
+  amenities?: string;
+  image_url?: string;
 }; 

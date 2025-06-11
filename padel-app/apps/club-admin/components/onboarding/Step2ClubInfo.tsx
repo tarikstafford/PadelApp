@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,11 +14,17 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
+import { Textarea } from "@workspace/ui/components/textarea";
+import { createClub } from "@/lib/api";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Club name is required" }),
   address: z.string().optional(),
   city: z.string().optional(),
+  postal_code: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
+  description: z.string().optional(),
 });
 
 interface Step2Props {
@@ -28,18 +35,32 @@ interface Step2Props {
 }
 
 export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, formData }: Step2Props) {
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: formData.name,
-      address: formData.address,
-      city: formData.city,
+      name: formData.name || "",
+      address: formData.address || "",
+      city: formData.city || "",
+      postal_code: formData.postal_code || "",
+      phone: formData.phone || "",
+      email: formData.email || "",
+      description: formData.description || "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    updateFormData(values);
-    nextStep();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+      const newClub = await createClub(values);
+      updateFormData({ ...values, clubId: newClub.id });
+      nextStep();
+    } catch (error) {
+      // Error is already handled by apiClient
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -54,7 +75,7 @@ export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, form
               <FormItem>
                 <FormLabel>Club Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Padel Club" {...field} />
+                  <Input placeholder="Padel Club" {...field} disabled={isLoading} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -67,7 +88,48 @@ export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, form
               <FormItem>
                 <FormLabel>Address</FormLabel>
                 <FormControl>
-                  <Input placeholder="123 Padel St" {...field} />
+                  <Input placeholder="123 Padel St" {...field} disabled={isLoading} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Padelville" {...field} disabled={isLoading} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="postal_code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Postal Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="12345" {...field} disabled={isLoading} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                  <Input placeholder="(123) 456-7890" {...field} disabled={isLoading} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -75,22 +137,42 @@ export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, form
           />
           <FormField
             control={form.control}
-            name="city"
+            name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>City</FormLabel>
+                <FormLabel>Club Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="Padelville" {...field} />
+                  <Input placeholder="contact@padelclub.com" {...field} disabled={isLoading} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Tell us a little bit about your club"
+                    className="resize-none"
+                    {...field}
+                    disabled={isLoading}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
           <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={prevStep}>
+            <Button type="button" variant="outline" onClick={prevStep} disabled={isLoading}>
               Back
             </Button>
-            <Button type="submit">Next</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Creating Club..." : "Next"}
+            </Button>
           </div>
         </form>
       </Form>

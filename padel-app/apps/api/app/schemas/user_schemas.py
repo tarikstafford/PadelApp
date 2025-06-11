@@ -2,6 +2,12 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models.user_role import UserRole # Import the enum
 
+# Schema for creating a club admin
+class AdminUserCreate(BaseModel):
+    full_name: str
+    email: EmailStr
+    password: str
+
 # Shared properties
 class UserBase(BaseModel):
     email: EmailStr

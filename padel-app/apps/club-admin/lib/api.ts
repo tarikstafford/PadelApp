@@ -8,6 +8,9 @@ import {
   Game,
   Court,
   Club,
+  AdminRegistrationData,
+  AuthResponse,
+  ClubData,
 } from './types';
 
 const getApiUrl = () => {
@@ -158,4 +161,16 @@ export const updateClub = async (clubId: number, data: Partial<Club>): Promise<C
     throw new Error("Club ID is required to update club details.");
   }
   return apiClient.put<Club>(`/admin/club/${clubId}`, data);
+};
+
+export const registerAdmin = async (data: AdminRegistrationData): Promise<AuthResponse> => {
+  return apiClient.post<AuthResponse>('/auth/register-admin', data);
+};
+
+export const createClub = async (data: ClubData): Promise<Club> => {
+  return apiClient.post<Club>('/clubs', data);
+};
+
+export const createCourt = async (data: any): Promise<Court> => {
+  return apiClient.post<Court>('/courts', data);
 }; 

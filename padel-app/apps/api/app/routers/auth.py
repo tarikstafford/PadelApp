@@ -10,50 +10,34 @@ from app.services import file_service
 
 router = APIRouter()
 
-@router.post("/register-club", response_model=token_schemas.Token, status_code=status.HTTP_201_CREATED)
-async def register_club(
-    club_in: club_schemas.ClubRegistrationSchema, 
+@router.post("/register-admin", response_model=token_schemas.Token, status_code=status.HTTP_201_CREATED)
+async def register_admin(
+    user_in: user_schemas.AdminUserCreate, 
     db: Session = Depends(get_db)
 ):
     """
-    Create a new club and a club admin user.
+    Create a new club admin user and return tokens.
     """
-    db_user = crud.user_crud.get_user_by_email(db, email=club_in.admin_email)
+    db_user = crud.user_crud.get_user_by_email(db, email=user_in.email)
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
     
-    user_in = user_schemas.UserCreate(
-        email=club_in.admin_email,
-        password=club_in.admin_password,
-        full_name=club_in.admin_name,
+    # Create the user with the CLUB_ADMIN role
+    user_to_create = user_schemas.UserCreate(
+        email=user_in.email,
+        password=user_in.password,
+        full_name=user_in.full_name,
         role=models.UserRole.CLUB_ADMIN
     )
-    new_user = crud.user_crud.create_user(db=db, user=user_in)
+    new_user = crud.user_crud.create_user(db=db, user=user_to_create)
 
-    club_create_in = club_schemas.ClubCreate(
-        name=club_in.name,
-        address=club_in.address,
-        city=club_in.city,
-        postal_code=club_in.postal_code,
-        phone=club_in.phone,
-        email=club_in.email,
-        description=club_in.description,
-        opening_hours=club_in.opening_hours,
-        amenities=club_in.amenities,
-        image_url=club_in.image_url
-    )
+    # Generate tokens
+    access_token = security.create_access_token(subject=new_user.email)
+    refresh_token = security.create_refresh_token(subject=new_user.email)
     
-    new_club = crud.club_crud.create_club(db=db, club=club_create_in, owner_id=new_user.id)
-    
-    access_token = security.create_access_token(
-        subject=new_user.email
-    )
-    refresh_token = security.create_refresh_token(
-        subject=new_user.email
-    )
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,

@@ -4,8 +4,34 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas # models for type hints, schemas for response_model
 from app.database import get_db
+from app.core import security
 
 router = APIRouter()
+
+@router.post("", response_model=schemas.Club, status_code=status.HTTP_201_CREATED)
+async def create_club(
+    club_in: schemas.ClubCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Create a new club. Must be authenticated as a CLUB_ADMIN.
+    A user can only own one club.
+    """
+    if current_user.role != models.UserRole.CLUB_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only club admins can create new clubs."
+        )
+    
+    if current_user.owned_club:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This user already owns a club."
+        )
+
+    new_club = crud.club_crud.create_club(db=db, club=club_in, owner_id=current_user.id)
+    return new_club
 
 @router.get("", response_model=List[schemas.Club]) # GET /clubs (pluralized by prefix later)
 async def read_clubs(
