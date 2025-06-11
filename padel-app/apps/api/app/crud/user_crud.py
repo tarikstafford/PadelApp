@@ -20,7 +20,7 @@ def create_user(db: Session, user: UserCreate) -> UserModel:
     db_user = UserModel(
         email=user.email,
         hashed_password=hashed_password,
-        name=user.name,
+        full_name=user.full_name,
         is_active=user.is_active if user.is_active is not None else True,
         role=user.role
     )
@@ -66,7 +66,7 @@ def search_users(
         .filter(
             UserModel.id != current_user_id, # Exclude the current user
             or_(
-                UserModel.name.ilike(search_term),
+                UserModel.full_name.ilike(search_term),
                 UserModel.email.ilike(search_term)
             )
         )

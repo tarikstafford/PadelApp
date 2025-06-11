@@ -28,7 +28,7 @@ async def register_club(
     user_in = user_schemas.UserCreate(
         email=club_in.admin_email,
         password=club_in.admin_password,
-        name=club_in.admin_name,
+        full_name=club_in.admin_name,
         role=models.UserRole.CLUB_ADMIN
     )
     new_user = crud.user_crud.create_user(db=db, user=user_in)

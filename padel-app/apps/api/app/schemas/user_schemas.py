@@ -5,7 +5,7 @@ from app.models.user_role import UserRole # Import the enum
 # Shared properties
 class UserBase(BaseModel):
     email: EmailStr
-    name: Optional[str] = None
+    full_name: Optional[str] = None
     profile_picture_url: Optional[str] = None
     is_active: Optional[bool] = True
     role: Optional[UserRole] = UserRole.PLAYER
@@ -18,7 +18,7 @@ class UserCreate(UserBase):
 class UserUpdate(UserBase):
     password: Optional[str] = None
     email: Optional[EmailStr] = None
-    name: Optional[str] = None
+    full_name: Optional[str] = None
     profile_picture_url: Optional[str] = None
     is_active: Optional[bool] = None
 
