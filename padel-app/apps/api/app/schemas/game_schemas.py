@@ -29,10 +29,9 @@ class GameBase(BaseModel):
     game_type: GameType = GameType.PRIVATE
     skill_level: Optional[str] = None
 
-class GameCreate(BaseModel): # No longer inherits from GameBase
+class GameCreate(GameBase): # No longer inherits from GameBase
     booking_id: int
-    game_type: GameType = GameType.PRIVATE
-    skill_level: Optional[str] = None
+    
 
 class GameResponse(GameBase):
     id: int
