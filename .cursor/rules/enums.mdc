@@ -1,0 +1,58 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+- **All Enum Values Must Be Lowercase**
+    - To ensure consistency and prevent case-sensitivity errors with the database, all string values for Python `enum.Enum` classes and SQLAlchemy `SAEnum` types must be defined in lowercase.
+
+- **Python Model Definition (`app/models/`):**
+    - When defining an enum that will be used in a SQLAlchemy model, all members must be lowercase strings.
+
+    ```python
+    // ✅ DO: Use lowercase for enum members.
+    // In: app/models/game.py
+
+    class GameType(str, enum.Enum):
+        PUBLIC = "public"
+        PRIVATE = "private"
+    ```
+
+    ```python
+    // ❌ DON'T: Use uppercase or mixed-case.
+    class GameType(str, enum.Enum):
+        PUBLIC = "PUBLIC" // Incorrect
+        Private = "Private" // Incorrect
+    ```
+
+- **Database Migration Definition (`migrations/versions/`):**
+    - When creating a native database `ENUM` type in an Alembic migration, the values must be lowercase strings.
+
+    ```python
+    // ✅ DO: Use lowercase for native database ENUM types.
+    // In: migrations/versions/145e9c6a294a_add_missing_columns_to_games_table.py
+    
+    def upgrade() -> None:
+        game_type_enum = postgresql.ENUM('public', 'private', name='gametype')
+        game_type_enum.create(op.get_bind(), checkfirst=True)
+        op.add_column('games', sa.Column('game_type', game_type_enum, ...))
+    ```
+
+- **Backend Data Handling (CRUD Layer):**
+    - The backend is the ultimate guard for data integrity. Before creating or updating a database record, any incoming data intended for an enum column **must** be converted to lowercase. This provides a robust solution that doesn't depend on the client sending perfectly formatted data.
+    
+    ```python
+    // ✅ DO: Force incoming data to lowercase in the CRUD layer.
+    // In: app/crud/game_crud.py
+
+    def create_game(db: Session, game_in: GameCreate) -> GameModel:
+        # Force the value to lowercase before creating the DB model.
+        game_type_value = str(game_in.game_type).lower()
+
+        db_game = GameModel(
+            ...
+            game_type=game_type_value,
+            ...
+        )
+        # ...
+    ```
