@@ -88,3 +88,7 @@ The PadelGo project is designed to serve two primary user groups: **Players** an
 *   (Future) Manage players and accept payments.
 
 This document provides a complete picture of the PadelGo project's architecture and functionality. The use of a monorepo, a modern tech stack, and a clear separation of services creates a robust and scalable foundation for future development. 
+
+## 5. Design
+
+We use shadcn components to build out most of the ui/ux. Add feedback for users if things go well or they go wrong!
