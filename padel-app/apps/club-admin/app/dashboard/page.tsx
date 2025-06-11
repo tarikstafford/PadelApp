@@ -20,7 +20,10 @@ export default function DashboardPage() {
           setLoading(false);
         })
         .catch(error => {
-          console.error("Failed to fetch club data", error);
+          if (error.status !== 404) {
+            console.error("Failed to fetch club data", error);
+          }
+          setClub(null);
           setLoading(false);
         });
     }

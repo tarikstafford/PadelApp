@@ -13,7 +13,7 @@ from app.core.dependencies import RoleChecker, ClubAdminChecker, BookingAdminChe
 
 router = APIRouter(
     tags=["admin"],
-    dependencies=[Depends(RoleChecker([UserRole.ADMIN, UserRole.SUPER_ADMIN]))],
+    dependencies=[Depends(RoleChecker([UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.CLUB_ADMIN]))],
 )
 
 # Example of a protected route
