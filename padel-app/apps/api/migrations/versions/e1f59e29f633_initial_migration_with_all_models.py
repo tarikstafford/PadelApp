@@ -32,13 +32,14 @@ def upgrade() -> None:
     sa.Column('opening_hours', sa.Text(), nullable=True),
     sa.Column('amenities', sa.Text(), nullable=True),
     sa.Column('image_url', sa.String(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    if_not_exists=True
     )
-    op.create_index(op.f('ix_clubs_city'), 'clubs', ['city'], unique=False)
-    op.create_index(op.f('ix_clubs_email'), 'clubs', ['email'], unique=False)
-    op.create_index(op.f('ix_clubs_id'), 'clubs', ['id'], unique=False)
-    op.create_index(op.f('ix_clubs_name'), 'clubs', ['name'], unique=False)
-    op.create_index(op.f('ix_clubs_postal_code'), 'clubs', ['postal_code'], unique=False)
+    op.create_index(op.f('ix_clubs_city'), 'clubs', ['city'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_clubs_email'), 'clubs', ['email'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_clubs_id'), 'clubs', ['id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_clubs_name'), 'clubs', ['name'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_clubs_postal_code'), 'clubs', ['postal_code'], unique=False, if_not_exists=True)
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=True),
@@ -47,11 +48,12 @@ def upgrade() -> None:
     sa.Column('profile_picture_url', sa.String(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('is_admin', sa.Boolean(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    if_not_exists=True
     )
-    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
-    op.create_index(op.f('ix_users_name'), 'users', ['name'], unique=False)
+    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True, if_not_exists=True)
+    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_users_name'), 'users', ['name'], unique=False, if_not_exists=True)
     op.create_table('courts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -61,10 +63,11 @@ def upgrade() -> None:
     sa.Column('price_per_hour', sa.Numeric(precision=10, scale=2), nullable=True),
     sa.Column('default_availability_status', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['club_id'], ['clubs.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    if_not_exists=True
     )
-    op.create_index(op.f('ix_courts_id'), 'courts', ['id'], unique=False)
-    op.create_index(op.f('ix_courts_name'), 'courts', ['name'], unique=False)
+    op.create_index(op.f('ix_courts_id'), 'courts', ['id'], unique=False, if_not_exists=True)
+    op.create_index(op.f('ix_courts_name'), 'courts', ['name'], unique=False, if_not_exists=True)
     op.create_table('bookings',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('court_id', sa.Integer(), nullable=False),
@@ -74,9 +77,10 @@ def upgrade() -> None:
     sa.Column('status', sa.Enum('PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', name='bookingstatus'), nullable=False),
     sa.ForeignKeyConstraint(['court_id'], ['courts.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    if_not_exists=True
     )
-    op.create_index(op.f('ix_bookings_id'), 'bookings', ['id'], unique=False)
+    op.create_index(op.f('ix_bookings_id'), 'bookings', ['id'], unique=False, if_not_exists=True)
     op.create_table('games',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('booking_id', sa.Integer(), nullable=False),
@@ -84,9 +88,10 @@ def upgrade() -> None:
     sa.Column('skill_level', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('booking_id')
+    sa.UniqueConstraint('booking_id'),
+    if_not_exists=True
     )
-    op.create_index(op.f('ix_games_id'), 'games', ['id'], unique=False)
+    op.create_index(op.f('ix_games_id'), 'games', ['id'], unique=False, if_not_exists=True)
     op.create_table('game_players',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('game_id', sa.Integer(), nullable=False),
@@ -94,9 +99,10 @@ def upgrade() -> None:
     sa.Column('status', sa.Enum('INVITED', 'ACCEPTED', 'DECLINED', 'REQUESTED_TO_JOIN', name='gameplayerstatus'), nullable=False),
     sa.ForeignKeyConstraint(['game_id'], ['games.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    if_not_exists=True
     )
-    op.create_index(op.f('ix_game_players_id'), 'game_players', ['id'], unique=False)
+    op.create_index(op.f('ix_game_players_id'), 'game_players', ['id'], unique=False, if_not_exists=True)
     # ### end Alembic commands ###
 
 
