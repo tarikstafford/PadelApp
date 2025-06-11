@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Enum
+from sqlalchemy import Column, Integer, String, Boolean, Enum as SAEnum
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -15,7 +15,13 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False, server_default='true')
     
     # New role field
-    role = Column(Enum(UserRole), nullable=False, default=UserRole.PLAYER, server_default=UserRole.PLAYER.value, index=True)
+    role = Column(
+        SAEnum(UserRole, name="userrole", create_enum=False), 
+        nullable=False, 
+        default=UserRole.PLAYER, 
+        server_default=UserRole.PLAYER.value, 
+        index=True
+    )
 
     # Relationship to Bookings (one-to-many)
     bookings = relationship("Booking", back_populates="user")
