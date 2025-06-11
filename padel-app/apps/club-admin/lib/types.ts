@@ -108,4 +108,12 @@ export type ClubData = {
   opening_hours?: string;
   amenities?: string;
   image_url?: string;
+};
+
+export type CourtData = {
+  name: string;
+  surface_type?: string;
+  is_indoor?: boolean;
+  price_per_hour?: number;
+  club_id: number;
 }; 

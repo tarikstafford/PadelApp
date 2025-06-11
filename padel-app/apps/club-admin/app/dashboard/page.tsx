@@ -14,18 +14,23 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      apiClient.get<Club>("/admin/my-club")
-        .then(data => {
+      // Use a custom fetcher here to handle the 404 gracefully
+      const fetchClubData = async () => {
+        try {
+          const data = await apiClient.get<Club>("/admin/my-club");
           setClub(data);
-          setLoading(false);
-        })
-        .catch(error => {
-          if (error.status !== 404) {
+        } catch (error: any) {
+          // Only log and show toast for unexpected errors, not for 404
+          if (error?.status !== 404) {
             console.error("Failed to fetch club data", error);
           }
+          // In case of any error (including 404), there is no club.
           setClub(null);
+        } finally {
           setLoading(false);
-        });
+        }
+      };
+      fetchClubData();
     }
   }, [user]);
 

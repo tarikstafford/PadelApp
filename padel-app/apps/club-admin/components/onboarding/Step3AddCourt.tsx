@@ -42,7 +42,12 @@ export default function Step3AddCourt({ prevStep, formData }: Step3Props) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await createCourt(values);
+      if (!formData.clubId) {
+        toast.error("Could not find club information. Please go back.");
+        setIsLoading(false);
+        return;
+      }
+      await createCourt({ ...values, club_id: formData.clubId });
       toast.success("Club and initial court created successfully!");
       router.push("/dashboard");
     } catch (error) {

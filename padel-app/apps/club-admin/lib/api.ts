@@ -12,6 +12,7 @@ import {
   AuthResponse,
   ClubData,
   User,
+  CourtData
 } from './types';
 
 const getApiUrl = () => {
@@ -172,7 +173,7 @@ export const createClub = async (data: ClubData): Promise<Club> => {
   return apiClient.post<Club>('/clubs', data);
 };
 
-export const createCourt = async (data: any): Promise<Court> => {
+export const createCourt = async (data: CourtData): Promise<Court> => {
   return apiClient.post<Court>('/courts', data);
 };
 
