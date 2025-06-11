@@ -25,7 +25,7 @@ def upgrade() -> None:
 
     # Add the missing columns
     op.add_column('courts', sa.Column('surface_type', surface_type_enum, nullable=True))
-    op.add_column('courts', sa.Column('is_indoor', sa.Boolean(), nullable=True, server_default='false'))
+    # op.add_column('courts', sa.Column('is_indoor', sa.Boolean(), nullable=True, server_default='false'))
     op.add_column('courts', sa.Column('price_per_hour', sa.Numeric(precision=10, scale=2), nullable=True))
     op.add_column('courts', sa.Column('default_availability_status', availability_status_enum, nullable=True, server_default='Available'))
 
@@ -42,7 +42,7 @@ def downgrade() -> None:
     # Drop the added columns
     op.drop_column('courts', 'default_availability_status')
     op.drop_column('courts', 'price_per_hour')
-    op.drop_column('courts', 'is_indoor')
+    # op.drop_column('courts', 'is_indoor')
     op.drop_column('courts', 'surface_type')
 
     # Drop the ENUM types
