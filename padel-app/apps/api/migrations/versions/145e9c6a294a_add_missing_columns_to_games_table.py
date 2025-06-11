@@ -22,7 +22,7 @@ def upgrade() -> None:
     game_type_enum = postgresql.ENUM('public', 'private', name='gametype')
     game_type_enum.create(op.get_bind(), checkfirst=True)
 
-    op.add_column('games', sa.Column('booking_id', sa.Integer(), nullable=False))
+    # op.add_column('games', sa.Column('booking_id', sa.Integer(), nullable=False))
     op.add_column('games', sa.Column('game_type', game_type_enum, nullable=False, server_default='private'))
     op.add_column('games', sa.Column('skill_level', sa.String(), nullable=True))
     
