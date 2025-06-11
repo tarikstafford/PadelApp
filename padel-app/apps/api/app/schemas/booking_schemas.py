@@ -28,6 +28,7 @@ class Booking(BookingBase):
     status: BookingStatus # Use the enum from the model
     user: User
     court: Court
+    game_id: Optional[int] = None
 
     model_config = {"from_attributes": True}
 

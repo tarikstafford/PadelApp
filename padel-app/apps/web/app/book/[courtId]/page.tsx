@@ -45,12 +45,12 @@ interface GamePlayer {
 interface GameResponse {
     id: number;
     booking_id: number;
-    game_type: "PRIVATE" | "PUBLIC";
+    game_type: "private" | "public";
     skill_level?: string | null;
     players: GamePlayer[];
 }
 
-type GameTypeOption = "PRIVATE" | "PUBLIC";
+type GameTypeOption = "private" | "public";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -74,11 +74,40 @@ function BookingPageInternal() {
   const [isBooking, setIsBooking] = useState(false);
 
   const [createdBookingDetails, setCreatedBookingDetails] = useState<BookingDetail | null>(null);
-  const [gameType, setGameType] = useState<GameTypeOption>("PRIVATE");
+  const [gameType, setGameType] = useState<GameTypeOption>("private");
   const [skillLevel, setSkillLevel] = useState("");
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [gameCreationError, setGameCreationError] = useState<string | null>(null);
   const [createdGame, setCreatedGame] = useState<GameResponse | null>(null);
+
+  const fetchBookingDetails = useCallback(async (bookingIdToFetch: string) => {
+    if (!accessToken) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/bookings/${bookingIdToFetch}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            const msg = typeof data.detail === 'string' ? data.detail : "Failed to fetch booking details for game creation.";
+            throw new Error(msg);
+        }
+        setCreatedBookingDetails(data as BookingDetail);
+        toast.info("Loaded existing booking. Please set up your game.");
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Could not load booking details.";
+        console.error("Error fetching booking details:", error);
+        toast.error(message);
+        // Optionally redirect if booking is not found or not accessible
+        // router.push('/bookings');
+    }
+  }, [accessToken]);
+  
+  useEffect(() => {
+    const bookingIdFromUrl = searchParams.get('bookingId');
+    if (bookingIdFromUrl) {
+      fetchBookingDetails(bookingIdFromUrl);
+    }
+  }, [searchParams, fetchBookingDetails]);
 
   useEffect(() => {
     if (courtId) {
@@ -190,7 +219,7 @@ function BookingPageInternal() {
             },
             body: JSON.stringify({
                 booking_id: createdBookingDetails.id,
-                game_type: gameType.toUpperCase(),
+                game_type: gameType,
                 skill_level: skillLevel || null,
             }),
         });
@@ -298,7 +327,7 @@ function BookingPageInternal() {
         {createdBookingDetails && !createdGame && (
             <Card>
                 <CardHeader><CardTitle>Create Your Game</CardTitle><CardDescription>Your booking for {courtInfo.name} at {format(parseISO(createdBookingDetails.start_time), 'PPP, HH:mm')} is confirmed. Now set up your game details.</CardDescription></CardHeader>
-                <form onSubmit={handleCreateGame}><CardContent className="space-y-4"><div><Label className="text-base font-medium">Game Type</Label><RadioGroup defaultValue="PRIVATE" value={gameType} onValueChange={(value: GameTypeOption) => setGameType(value)} className="mt-2 flex space-x-4"><div className="flex items-center space-x-2"><RadioGroupItem value="PRIVATE" id="gameTypePrivate" /><Label htmlFor="gameTypePrivate" className="font-normal flex items-center"><ShieldCheck className="mr-2 h-4 w-4 text-muted-foreground"/> Private</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="PUBLIC" id="gameTypePublic" /><Label htmlFor="gameTypePublic" className="font-normal flex items-center"><Users className="mr-2 h-4 w-4 text-muted-foreground"/> Public</Label></div></RadioGroup><p className="text-xs text-muted-foreground mt-1">Private games are only visible to invited players. Public games can be discovered and joined by other users.</p></div><div><Label htmlFor="skillLevel" className="text-base font-medium">Skill Level (Optional)</Label><Input id="skillLevel" value={skillLevel} onChange={(e) => setSkillLevel(e.target.value)} placeholder="E.g., Beginner, Intermediate, Advanced 3.5+" className="mt-2"/></div>{gameCreationError && <p className="text-sm text-destructive">{gameCreationError}</p>}</CardContent><CardFooter><Button type="submit" className="w-full" disabled={isCreatingGame}>{isCreatingGame ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating Game...</> : "Create Game & Invite Players"}</Button></CardFooter></form>
+                <form onSubmit={handleCreateGame}><CardContent className="space-y-4"><div><Label className="text-base font-medium">Game Type</Label><RadioGroup defaultValue="private" value={gameType} onValueChange={(value: GameTypeOption) => setGameType(value)} className="mt-2 flex space-x-4"><div className="flex items-center space-x-2"><RadioGroupItem value="private" id="gameTypePrivate" /><Label htmlFor="gameTypePrivate" className="font-normal flex items-center"><ShieldCheck className="mr-2 h-4 w-4 text-muted-foreground"/> Private</Label></div><div className="flex items-center space-x-2"><RadioGroupItem value="public" id="gameTypePublic" /><Label htmlFor="gameTypePublic" className="font-normal flex items-center"><Users className="mr-2 h-4 w-4 text-muted-foreground"/> Public</Label></div></RadioGroup><p className="text-xs text-muted-foreground mt-1">Private games are only visible to invited players. Public games can be discovered and joined by other users.</p></div><div><Label htmlFor="skillLevel" className="text-base font-medium">Skill Level (Optional)</Label><Input id="skillLevel" value={skillLevel} onChange={(e) => setSkillLevel(e.target.value)} placeholder="E.g., Beginner, Intermediate, Advanced 3.5+" className="mt-2"/></div>{gameCreationError && <p className="text-sm text-destructive">{gameCreationError}</p>}</CardContent><CardFooter><Button type="submit" className="w-full" disabled={isCreatingGame}>{isCreatingGame ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating Game...</> : "Create Game & Invite Players"}</Button></CardFooter></form>
             </Card>
         )}
 

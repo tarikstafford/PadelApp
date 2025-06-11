@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 // import { useRouter } from 'next/navigation'; // Unused
 import { Button } from "@workspace/ui/components/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card"; // Removed unused CardFooter
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@workspace/ui/components/card"; // Removed unused CardFooter
 import { Calendar } from "@workspace/ui/components/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
@@ -25,6 +25,7 @@ interface Booking {
   start_time: string; // ISO string
   end_time: string;   // ISO string
   status: string; // e.g., "CONFIRMED", "CANCELLED", "COMPLETED"
+  game_id?: number | null;
   // Anticipated enriched fields (backend would need to provide these or fetch client-side)
   court_name?: string;
   club_name?: string;
@@ -204,23 +205,36 @@ function BookingsPageInternal() {
       {!isLoading && !error && bookings.length > 0 && (
         <div className="space-y-4">
           {bookings.map((booking) => (
-            <Link key={booking.id} href={`/bookings/${booking.id}`} passHref legacyBehavior>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardHeader>
-                  {/* Assuming booking object will have court and club names, if not, fetch or adjust */}
-                  <CardTitle>Court ID: {booking.court_id} {/* Placeholder for Court Name */}</CardTitle>
-                  <CardDescription>
-                    {/* Placeholder for Club Name */} Booked for: {format(parseISO(booking.start_time), 'PPP, HH:mm')} - {format(parseISO(booking.end_time), 'HH:mm')}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
-                </CardContent>
-                 {/* <CardFooter>
-                   <Button variant="outline" size="sm">View Details</Button>
-                 </CardFooter> */}
-              </Card>
-            </Link>
+            <Card key={booking.id} className="transition-shadow">
+              <Link href={`/bookings/${booking.id}`} passHref legacyBehavior>
+                <div className="cursor-pointer hover:bg-muted/50 rounded-t-lg">
+                  <CardHeader>
+                    <CardTitle>Court ID: {booking.court_id}</CardTitle>
+                    <CardDescription>
+                      Booked for: {format(parseISO(booking.start_time), 'PPP, HH:mm')} - {format(parseISO(booking.end_time), 'HH:mm')}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
+                  </CardContent>
+                </div>
+              </Link>
+              <CardFooter className="bg-muted/20 p-4 border-t">
+                {booking.game_id ? (
+                  <Link href={`/games/${booking.game_id}`} passHref legacyBehavior>
+                    <Button variant="outline" size="sm" asChild>
+                      <a>View Game</a>
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href={`/book/${booking.court_id}?bookingId=${booking.id}`} passHref legacyBehavior>
+                    <Button variant="default" size="sm" asChild>
+                      <a>Create Game</a>
+                    </Button>
+                  </Link>
+                )}
+              </CardFooter>
+            </Card>
           ))}
         </div>
       )}

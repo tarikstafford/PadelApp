@@ -62,7 +62,11 @@ def create_booking(db: Session, booking_in: BookingCreate, user_id: int) -> Book
 
 def get_booking(db: Session, booking_id: int) -> Optional[BookingModel]:
     """Retrieve a single booking by its ID."""
-    return db.query(BookingModel).filter(BookingModel.id == booking_id).first()
+    return db.query(BookingModel).options(
+        joinedload(BookingModel.user),
+        joinedload(BookingModel.court),
+        joinedload(BookingModel.game)
+    ).filter(BookingModel.id == booking_id).first()
 
 def get_bookings_by_user(
     db: Session,

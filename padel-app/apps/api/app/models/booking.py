@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SAEnum
 from sqlalchemy.orm import relationship
 import enum
+from typing import Optional
 
 from app.database import Base
 
@@ -30,6 +31,10 @@ class Booking(Base):
     
     # Relationship to Game model (one-to-one with Booking)
     game = relationship("Game", uselist=False, back_populates="booking", cascade="all, delete-orphan")
+
+    @property
+    def game_id(self) -> Optional[int]:
+        return self.game.id if self.game else None
 
     def __repr__(self):
         return f"<Booking(id={self.id}, court_id={self.court_id}, user_id={self.user_id}, start_time='{self.start_time}')>" 
