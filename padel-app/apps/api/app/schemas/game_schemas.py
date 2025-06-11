@@ -31,13 +31,6 @@ class GameBase(BaseModel):
 
 class GameCreate(GameBase):
     booking_id: int
-    
-    @validator("game_type", pre=True, always=True)
-    def set_game_type_lowercase(cls, v):
-        if v:
-            return v.lower()
-        return GameType.PRIVATE.lower()
-    
 
 class GameResponse(GameBase):
     id: int
