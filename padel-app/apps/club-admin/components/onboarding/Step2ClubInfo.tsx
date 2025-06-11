@@ -16,6 +16,7 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { createClub } from "@/lib/api";
+import { setCookie } from "cookies-next";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Club name is required" }),
@@ -55,6 +56,7 @@ export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, form
     try {
       const newClub = await createClub(values);
       updateFormData({ ...values, clubId: newClub.id });
+      setCookie("clubId", newClub.id);
       nextStep();
     } catch (error) {
       // Error is already handled by apiClient

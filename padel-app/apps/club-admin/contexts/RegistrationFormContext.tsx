@@ -3,12 +3,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
 interface FormData {
-  admin_name: string;
-  admin_email: string;
-  admin_password: string;
-  name: string;
-  address: string;
-  city: string;
+  [key: string]: any;
 }
 
 interface RegistrationFormContextType {
@@ -29,7 +24,7 @@ export function useRegistrationForm() {
   return context;
 }
 
-export function RegistrationFormProvider({ children }: { children: ReactNode }) {
+export function RegistrationFormProvider({ children, initialStep = 1, initialData = {} }: { children: ReactNode, initialStep?: number, initialData?: Partial<FormData> }) {
   const [formData, setFormData] = useState<FormData>({
     admin_name: "",
     admin_email: "",
@@ -37,8 +32,9 @@ export function RegistrationFormProvider({ children }: { children: ReactNode }) 
     name: "",
     address: "",
     city: "",
+    ...initialData,
   });
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(initialStep);
 
   const updateFormData = (data: Partial<FormData>) => {
     setFormData((prev) => ({ ...prev, ...data }));

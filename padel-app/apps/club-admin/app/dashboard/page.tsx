@@ -36,7 +36,7 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-bold mb-2">Welcome to Your Dashboard!</h2>
         <p className="mb-4 text-gray-600">It looks like you haven't created a club yet. Let's get started.</p>
         <Button asChild>
-          <Link href="/profile">Create Your Club Profile</Link>
+          <Link href="/register?step=2">Create Your Club Profile</Link>
         </Button>
       </div>
     );

@@ -11,6 +11,7 @@ import {
   AdminRegistrationData,
   AuthResponse,
   ClubData,
+  User,
 } from './types';
 
 const getApiUrl = () => {
@@ -173,4 +174,8 @@ export const createClub = async (data: ClubData): Promise<Club> => {
 
 export const createCourt = async (data: any): Promise<Court> => {
   return apiClient.post<Court>('/courts', data);
+};
+
+export const getMe = async (): Promise<User> => {
+  return apiClient.get<User>('/auth/users/me');
 }; 

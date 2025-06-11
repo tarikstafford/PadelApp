@@ -7,7 +7,7 @@ export enum UserRole {
 export type User = {
   id: number;
   email: string;
-  name?: string;
+  full_name?: string;
   profile_picture_url?: string;
   is_active: boolean;
   role: UserRole;

@@ -9,5 +9,8 @@
     "lint": "echo 'Lint script for API to be configured'"
   },
   "author": "",
-  "license": "ISC"
-} 
+  "license": "ISC",
+  "dependencies": {
+    "jwt-decode": "^4.0.0"
+  }
+}
