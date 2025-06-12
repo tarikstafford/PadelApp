@@ -83,16 +83,11 @@ async def read_game_details(
     if not game:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
 
-    # Authorization: Check if the current user is part of the game
+    # Authorization: Check if the current user is a participant OR the creator of the booking
     is_participant = any(gp.user_id == current_user.id for gp in game.players)
+    is_creator = game.booking and game.booking.user_id == current_user.id
     
-    # Alternative: if game creator should always have access, even if not in GamePlayers (though they are auto-added)
-    # booking_owner_id = game.booking.user_id # Accessing via game.booking relationship
-    # if not is_participant and current_user.id != booking_owner_id: 
-
-    if not is_participant:
-        # A stricter check might be: if not is_participant and current_user.id != game.booking.user_id:
-        # However, game.booking might not be loaded by default by get_game. For now, just participant check.
+    if not is_participant and not is_creator:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, 
             detail="Not authorized to access this game's details."
