@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.database import get_db
 from app.core import security
-from app.services import image_uploader
+from app.services import file_service
 
 router = APIRouter()
 
@@ -38,7 +38,7 @@ async def upload_profile_picture(
     """
     try:
         # Upload image and get the URL
-        image_url = await image_uploader.upload_image(file=file, user_id=current_user.id)
+        image_url = await file_service.save_profile_picture(file=file, user_id=current_user.id)
         
         # Update user's profile_picture_url in the database
         user_update_schema = schemas.UserUpdate(profile_picture_url=image_url)
