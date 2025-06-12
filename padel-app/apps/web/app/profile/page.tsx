@@ -13,8 +13,57 @@ import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Loader2 } from 'lucide-react';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 function UserProfilePage() {
-    const { user, isLoading } = useAuth();
+    const { user, isLoading, accessToken, fetchUser } = useAuth();
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({ name: '', email: '' });
+
+    useEffect(() => {
+        if (user) {
+            setFormData({ name: user.name || '', email: user.email || '' });
+        }
+    }, [user]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSave = async () => {
+        if (!accessToken) {
+            toast.error("You are not authenticated.");
+            return;
+        }
+
+        toast.loading("Saving your profile...");
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({
+                    full_name: formData.name,
+                    email: formData.email,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.detail || "Failed to update profile.");
+            }
+
+            toast.success("Profile updated successfully!");
+            await fetchUser(); // Re-fetch user data to update the context
+            setIsEditing(false); // Exit editing mode
+        } catch (error: any) {
+            toast.error(error.message || "An unexpected error occurred.");
+        }
+    };
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
@@ -34,14 +83,36 @@ function UserProfilePage() {
                 <CardHeader className="text-center">
                     <Avatar className="w-24 h-24 mx-auto mb-4">
                         <AvatarImage src={user.profile_picture_url || ''} alt={user.name || 'User'} />
-                        <AvatarFallback>{user.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                        <AvatarFallback>{formData.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
-                    <CardTitle className="text-2xl">{user.name || 'Padel Player'}</CardTitle>
-                    <CardDescription>{user.email}</CardDescription>
+                    {!isEditing ? (
+                        <>
+                            <CardTitle className="text-2xl">{user.name || 'Padel Player'}</CardTitle>
+                            <CardDescription>{user.email}</CardDescription>
+                        </>
+                    ) : (
+                        <div className="space-y-4 px-6 py-2">
+                             <div className="space-y-2 text-left">
+                                <Label htmlFor="name">Full Name</Label>
+                                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} />
+                            </div>
+                            <div className="space-y-2 text-left">
+                                <Label htmlFor="email">Email</Label>
+                                <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
+                            </div>
+                        </div>
+                    )}
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="text-center">
-                        <Button variant="outline">Edit Profile</Button>
+                        {!isEditing ? (
+                            <Button variant="outline" onClick={() => setIsEditing(true)}>Edit Profile</Button>
+                        ) : (
+                            <div className="flex justify-center gap-4">
+                                <Button variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
+                                <Button onClick={handleSave}>Save Changes</Button>
+                            </div>
+                        )}
                     </div>
                     <div>
                         <h3 className="text-lg font-semibold mb-2">My Bookings</h3>

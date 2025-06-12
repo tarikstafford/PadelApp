@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''; // Get base URL from env
@@ -15,153 +15,135 @@ interface User {
 }
 
 // Define the shape of the AuthContext
-interface AuthContextType {
-  user: User | null;
-  accessToken: string | null;
-  isLoading: boolean;
-  login: (email_or_token: string, password?: string) => Promise<void>; // Can accept email/pass or a token for session init
-  logout: () => void;
-  register: (name: string, email: string, password: string) => Promise<void>;
+export interface AuthContextType {
+    user: User | null;
+    setUser: React.Dispatch<React.SetStateAction<User | null>>;
+    accessToken: string | null;
+    setAccessToken: (token: string | null) => void;
+    refreshToken: string | null;
+    setRefreshToken: (token: string | null) => void;
+    login: (token: string, refresh: string) => void;
+    logout: () => void;
+    register: (name: string, email: string, password: string) => Promise<void>;
+    isLoading: boolean;
+    fetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true to check session
-  const router = useRouter();
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<User | null>(null);
+    const [accessToken, setAccessTokenState] = useState<string | null>(null);
+    const [refreshToken, setRefreshTokenState] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
 
-  // DEBUG: Log the value of the environment variable at runtime
-  useEffect(() => {
-    console.log("NEXT_PUBLIC_API_URL as seen by client:", process.env.NEXT_PUBLIC_API_URL);
-  }, []);
+    // DEBUG: Log the value of the environment variable at runtime
+    useEffect(() => {
+        console.log("NEXT_PUBLIC_API_URL as seen by client:", process.env.NEXT_PUBLIC_API_URL);
+    }, []);
 
-  const fetchAndUpdateUser = async (token?: string) => {
-    const currentToken = token || accessToken;
-    if (!currentToken) {
-      setUser(null); // Clear user if no token
-      return;
-    }
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
-        headers: { 'Authorization': `Bearer ${currentToken}` },
-      });
-      if (response.ok) {
-        const userData: User = await response.json();
-        setUser(userData);
-      } else {
-        console.warn('Failed to fetch user data with token.');
-        setUser(null); // Clear user on fetch failure
-        // Optionally, try to refresh token here if status is 401 and refresh token exists
-        // For now, we'll just clear the user state.
-        if (response.status === 401) {
-            // Attempt to logout to clear tokens if user fetch fails due to auth
-            logout(); // This will redirect to login
+    const setAccessToken = (token: string | null) => {
+        setAccessTokenState(token);
+        if (typeof window !== 'undefined') {
+            if (token) {
+                localStorage.setItem('accessToken', token);
+            } else {
+                localStorage.removeItem('accessToken');
+            }
         }
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      setUser(null);
-    }
-  };
-
-  // Effect to check for existing session on initial load
-  useEffect(() => {
-    const attemptLoadSession = async () => {
-      const storedAccessToken = localStorage.getItem('access_token');
-      const storedRefreshToken = localStorage.getItem('refresh_token');
-
-      if (storedAccessToken) {
-        setAccessToken(storedAccessToken);
-        setRefreshToken(storedRefreshToken);
-        await fetchAndUpdateUser(storedAccessToken);
-      }
-      setIsLoading(false);
     };
-    attemptLoadSession();
-  }, []);
 
-  const login = async (email_param: string, password_param?: string) => {
-    setIsLoading(true);
-    try {
-      // For simplicity, this login function assumes email/password.
-      // A more robust version might handle direct token setting for session recovery.
-      if (!password_param) throw new Error("Password is required for login.");
+    const setRefreshToken = (token: string | null) => {
+        setRefreshTokenState(token);
+        if (typeof window !== 'undefined') {
+            if (token) {
+                localStorage.setItem('refreshToken', token);
+            } else {
+                localStorage.removeItem('refreshToken');
+            }
+        }
+    };
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ username: email_param, password: password_param }).toString(),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || "Login failed");
-      }
-      setAccessToken(data.access_token);
-      localStorage.setItem('access_token', data.access_token);
-      if (data.refresh_token) {
-        setRefreshToken(data.refresh_token);
-        localStorage.setItem('refresh_token', data.refresh_token);
-      }
-      await fetchAndUpdateUser(data.access_token);
-      router.push('/profile'); // Redirect to profile page
-    } catch (error: any) {
-      console.error("Login error in AuthContext:", error);
-      // Clear any partial auth state
-      logout(); // Use logout to ensure clean state
-      throw error; // Re-throw for the form to catch and display
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const fetchAndUpdateUser = useCallback(async () => {
+        const token = accessToken || (typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null);
+        if (token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (response.ok) {
+                    const userData = await response.json();
+                    setUser(userData);
+                } else {
+                    setUser(null);
+                    setAccessToken(null);
+                    setRefreshToken(null);
+                }
+            } catch (error) {
+                console.error("Failed to fetch user", error);
+                setUser(null);
+            }
+        }
+        setIsLoading(false);
+    }, [accessToken]);
 
-  const register = async (name_param: string, email_param: string, password_param: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name_param, email: email_param, password: password_param }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || "Registration failed");
-      }
-      // Typically, after registration, you might redirect to login or show a success message.
-      // Some apps might auto-login, but that requires another API call or token return from register.
-      alert("Registration successful! Please log in.");
-      router.push('/auth/login');
-    } catch (error: any) {
-      console.error("Registration error in AuthContext:", error);
-      throw error; // Re-throw for the form to catch and display
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            setAccessTokenState(token);
+            setRefreshTokenState(localStorage.getItem('refreshToken'));
+        }
+        fetchAndUpdateUser();
+    }, [fetchAndUpdateUser]);
 
-  const logout = () => {
-    setUser(null);
-    setAccessToken(null);
-    setRefreshToken(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    router.push('/auth/login'); // Redirect to login page
-  };
+    const login = (token: string, refresh: string) => {
+        setAccessToken(token);
+        setRefreshToken(refresh);
+        fetchAndUpdateUser();
+    };
 
-  return (
-    <AuthContext.Provider value={{ user, accessToken, isLoading, login, logout, register }}>
-      {children}
-    </AuthContext.Provider>
-  );
+    const logout = () => {
+        setUser(null);
+        setAccessToken(null);
+        setRefreshToken(null);
+    };
+
+    const register = async (name: string, email: string, password: string) => {
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ full_name: name, email, password }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Registration failed');
+        }
+        // Optionally log the user in directly after registration
+    };
+
+    const value = {
+        user,
+        setUser,
+        accessToken,
+        setAccessToken,
+        refreshToken,
+        setRefreshToken,
+        isLoading,
+        login,
+        logout,
+        register,
+        fetchUser: fetchAndUpdateUser,
+    };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 // Custom hook to use the AuthContext
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 }; 
