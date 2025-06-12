@@ -6,7 +6,7 @@ from .clubs import router as clubs_router
 from .courts import router as courts_router
 from .bookings import router as bookings_router
 from .games import router as games_router
-from .users_router import router as users_router
+from .users import router as users_router
 
 # Import other routers here as they are created, e.g.:
 # from .items import router as items_router
