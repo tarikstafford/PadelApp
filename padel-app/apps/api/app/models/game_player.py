@@ -15,9 +15,8 @@ class GamePlayerStatus(str, enum.Enum):
 class GamePlayer(Base):
     __tablename__ = "game_players"
 
-    id = Column(Integer, primary_key=True, index=True)
-    game_id = Column(Integer, ForeignKey("games.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    game_id = Column(Integer, ForeignKey("games.id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     status = Column(SAEnum(GamePlayerStatus), default=GamePlayerStatus.INVITED, nullable=False)
 
     # Relationship to Game model
@@ -28,4 +27,4 @@ class GamePlayer(Base):
                           )
 
     def __repr__(self):
-        return f"<GamePlayer(id={self.id}, game_id={self.game_id}, user_id={self.user_id}, status='{self.status}')>" 
+        return f"<GamePlayer(game_id={self.game_id}, user_id={self.user_id}, status='{self.status}')>" 

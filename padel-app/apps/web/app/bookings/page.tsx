@@ -208,15 +208,15 @@ function BookingsPageInternal() {
             <Card key={booking.id} className="transition-shadow">
               <Link href={`/bookings/${booking.id}`} passHref legacyBehavior>
                 <div className="cursor-pointer hover:bg-muted/50 rounded-t-lg">
-                  <CardHeader>
+                <CardHeader>
                     <CardTitle>Court ID: {booking.court_id}</CardTitle>
-                    <CardDescription>
+                  <CardDescription>
                       Booked for: {format(parseISO(booking.start_time), 'PPP, HH:mm')} - {format(parseISO(booking.end_time), 'HH:mm')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
-                  </CardContent>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
+                </CardContent>
                 </div>
               </Link>
               <CardFooter className="bg-muted/20 p-4 border-t">
@@ -234,7 +234,7 @@ function BookingsPageInternal() {
                   </Link>
                 )}
               </CardFooter>
-            </Card>
+              </Card>
           ))}
         </div>
       )}
