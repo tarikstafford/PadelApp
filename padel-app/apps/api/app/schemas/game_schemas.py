@@ -34,6 +34,9 @@ class GameCreate(GameBase):
 
 class GameResponse(GameBase):
     id: int
+    club_id: int
+    start_time: datetime
+    end_time: datetime
     booking: BookingSchema # Nested booking details
     players: List[GamePlayerResponse] = [] # List of players in the game
     # booking: Optional[BookingSchema] # Could add if booking details are needed here too
