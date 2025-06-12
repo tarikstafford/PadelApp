@@ -7,12 +7,15 @@ import Image from 'next/image';
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
-import { Loader2, AlertTriangle, ArrowLeft, Calendar as CalendarIcon, Users, Hash, ShieldCheck, UserCheck, UserX, Info, CheckCircleIcon, XCircleIcon } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowLeft, Calendar as CalendarIcon, Users, Hash, ShieldCheck, UserCheck, UserX, Info, CheckCircleIcon, XCircleIcon, UserPlus, Copy } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import withAuth from '@/components/auth/withAuth';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Separator } from '@workspace/ui/components/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@workspace/ui/components/dialog';
+import { Input } from '@workspace/ui/components/input';
+import { Label } from '@workspace/ui/components/label';
 
 const MAX_PLAYERS_PER_GAME = 4; // Define the constant here
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -45,6 +48,33 @@ interface GameDetail {
     players: GamePlayer[];
 }
 
+// PlayerSlot Component
+const PlayerSlot = ({ player, onInvite }: { player?: GamePlayer, onInvite: () => void }) => {
+    if (player) {
+        return (
+            <div className="flex flex-col items-center space-y-2">
+                <div className="relative w-24 h-24">
+                    <Image
+                        src={player.user.profile_picture_url || `https://avatar.vercel.sh/${player.user.email}?s=96`}
+                        alt={player.user.name || player.user.email}
+                        layout="fill"
+                        className="rounded-full object-cover"
+                    />
+                </div>
+                <span className="text-sm font-medium text-center truncate w-24">{player.user.name || 'Player'}</span>
+            </div>
+        );
+    }
+    return (
+        <div className="flex flex-col items-center space-y-2">
+            <button onClick={onInvite} className="w-24 h-24 rounded-full bg-muted flex items-center justify-center text-sm text-muted-foreground hover:bg-muted/80 transition-colors">
+                <UserPlus className="h-8 w-8 text-muted-foreground/50" />
+            </button>
+            <span className="text-sm text-muted-foreground">Invite Player</span>
+        </div>
+    );
+};
+
 function GameDetailPageInternal() {
   const params = useParams();
   const router = useRouter();
@@ -56,6 +86,19 @@ function GameDetailPageInternal() {
   const [error, setError] = useState<string | null>(null);
   const [isRespondingToInvite, setIsRespondingToInvite] = useState(false);
   const [isManagingPlayer, setIsManagingPlayer] = useState<Record<number, boolean>>({}); // { playerUserId: isLoading }
+  const [inviteLink, setInviteLink] = useState('');
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+
+  const generateInviteLink = () => {
+    const link = `${window.location.origin}/games/${gameId}`;
+    setInviteLink(link);
+    setIsInviteDialogOpen(true);
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(inviteLink);
+    toast.success("Invitation link copied to clipboard!");
+  };
 
   const fetchGameData = useCallback(async () => {
     if (!gameId || !accessToken) return;
@@ -167,6 +210,10 @@ function GameDetailPageInternal() {
   const courtName = game.booking.court?.name || `ID ${game.booking.court_id}`;
   const clubName = game.booking.court?.club?.name || (game.booking.court?.club_id ? `Club ID: ${game.booking.court.club_id}` : 'Club details unavailable');
 
+  const acceptedPlayers = game.players.filter(p => p.status === "ACCEPTED");
+  const teamA = [acceptedPlayers[0], acceptedPlayers[1]]; // First two players
+  const teamB = [acceptedPlayers[2], acceptedPlayers[3]]; // Next two players
+
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
       <Button variant="outline" size="sm" onClick={() => router.back()} className="mb-4">
@@ -201,39 +248,59 @@ function GameDetailPageInternal() {
             </div>
             <Separator />
             <div>
-                <h3 className="text-lg font-semibold mb-2 flex items-center"><Users className="mr-2 h-5 w-5 text-muted-foreground"/> Players ({game.players.filter(p => p.status === "ACCEPTED").length} / {MAX_PLAYERS_PER_GAME} Accepted)</h3>
-                {game.players.length > 0 ? (
-                    <ul className="space-y-2">
-                        {game.players.map(playerEntry => (
-                            <li key={playerEntry.user.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
-                                <div className="flex items-center space-x-3 mb-2 sm:mb-0">
-                                    <div className="relative h-10 w-10">
-                                        <Image src={playerEntry.user.profile_picture_url || `https://avatar.vercel.sh/${playerEntry.user.email}?s=40`} alt={playerEntry.user.name || playerEntry.user.email} layout="fill" className="rounded-full" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium">{playerEntry.user.name || playerEntry.user.email}</p>
-                                        <p className="text-xs text-muted-foreground">{playerEntry.user.email}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    {getPlayerStatusIcon(playerEntry.status)}
-                                    <Badge variant={getPlayerStatusVariant(playerEntry.status)}>{playerEntry.status}</Badge>
-                                    {isCurrentUserGameCreator && playerEntry.status === "REQUESTED_TO_JOIN" && (
-                                        <div className="flex space-x-2 ml-2">
-                                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "ACCEPTED")} disabled={isManagingPlayer[playerEntry.user.id] || game.players.filter(p=>p.status === "ACCEPTED").length >= MAX_PLAYERS_PER_GAME}>
-                                                {isManagingPlayer[playerEntry.user.id] && game.players.filter(p=>p.status === "ACCEPTED").length < MAX_PLAYERS_PER_GAME ? <Loader2 className="h-3 w-3 animate-spin"/> : <CheckCircleIcon className="h-3 w-3"/>} Approve
-                                            </Button>
-                                            <Button variant="destructive" size="sm" className="px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "DECLINED")} disabled={isManagingPlayer[playerEntry.user.id]}>
-                                                {isManagingPlayer[playerEntry.user.id] ? <Loader2 className="h-3 w-3 animate-spin"/> : <XCircleIcon className="h-3 w-3" />} Decline
-                                            </Button>
+                <h3 className="text-lg font-semibold mb-4 flex items-center"><Users className="mr-2 h-5 w-5 text-muted-foreground"/> Players ({game.players.filter(p => p.status === "ACCEPTED").length} / {MAX_PLAYERS_PER_GAME} Accepted)</h3>
+                
+                {/* 2v2 Player Display Layout */}
+                <div className="flex items-center justify-around p-4 rounded-lg bg-muted/30">
+                    {/* Team A */}
+                    <div className="flex flex-col items-center space-y-4">
+                        <PlayerSlot player={teamA[0]} onInvite={generateInviteLink} />
+                        <PlayerSlot player={teamA[1]} onInvite={generateInviteLink} />
+                    </div>
+
+                    <div className="text-2xl font-bold text-muted-foreground">VS</div>
+
+                    {/* Team B */}
+                    <div className="flex flex-col items-center space-y-4">
+                        <PlayerSlot player={teamB[0]} onInvite={generateInviteLink} />
+                        <PlayerSlot player={teamB[1]} onInvite={generateInviteLink} />
+                    </div>
+                </div>
+
+                {/* Player Management List (for invites, requests, etc.) */}
+                {game.players.length > 0 && (
+                    <div className="mt-6">
+                        <h4 className="text-md font-semibold mb-2">Player Management</h4>
+                        <ul className="space-y-2">
+                            {game.players.map(playerEntry => (
+                                <li key={playerEntry.user.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
+                                    <div className="flex items-center space-x-3 mb-2 sm:mb-0">
+                                        <div className="relative h-10 w-10">
+                                            <Image src={playerEntry.user.profile_picture_url || `https://avatar.vercel.sh/${playerEntry.user.email}?s=40`} alt={playerEntry.user.name || playerEntry.user.email} layout="fill" className="rounded-full" />
                                         </div>
-                                    )}
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-sm text-muted-foreground">No players have been added to this game yet.</p>
+                                        <div>
+                                            <p className="font-medium">{playerEntry.user.name || playerEntry.user.email}</p>
+                                            <p className="text-xs text-muted-foreground">{playerEntry.user.email}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        {getPlayerStatusIcon(playerEntry.status)}
+                                        <Badge variant={getPlayerStatusVariant(playerEntry.status)}>{playerEntry.status}</Badge>
+                                        {isCurrentUserGameCreator && playerEntry.status === "REQUESTED_TO_JOIN" && (
+                                            <div className="flex space-x-2 ml-2">
+                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "ACCEPTED")} disabled={isManagingPlayer[playerEntry.user.id] || game.players.filter(p=>p.status === "ACCEPTED").length >= MAX_PLAYERS_PER_GAME}>
+                                                    {isManagingPlayer[playerEntry.user.id] && game.players.filter(p=>p.status === "ACCEPTED").length < MAX_PLAYERS_PER_GAME ? <Loader2 className="h-3 w-3 animate-spin"/> : <CheckCircleIcon className="h-3 w-3"/>} Approve
+                                                </Button>
+                                                <Button variant="destructive" size="sm" className="px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "DECLINED")} disabled={isManagingPlayer[playerEntry.user.id]}>
+                                                    {isManagingPlayer[playerEntry.user.id] ? <Loader2 className="h-3 w-3 animate-spin"/> : <XCircleIcon className="h-3 w-3" />} Decline
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
             </div>
 
@@ -261,6 +328,29 @@ function GameDetailPageInternal() {
             )}
         </CardContent>
       </Card>
+      
+      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Invite a Player</DialogTitle>
+                <DialogDescription>
+                    Share this link with someone to invite them to join your game.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center space-x-2 mt-4">
+                <div className="grid flex-1 gap-2">
+                    <Label htmlFor="link" className="sr-only">
+                        Link
+                    </Label>
+                    <Input id="link" value={inviteLink} readOnly />
+                </div>
+                <Button type="submit" size="sm" className="px-3" onClick={copyToClipboard}>
+                    <span className="sr-only">Copy</span>
+                    <Copy className="h-4 w-4" />
+                </Button>
+            </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
