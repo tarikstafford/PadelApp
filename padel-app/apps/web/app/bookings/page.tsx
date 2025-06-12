@@ -245,58 +245,40 @@ function BookingsPageInternal() {
                 </CardHeader>
                 <CardContent>
                   <Badge variant={getStatusVariant(booking.status)}>{booking.status}</Badge>
+
+                  {/* Display players if a game exists */}
+                  {booking.game && booking.game.players.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
+                        <Users className="mr-2 h-4 w-4" /> Players in Game
+                      </h4>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {booking.game.players.map((player) => (
+                          <div key={player.user_id} className="flex items-center gap-2" title={player.user.full_name}>
+                             <Avatar className="h-8 w-8">
+                              <AvatarImage src={player.user.profile_picture_url || ''} alt={player.user.full_name} />
+                              <AvatarFallback>{player.user.full_name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
                 </div>
               </Link>
-              <CardFooter className="bg-muted/20 p-4 border-t flex-grow flex flex-col items-start space-y-4">
-                {booking.game ? (
-                  <>
-                    <div className="w-full flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                        <h4 className="font-semibold">Game Details</h4>
-                      </div>
-                      <Badge variant={booking.game.game_type === 'PUBLIC' ? 'default' : 'secondary'}>
-                        {booking.game.game_type}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {booking.game.players.map((player) => (
-                        <Avatar key={player.user_id} className="h-8 w-8">
-                          <AvatarImage src={player.user?.profile_picture_url || ''} alt={player.user.full_name} />
-                          <AvatarFallback>{player.user?.full_name?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                      ))}
-                      {[...Array(4 - booking.game.players.length)].map((_, i) => (
-                        <Avatar key={`placeholder-${i}`} className="h-8 w-8 bg-muted border-2 border-dashed">
-                          <AvatarFallback>?</AvatarFallback>
-                        </Avatar>
-                      ))}
-                    </div>
-                    <div className="w-full flex justify-between items-center pt-2">
-                       <p className="text-sm text-muted-foreground">
-                        {4 - booking.game.players.length > 0
-                          ? `${4 - booking.game.players.length} slot(s) open`
-                          : "Game is full"}
-                      </p>
-                      <Link href={`/games/${booking.game.id}`} passHref legacyBehavior>
-                        <Button variant="outline" size="sm" asChild>
-                          <a>View Game</a>
-                        </Button>
-                      </Link>
-                    </div>
-                  </>
-                ) : (
-                  <div className="w-full flex justify-center">
-                    <Link href={`/book/${booking.court_id}?bookingId=${booking.id}`} passHref legacyBehavior>
-                      <Button variant="default" size="sm" asChild>
-                        <a>Create Game</a>
-                      </Button>
+              <CardFooter className="bg-muted/30 border-t pt-4 mt-auto">
+                 {booking.game ? (
+                    <Link href={`/games/${booking.game.id}`} className="w-full">
+                      <Button className="w-full" variant="outline">View Game</Button>
                     </Link>
-                  </div>
-                )}
+                  ) : (
+                    <Link href={`/book/${booking.court.id}?bookingId=${booking.id}`} className="w-full">
+                      <Button className="w-full">Create Game</Button>
+                    </Link>
+                  )}
               </CardFooter>
-              </Card>
+            </Card>
           ))}
         </div>
       )}
