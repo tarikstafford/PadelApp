@@ -9,165 +9,56 @@ import withAuth from "@/components/auth/withAuth"; // Import the withAuth HOC
 import { useAuth } from "@/contexts/AuthContext"; // Import useAuth to access user data
 import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload'; // Import the new component
 import { toast } from "sonner"; // Import toast
+import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
+import { Loader2 } from 'lucide-react';
 
-function ProfilePage() { // Changed to a named function for HOC
-  const { user, accessToken, fetchAndUpdateUser } = useAuth(); // Added accessToken
-  const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [formError, setFormError] = useState(""); // Renamed from error to avoid conflict with toast.error
-  const [isSaving, setIsSaving] = useState(false); // For save operation loading state
+function UserProfilePage() {
+    const { user, isLoading } = useAuth();
 
-  // Effect to update form fields if user context changes (e.g., after initial load)
-  useEffect(() => {
-    if (user) {
-      setName(user.name || "");
-      setEmail(user.email || "");
+    if (isLoading) {
+        return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
     }
-  }, [user]);
 
-  // Display loading or placeholder if user data isn't available yet
-  // The withAuth HOC already handles the main loading and redirect, 
-  // but user might be null briefly after redirect if context is still settling.
-  if (!user) {
-    return <p>Loading profile...</p>; // Or a more sophisticated loading state
-  }
-
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-    // Reset form fields to current user data when entering edit mode or cancelling
-    if (!isEditing) {
-      setName(user.name || "");
-      setEmail(user.email || "");
-    }
-    setFormError(""); // Clear errors when toggling edit mode
-  };
-
-  const handleSaveChanges = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFormError("");
-    if (!name.trim() || !email.trim()) {
-      setFormError("Name and email cannot be empty.");
-      return;
-    }
-    // Basic email validation regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setFormError("Please enter a valid email address.");
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const response = await fetch("/api/v1/auth/users/me", {
-        method: "PUT",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}` 
-        },
-        body: JSON.stringify({ name, email }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.detail || "Failed to update profile.");
-      }
-      await fetchAndUpdateUser(); // Refresh user data from context
-      setIsEditing(false);
-      toast.success("Profile updated successfully!"); // Use toast for success
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "An unexpected error occurred.";
-      console.error("Error updating profile:", error);
-      setFormError(message);
-      toast.error(message);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleProfilePictureUploadSuccess = (newImageUrl: string) => {
-    console.log("Profile picture upload succeeded, new URL reported by component:", newImageUrl);
-    fetchAndUpdateUser(); // Refresh user data from context
-  };
-
-  // Profile picture URL (can be expanded in Subtask 5.4)
-  // const profilePictureDisplayUrl = user.profile_picture_url || `https://avatar.vercel.sh/${user.email}?s=96`; // REMOVED as it's unused
-
-  return (
-    <div className="space-y-8 max-w-2xl mx-auto">
-      <header className="mb-6 flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
-        {!isEditing && (
-          <Button variant="outline" onClick={handleEditToggle} disabled={isSaving}>Edit Profile</Button>
-        )}
-      </header>
-      
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <ProfilePictureUpload onUploadSuccess={handleProfilePictureUploadSuccess} />
-            {/* Display Name and Email next to picture or below, depending on screen size */}
-            <div className="text-center md:text-left">
-              <CardTitle className="text-2xl">{isEditing ? name : user.name || "User Name"}</CardTitle>
-              <CardDescription>{isEditing ? email : user.email}</CardDescription>
+    if (!user) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <p>Could not load user profile. Please try logging in again.</p>
             </div>
-          </div>
-        </CardHeader>
-        
-        <form onSubmit={handleSaveChanges}>
-          <CardContent className="space-y-6 pt-4">
-            {isEditing ? (
-              <>
-                <div className="space-y-2">
-                  <CardTitle className="text-xl mb-4">Edit Details</CardTitle>
-                  <Label htmlFor="name">Name</Label>
-                  <Input 
-                    id="name" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                    required 
-                    disabled={isSaving}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)} 
-                    required 
-                    disabled={isSaving}
-                  />
-                </div>
-                {formError && <p className="text-sm text-destructive mt-2">{formError}</p>}
-              </>
-            ) : (
-              <div className="space-y-2 mt-4">
-                <h3 className="text-lg font-medium">Personal Information</h3>
-                <div className="grid gap-2 border p-4 rounded-md">
-                  <div>
-                    <Label className="text-sm font-normal text-muted-foreground">Name</Label>
-                    <p className="font-medium">{user.name || "Not set"}</p> 
-                  </div>
-                  <div>
-                    <Label className="text-sm font-normal text-muted-foreground">Email</Label>
-                    <p className="font-medium">{user.email}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-          {isEditing && (
-            <CardFooter className="border-t pt-6 flex justify-end gap-2">
-              <Button variant="outline" type="button" onClick={handleEditToggle} disabled={isSaving}>Cancel</Button> 
-              <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Changes"}</Button> 
-            </CardFooter>
-          )}
-        </form>
-      </Card>
+        );
+    }
 
-      {/* Additional sections like "My Activity", "Linked Accounts" could go here as separate Cards */}
-    </div>
-  );
+    return (
+        <div className="max-w-2xl mx-auto py-10 px-4">
+            <Card>
+                <CardHeader className="text-center">
+                    <Avatar className="w-24 h-24 mx-auto mb-4">
+                        <AvatarImage src={user.profile_picture_url || ''} alt={user.name || 'User'} />
+                        <AvatarFallback>{user.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                    </Avatar>
+                    <CardTitle className="text-2xl">{user.name || 'Padel Player'}</CardTitle>
+                    <CardDescription>{user.email}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="text-center">
+                        <Button variant="outline">Edit Profile</Button>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold mb-2">My Bookings</h3>
+                        <div className="p-4 border rounded-lg text-center text-muted-foreground">
+                            <p>Upcoming bookings will be displayed here.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-semibold mb-2">My Games</h3>
+                        <div className="p-4 border rounded-lg text-center text-muted-foreground">
+                            <p>Recent and upcoming games will be shown here.</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
 }
 
-export default withAuth(ProfilePage); // Wrap ProfilePage with withAuth HOC 
+export default withAuth(UserProfilePage); 

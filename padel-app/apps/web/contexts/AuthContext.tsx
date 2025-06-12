@@ -22,7 +22,6 @@ interface AuthContextType {
   login: (email_or_token: string, password?: string) => Promise<void>; // Can accept email/pass or a token for session init
   logout: () => void;
   register: (name: string, email: string, password: string) => Promise<void>;
-  fetchAndUpdateUser: () => Promise<void>; // Added for refreshing user data
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/users/me`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
         headers: { 'Authorization': `Bearer ${currentToken}` },
       });
       if (response.ok) {
@@ -152,7 +151,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, isLoading, login, logout, register, fetchAndUpdateUser }}>
+    <AuthContext.Provider value={{ user, accessToken, isLoading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

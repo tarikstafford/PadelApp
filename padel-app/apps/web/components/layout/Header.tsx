@@ -1,9 +1,27 @@
+"use client";
+
 import Link from 'next/link';
 import { ThemeToggle } from './ThemeToggle';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+} from '@workspace/ui/components';
+import { Loader2 } from 'lucide-react';
 
 export default function Header() {
+  const { user, logout, isLoading } = useAuth();
+
   return (
-    <header className="bg-background border-b">
+    <header className="bg-background border-b sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Site Title/Logo */}
@@ -16,19 +34,48 @@ export default function Header() {
           {/* Right section: Navigation & Theme Toggle */}
           <div className="flex items-center space-x-4">
             {/* Navigation Links */}
-            <nav className="hidden md:flex space-x-6">
+            <nav className="hidden md:flex items-center space-x-6">
               <Link href="/discover" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 Discover
               </Link>
               <Link href="/bookings" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 My Bookings
               </Link>
-              <Link href="/profile" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                Profile
-              </Link>
-              <Link href="/auth/login" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                Login
-              </Link>
+              
+              {/* Auth-dependent UI */}
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.profile_picture_url || ''} alt={user.name || 'User'} />
+                      <AvatarFallback>{user.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <Link href="/profile" passHref>
+                      <DropdownMenuItem>Profile</DropdownMenuItem>
+                    </Link>
+                    <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout}>
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <Link href="/auth/login" passHref>
+                    <Button variant="ghost" className="text-sm font-medium">Login</Button>
+                  </Link>
+                  <Link href="/auth/register" passHref>
+                    <Button className="text-sm font-medium">Sign Up</Button>
+                  </Link>
+                </>
+              )}
             </nav>
 
             {/* Theme Toggle */}
