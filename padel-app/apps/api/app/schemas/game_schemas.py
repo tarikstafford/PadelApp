@@ -2,11 +2,15 @@ from typing import Optional, List
 from pydantic import BaseModel, EmailStr, validator
 from datetime import datetime # Though not directly in these schemas, good for context
 
+# Forward reference for Booking schema
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .booking_schemas import Booking
+
 # Import enums from models if they are to be used directly in schemas
 from app.models.game import GameType
 from app.models.game_player import GamePlayerStatus
 from .user_schemas import User as UserSchema # For embedding user details in GamePlayerResponse
-from .booking_schemas import Booking as BookingSchema # Import Booking schema
 
 # --- GamePlayer Schemas ---
 class GamePlayerBase(BaseModel):
@@ -37,7 +41,7 @@ class GameResponse(GameBase):
     club_id: int
     start_time: datetime
     end_time: datetime
-    booking: BookingSchema # Nested booking details
+    booking: 'Booking' # Nested booking details
     players: List[GamePlayerResponse] = [] # List of players in the game
     # booking: Optional[BookingSchema] # Could add if booking details are needed here too
 

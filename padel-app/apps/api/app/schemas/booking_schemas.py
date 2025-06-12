@@ -2,6 +2,11 @@ from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
 
+# Forward reference for Game schema
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .game_schemas import Game
+
 from .user_schemas import User
 from .court_schemas import Court
 
@@ -28,7 +33,7 @@ class Booking(BookingBase):
     status: BookingStatus # Use the enum from the model
     user: User
     court: Court
-    game_id: Optional[int] = None
+    game: Optional['Game'] = None
 
     model_config = {"from_attributes": True}
 
