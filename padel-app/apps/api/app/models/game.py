@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SAEnum, DateTime
 from sqlalchemy.orm import relationship
 import enum
 
@@ -16,9 +16,14 @@ class Game(Base):
     id = Column(Integer, primary_key=True, index=True)
     club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False, index=True)
     booking_id = Column(Integer, ForeignKey("bookings.id"), unique=True, nullable=False)
+    
+    # Game details
     game_type = Column(SAEnum(GameType, name="gametype", create_enum=False), default=GameType.PRIVATE, nullable=False)
     skill_level = Column(String, nullable=True) # e.g., "Beginner", "Intermediate", "Advanced"
-    # created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False) # User who initiated the game/booking
+    
+    # Timestamps inherited from booking for querying convenience
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
 
     # Relationship to Club model
     club = relationship("Club") # No back_populates needed if Club doesn't need to list games directly

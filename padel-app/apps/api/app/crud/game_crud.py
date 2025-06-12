@@ -12,13 +12,17 @@ from app.schemas.game_schemas import GameCreate
 
 MAX_PLAYERS_PER_GAME = 4
 
-def create_game(db: Session, game_in: GameCreate, club_id: int) -> GameModel:
+def create_game(
+    db: Session, game_in: GameCreate, club_id: int, start_time: datetime, end_time: datetime
+) -> GameModel:
     """Create a new game linked to a booking."""
     db_game = GameModel(
         booking_id=game_in.booking_id,
         club_id=club_id,
         game_type=game_in.game_type,
-        skill_level=game_in.skill_level
+        skill_level=game_in.skill_level,
+        start_time=start_time,
+        end_time=end_time,
     )
     db.add(db_game)
     db.commit()
