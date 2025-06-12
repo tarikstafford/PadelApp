@@ -25,7 +25,7 @@ async def update_user_me(
     """
     Update current user's profile.
     """
-    return crud.user_crud.update_user(db=db, user_id=current_user.id, user_in=user_in)
+    return crud.user_crud.update_user(db=db, db_user=current_user, user_in=user_in)
 
 @router.post("/me/profile-picture", response_model=schemas.User)
 async def upload_profile_picture(
@@ -42,7 +42,7 @@ async def upload_profile_picture(
         
         # Update user's profile_picture_url in the database
         user_update_schema = schemas.UserUpdate(profile_picture_url=image_url)
-        updated_user = crud.user_crud.update_user(db=db, user_id=current_user.id, user_in=user_update_schema)
+        updated_user = crud.user_crud.update_user(db=db, db_user=current_user, user_in=user_update_schema)
         
         return updated_user
     except ValueError as e:
