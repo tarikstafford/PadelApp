@@ -1,5 +1,6 @@
-# Base image
-FROM python:3.11-slim
+# Cache-busting comment to force a redeploy: 2025-06-11 12:30
+# Stage 1: Build the Python environment
+FROM python:3.11-slim as builder
 
 # Set working directory
 WORKDIR /app
