@@ -6,6 +6,7 @@ from datetime import date, datetime, time, timedelta
 from app.models.booking import Booking as BookingModel, BookingStatus
 from app.models.court import Court as CourtModel
 from app.models.game import Game as GameModel
+from app.models.game_player import GamePlayer as GamePlayerModel
 from app.schemas.booking_schemas import BookingCreate
 # from app.schemas.booking_schemas import BookingUpdate # For future C/U operations
 
@@ -83,7 +84,7 @@ def get_bookings_by_user(
     query = db.query(BookingModel).filter(BookingModel.user_id == user_id)
     query = query.options(
         joinedload(BookingModel.court).joinedload(CourtModel.club),
-        joinedload(BookingModel.game).selectinload(GameModel.players)
+        joinedload(BookingModel.game).selectinload(GameModel.players).selectinload(GamePlayerModel.player)
     )
 
     if start_date_filter:
