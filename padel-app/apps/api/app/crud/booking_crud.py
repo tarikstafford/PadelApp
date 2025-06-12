@@ -1,10 +1,11 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, desc, asc
 from datetime import date, datetime, time, timedelta
 
 from app.models.booking import Booking as BookingModel, BookingStatus
 from app.models.court import Court as CourtModel
+from app.models.game import Game as GameModel
 from app.schemas.booking_schemas import BookingCreate
 # from app.schemas.booking_schemas import BookingUpdate # For future C/U operations
 
@@ -80,7 +81,10 @@ def get_bookings_by_user(
 ) -> List[BookingModel]:
     """Retrieve bookings for a specific user with pagination, date filtering, and sorting."""
     query = db.query(BookingModel).filter(BookingModel.user_id == user_id)
-    query = query.options(joinedload(BookingModel.court))
+    query = query.options(
+        joinedload(BookingModel.court).joinedload(CourtModel.club),
+        joinedload(BookingModel.game).selectinload(GameModel.players)
+    )
 
     if start_date_filter:
         start_datetime_filter = datetime.combine(start_date_filter, time.min)

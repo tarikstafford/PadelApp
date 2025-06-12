@@ -9,15 +9,43 @@ import { Calendar } from "@workspace/ui/components/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Badge } from "@workspace/ui/components/badge";
-import { Loader2, AlertTriangle, CalendarIcon } from 'lucide-react'; // Removed unused ArrowLeft
+import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
+import { Loader2, AlertTriangle, CalendarIcon, Users, Disc2 } from 'lucide-react'; // Removed unused ArrowLeft
 import { useAuth } from '@/contexts/AuthContext';
 // import { toast } from 'sonner'; // Unused
 import withAuth from '@/components/auth/withAuth';
 import { format, parseISO } from 'date-fns'; // Removed unused addDays
 import type { DateRange } from "react-day-picker";
 
-// Interface for Booking data, assuming backend might enrich this later
-// For now, it matches schemas.Booking directly. We might need to fetch court/club names separately per booking if not.
+// Sub-interfaces for nested data structures
+interface Club {
+  id: number;
+  name: string;
+}
+
+interface Court {
+  id: number;
+  name: string;
+  club: Club;
+}
+
+interface GamePlayer {
+  user_id: number;
+  status: string;
+  user: {
+    id: number;
+    full_name: string;
+    profile_picture_url: string | null;
+  }
+}
+
+interface Game {
+  id: number;
+  game_type: 'PUBLIC' | 'PRIVATE';
+  players: GamePlayer[];
+}
+
+// Updated Booking interface
 interface Booking {
   id: number;
   court_id: number;
@@ -25,10 +53,8 @@ interface Booking {
   start_time: string; // ISO string
   end_time: string;   // ISO string
   status: string; // e.g., "CONFIRMED", "CANCELLED", "COMPLETED"
-  game_id?: number | null;
-  // Anticipated enriched fields (backend would need to provide these or fetch client-side)
-  court_name?: string;
-  club_name?: string;
+  court: Court;
+  game: Game | null;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -205,11 +231,14 @@ function BookingsPageInternal() {
       {!isLoading && !error && bookings.length > 0 && (
         <div className="space-y-4">
           {bookings.map((booking) => (
-            <Card key={booking.id} className="transition-shadow">
+            <Card key={booking.id} className="transition-shadow flex flex-col">
               <Link href={`/bookings/${booking.id}`} passHref legacyBehavior>
                 <div className="cursor-pointer hover:bg-muted/50 rounded-t-lg">
                 <CardHeader>
-                    <CardTitle>Court ID: {booking.court_id}</CardTitle>
+                    <CardTitle className="flex items-center">
+                      <Disc2 className="mr-2 h-5 w-5 text-primary" />
+                      {booking.court.club.name} - {booking.court.name}
+                    </CardTitle>
                   <CardDescription>
                       Booked for: {format(parseISO(booking.start_time), 'PPP, HH:mm')} - {format(parseISO(booking.end_time), 'HH:mm')}
                   </CardDescription>
@@ -219,19 +248,52 @@ function BookingsPageInternal() {
                 </CardContent>
                 </div>
               </Link>
-              <CardFooter className="bg-muted/20 p-4 border-t">
-                {booking.game_id ? (
-                  <Link href={`/games/${booking.game_id}`} passHref legacyBehavior>
-                    <Button variant="outline" size="sm" asChild>
-                      <a>View Game</a>
-                    </Button>
-                  </Link>
+              <CardFooter className="bg-muted/20 p-4 border-t flex-grow flex flex-col items-start space-y-4">
+                {booking.game ? (
+                  <>
+                    <div className="w-full flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <h4 className="font-semibold">Game Details</h4>
+                      </div>
+                      <Badge variant={booking.game.game_type === 'PUBLIC' ? 'default' : 'secondary'}>
+                        {booking.game.game_type}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {booking.game.players.map((player) => (
+                        <Avatar key={player.user_id} className="h-8 w-8">
+                          <AvatarImage src={player.user.profile_picture_url || ''} alt={player.user.full_name} />
+                          <AvatarFallback>{player.user.full_name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {[...Array(4 - booking.game.players.length)].map((_, i) => (
+                        <Avatar key={`placeholder-${i}`} className="h-8 w-8 bg-muted border-2 border-dashed">
+                          <AvatarFallback>?</AvatarFallback>
+                        </Avatar>
+                      ))}
+                    </div>
+                    <div className="w-full flex justify-between items-center pt-2">
+                       <p className="text-sm text-muted-foreground">
+                        {4 - booking.game.players.length > 0
+                          ? `${4 - booking.game.players.length} slot(s) open`
+                          : "Game is full"}
+                      </p>
+                      <Link href={`/games/${booking.game.id}`} passHref legacyBehavior>
+                        <Button variant="outline" size="sm" asChild>
+                          <a>View Game</a>
+                        </Button>
+                      </Link>
+                    </div>
+                  </>
                 ) : (
-                  <Link href={`/book/${booking.court_id}?bookingId=${booking.id}`} passHref legacyBehavior>
-                    <Button variant="default" size="sm" asChild>
-                      <a>Create Game</a>
-                    </Button>
-                  </Link>
+                  <div className="w-full flex justify-center">
+                    <Link href={`/book/${booking.court_id}?bookingId=${booking.id}`} passHref legacyBehavior>
+                      <Button variant="default" size="sm" asChild>
+                        <a>Create Game</a>
+                      </Button>
+                    </Link>
+                  </div>
                 )}
               </CardFooter>
               </Card>
