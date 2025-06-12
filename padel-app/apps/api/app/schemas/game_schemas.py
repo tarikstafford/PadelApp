@@ -41,7 +41,7 @@ class GameResponse(GameBase):
     club_id: int
     start_time: datetime
     end_time: datetime
-    booking: 'Booking' # Nested booking details
+    booking_id: int # Replaces the nested booking object
     players: List[GamePlayerResponse] = [] # List of players in the game
     # booking: Optional[BookingSchema] # Could add if booking details are needed here too
 

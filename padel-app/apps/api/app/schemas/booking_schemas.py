@@ -5,7 +5,7 @@ from datetime import datetime
 # Forward reference for Game schema
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .game_schemas import Game
+    from .game_schemas import GameResponse as GameSchema
 
 from .user_schemas import User
 from .court_schemas import Court
@@ -33,7 +33,7 @@ class Booking(BookingBase):
     status: BookingStatus # Use the enum from the model
     user: User
     court: Court
-    game: Optional['Game'] = None
+    game: Optional['GameSchema'] = None
 
     model_config = {"from_attributes": True}
 

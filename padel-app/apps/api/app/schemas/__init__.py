@@ -40,8 +40,4 @@ __all__ = [
     "GamePlayerResponse",
     "UserInviteRequest",
     "InvitationResponseRequest",
-]
-
-# Manually update forward references for models with circular dependencies
-Booking.model_rebuild()
-Game.model_rebuild() 
+] 
