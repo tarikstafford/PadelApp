@@ -2,32 +2,48 @@
 
 import Link from "next/link";
 import React, { useState } from "react";
-// import { useRouter } from 'next/navigation'; // No longer needed here for redirection
-import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
+import { useRouter } from 'next/navigation';
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, isLoading } = useAuth(); // Use isLoading from AuthContext
-  // const router = useRouter(); // No longer needed here for redirection
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
-    // isLoading state is now managed by AuthContext's login function
+    setIsLoading(true);
 
     try {
-      await login(email, password);
-      // Redirection is handled by the login function in AuthContext
-      // No need for router.push here or alert
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ username: email, password: password }).toString(),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Login failed");
+      }
+      
+      login(data.access_token, data.refresh_token);
+      router.push('/profile');
     } catch (err: any) {
       console.error("Login page error:", err);
       setError(err.message || "An unexpected error occurred.");
+    } finally {
+        setIsLoading(false);
     }
   };
 
