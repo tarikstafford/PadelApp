@@ -1,6 +1,6 @@
 # This file makes 'schemas' a Python package
 
-from .user_schemas import User, UserBase, UserCreate, UserUpdate, UserInDB
+from .user_schemas import User, UserBase, UserCreate, UserUpdate, UserInDB, UserSearchResult
 from .token_schemas import Token, TokenPayload, RefreshTokenRequest
 from .club_schemas import Club, ClubCreate, ClubUpdate, ClubWithCourts, ClubRegistrationSchema
 from .court_schemas import Court, CourtCreate, CourtUpdate, CourtCreateForAdmin
@@ -14,6 +14,7 @@ __all__ = [
     "UserCreate",
     "UserUpdate",
     "UserInDB",
+    "UserSearchResult",
     "Token",
     "TokenPayload",
     "RefreshTokenRequest",

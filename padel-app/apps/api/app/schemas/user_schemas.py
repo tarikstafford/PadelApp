@@ -46,4 +46,12 @@ class User(UserBase):
 
 # Schema representing a user object exactly as in the database
 class UserInDB(UserInDBBase):
-    pass # Inherits all fields from UserInDBBase, including hashed_password 
+    pass # Inherits all fields from UserInDBBase, including hashed_password
+
+# Schema for user search results
+class UserSearchResult(BaseModel):
+    id: int
+    full_name: str
+    profile_picture_url: Optional[str] = None
+
+    model_config = {"from_attributes": True} 
