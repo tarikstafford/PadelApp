@@ -3,56 +3,53 @@ description:
 globs: 
 alwaysApply: false
 ---
-- **All Enum Values Must Be Lowercase**
-    - To ensure consistency and prevent case-sensitivity errors with the database, all string values for Python `enum.Enum` classes and SQLAlchemy `SAEnum` types must be defined in lowercase.
+- **All Enum Values Must Be UPPERCASE**
+    - To ensure consistency and prevent case-sensitivity errors with the database, all string values for Python `enum.Enum` classes and SQLAlchemy `SAEnum` types must be defined in UPPERCASE. This aligns with the convention seen in `database.mdc`.
 
 - **Python Model Definition (`app/models/`):**
-    - When defining an enum that will be used in a SQLAlchemy model, all members must be lowercase strings.
+    - When defining an enum that will be used in a SQLAlchemy model, all members must be UPPERCASE strings.
 
     ```python
-    // ✅ DO: Use lowercase for enum members.
+    // ✅ DO: Use UPPERCASE for enum members.
     // In: app/models/game.py
 
     class GameType(str, enum.Enum):
-        PUBLIC = "public"
-        PRIVATE = "private"
+        PUBLIC = "PUBLIC"
+        PRIVATE = "PRIVATE"
     ```
 
     ```python
-    // ❌ DON'T: Use uppercase or mixed-case.
+    // ❌ DON'T: Use lowercase or mixed-case.
     class GameType(str, enum.Enum):
-        PUBLIC = "PUBLIC" // Incorrect
+        public = "public" // Incorrect
         Private = "Private" // Incorrect
     ```
 
 - **Database Migration Definition (`migrations/versions/`):**
-    - When creating a native database `ENUM` type in an Alembic migration, the values must be lowercase strings.
+    - When creating a native database `ENUM` type in an Alembic migration, the values must be UPPERCASE strings.
 
     ```python
-    // ✅ DO: Use lowercase for native database ENUM types.
+    // ✅ DO: Use UPPERCASE for native database ENUM types.
     // In: migrations/versions/145e9c6a294a_add_missing_columns_to_games_table.py
     
     def upgrade() -> None:
-        game_type_enum = postgresql.ENUM('public', 'private', name='gametype')
-        game_type_enum.create(op.get_bind(), checkfirst=True)
-        op.add_column('games', sa.Column('game_type', game_type_enum, ...))
+        op.execute("CREATE TYPE gametype AS ENUM('PUBLIC', 'PRIVATE')")
+        op.add_column('games', sa.Column('game_type', sa.Enum('PUBLIC', 'PRIVATE', name='gametype'), ...))
     ```
 
-- **Backend Data Handling (CRUD Layer):**
-    - The backend is the ultimate guard for data integrity. Before creating or updating a database record, any incoming data intended for an enum column **must** be converted to lowercase. This provides a robust solution that doesn't depend on the client sending perfectly formatted data.
+- **Backend Data Handling (General Principle):**
+    - While client-side data should be validated, the database schema and model definitions are the ultimate source of truth. Data passed to the CRUD layer should already conform to the Pydantic schema, which in turn should use the correct UPPERCASE `Enum` type. No case conversion should be necessary in the CRUD layer.
     
     ```python
-    // ✅ DO: Force incoming data to lowercase in the CRUD layer.
+    // ✅ DO: Rely on the Pydantic schema using the correct Enum.
+    // In: app/schemas/game_schemas.py
+    class GameCreate(GameBase):
+        game_type: Optional[GameType] = GameType.PRIVATE
+        # ...
+    
     // In: app/crud/game_crud.py
-
     def create_game(db: Session, game_in: GameCreate) -> GameModel:
-        # Force the value to lowercase before creating the DB model.
-        game_type_value = str(game_in.game_type).lower()
-
-        db_game = GameModel(
-            ...
-            game_type=game_type_value,
-            ...
-        )
+        # No conversion needed if the schema uses the correct Enum type.
+        db_game = GameModel(game_type=game_in.game_type, ...)
         # ...
     ```

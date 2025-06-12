@@ -14,13 +14,9 @@ MAX_PLAYERS_PER_GAME = 4
 
 def create_game(db: Session, game_in: GameCreate) -> GameModel:
     """Create a new game linked to a booking."""
-    
-    # Ensure game_type is lowercase before creating the model
-    game_type_value = game_in.game_type.value if isinstance(game_in.game_type, GameType) else str(game_in.game_type).lower()
-
     db_game = GameModel(
         booking_id=game_in.booking_id,
-        game_type=game_type_value,
+        game_type=game_in.game_type,
         skill_level=game_in.skill_level
     )
     db.add(db_game)

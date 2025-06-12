@@ -6,8 +6,8 @@ from app.database import Base
 
 # Enum for game type
 class GameType(str, enum.Enum):
-    PUBLIC = "public"
-    PRIVATE = "private"
+    PUBLIC = "PUBLIC"
+    PRIVATE = "PRIVATE"
     # Add other types if needed, e.g., TOURNAMENT, LEAGUE
 
 class Game(Base):
