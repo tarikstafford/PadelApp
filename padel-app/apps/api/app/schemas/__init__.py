@@ -8,6 +8,11 @@ from .availability_schemas import TimeSlot
 from .booking_schemas import Booking, BookingCreate
 from .game_schemas import GameCreate, GameResponse, GamePlayerResponse, UserInviteRequest, InvitationResponseRequest
 
+# Manually update forward references for models that have them.
+# This is needed because Booking schema refers to GameResponse ('GameSchema')
+# which is defined in another file.
+Booking.model_rebuild()
+
 __all__ = [
     "User",
     "UserBase",
