@@ -15,7 +15,7 @@ class Game(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     booking_id = Column(Integer, ForeignKey("bookings.id"), unique=True, nullable=False)
-    game_type = Column(SAEnum(GameType), default=GameType.PRIVATE, nullable=False)
+    game_type = Column(SAEnum(GameType, name="gametype", create_enum=False), default=GameType.PRIVATE, nullable=False)
     skill_level = Column(String, nullable=True) # e.g., "Beginner", "Intermediate", "Advanced"
     # created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False) # User who initiated the game/booking
 
