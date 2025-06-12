@@ -45,12 +45,12 @@ interface GamePlayer {
 interface GameResponse {
     id: number;
     booking_id: number;
-    game_type: "private" | "public";
+    game_type: "PRIVATE" | "PUBLIC";
     skill_level?: string | null;
     players: GamePlayer[];
 }
 
-type GameTypeOption = "private" | "public";
+type GameTypeOption = "PRIVATE" | "PUBLIC";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -74,7 +74,7 @@ function BookingPageInternal() {
   const [isBooking, setIsBooking] = useState(false);
 
   const [createdBookingDetails, setCreatedBookingDetails] = useState<BookingDetail | null>(null);
-  const [gameType, setGameType] = useState<GameTypeOption>("private");
+  const [gameType, setGameType] = useState<GameTypeOption>("PRIVATE");
   const [skillLevel, setSkillLevel] = useState("");
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [gameCreationError, setGameCreationError] = useState<string | null>(null);
@@ -219,23 +219,32 @@ function BookingPageInternal() {
             },
             body: JSON.stringify({
                 booking_id: createdBookingDetails.id,
-                game_type: gameType.toUpperCase(),
+                game_type: gameType,
                 skill_level: skillLevel || null,
             }),
         });
-        const data = await response.json();
+
         if (!response.ok) {
-            console.error("Game creation failed. Server response:", data);
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (e) {
+                // If response is not JSON or empty
+                errorData = { detail: `Request failed with status ${response.status}. Please try again.` };
+            }
+            console.error("Game creation failed. Full server response:", errorData);
+            
             let errorMessage = "Failed to create game.";
-            if (response.status === 422 && data.detail) {
-                if (Array.isArray(data.detail)) {
-                    errorMessage = data.detail.map((err: { loc: any[]; msg: any; }) => `${err.loc.join(' > ')}: ${err.msg}`).join('; ');
-                } else if (typeof data.detail === 'string') {
-                    errorMessage = data.detail;
-                }
+            if (errorData && typeof errorData.detail === 'string') {
+                errorMessage = errorData.detail;
+            } else if (errorData && Array.isArray(errorData.detail)) {
+                // Handle validation errors (e.g., 422)
+                errorMessage = errorData.detail.map((err: { loc: any[]; msg: any; }) => `${err.loc.join(' > ')}: ${err.msg}`).join('; ');
             }
             throw new Error(errorMessage);
         }
+
+        const data = await response.json();
         toast.success("Game created successfully! Now invite players.");
         setCreatedGame(data as GameResponse);
         setCreatedBookingDetails(null);
