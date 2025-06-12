@@ -237,7 +237,7 @@ function BookingsPageInternal() {
                 <CardHeader>
                     <CardTitle className="flex items-center">
                       <Disc2 className="mr-2 h-5 w-5 text-primary" />
-                      {booking.court.club.name} - {booking.court.name}
+                      {booking.court?.club?.name} - {booking.court?.name}
                     </CardTitle>
                   <CardDescription>
                       Booked for: {format(parseISO(booking.start_time), 'PPP, HH:mm')} - {format(parseISO(booking.end_time), 'HH:mm')}
@@ -263,8 +263,8 @@ function BookingsPageInternal() {
                     <div className="flex items-center space-x-2">
                       {booking.game.players.map((player) => (
                         <Avatar key={player.user_id} className="h-8 w-8">
-                          <AvatarImage src={player.user.profile_picture_url || ''} alt={player.user.full_name} />
-                          <AvatarFallback>{player.user.full_name.charAt(0)}</AvatarFallback>
+                          <AvatarImage src={player.user?.profile_picture_url || ''} alt={player.user.full_name} />
+                          <AvatarFallback>{player.user?.full_name?.charAt(0)}</AvatarFallback>
                         </Avatar>
                       ))}
                       {[...Array(4 - booking.game.players.length)].map((_, i) => (
