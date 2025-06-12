@@ -44,7 +44,9 @@ async def create_new_game(
         )
 
     # 4. Create the game
-    created_game_orm = crud.game_crud.create_game(db=db, game_in=game_in)
+    created_game_orm = crud.game_crud.create_game(
+        db=db, game_in=game_in, club_id=booking.court.club_id
+    )
 
     # 5. Add the creator as the first player with status ACCEPTED
     crud.game_player_crud.add_player_to_game(

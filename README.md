@@ -39,3 +39,4 @@ To run the backend service, you will need to create a `.env` file in the `padel-
 - `CLOUDINARY_CLOUD_NAME`: Your Cloudinary cloud name.
 - `CLOUDINARY_API_KEY`: Your Cloudinary API key.
 - `CLOUDINARY_API_SECRET`: Your Cloudinary API secret. 
+

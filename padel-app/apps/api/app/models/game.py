@@ -14,10 +14,14 @@ class Game(Base):
     __tablename__ = "games"
 
     id = Column(Integer, primary_key=True, index=True)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False, index=True)
     booking_id = Column(Integer, ForeignKey("bookings.id"), unique=True, nullable=False)
     game_type = Column(SAEnum(GameType, name="gametype", create_enum=False), default=GameType.PRIVATE, nullable=False)
     skill_level = Column(String, nullable=True) # e.g., "Beginner", "Intermediate", "Advanced"
     # created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False) # User who initiated the game/booking
+
+    # Relationship to Club model
+    club = relationship("Club") # No back_populates needed if Club doesn't need to list games directly
 
     # Relationship to Booking model (one-to-one with Game)
     booking = relationship("Booking", back_populates="game")
