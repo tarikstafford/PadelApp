@@ -23,7 +23,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 // Interfaces matching backend schemas
 interface UserForGame {
     id: number;
-    name?: string | null;
+    full_name?: string | null;
     email: string;
     profile_picture_url?: string | null;
 }
@@ -56,12 +56,12 @@ const PlayerSlot = ({ player, onInvite }: { player?: GamePlayer, onInvite: () =>
                 <div className="relative w-24 h-24">
                     <Image
                         src={player.user?.profile_picture_url || (player.user?.email ? `https://avatar.vercel.sh/${player.user.email}?s=96` : "/default-avatar.png")}
-                        alt={player.user?.name || player.user?.email || "Unknown User"}
+                        alt={player.user?.full_name || player.user?.email || "Unknown User"}
                         layout="fill"
                         className="rounded-full object-cover"
                     />
                 </div>
-                <span className="text-sm font-medium text-center truncate w-24">{player.user?.name || 'Player'}</span>
+                <span className="text-sm font-medium text-center truncate w-24">{player.user?.full_name || player.user?.email || 'Player'}</span>
             </div>
         );
     }
@@ -281,10 +281,10 @@ function GameDetailPageInternal() {
                                 <li key={playerEntry.user.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
                                     <div className="flex items-center space-x-3 mb-2 sm:mb-0">
                                         <div className="relative h-10 w-10">
-                                            <Image src={playerEntry.user?.profile_picture_url || `https://avatar.vercel.sh/${playerEntry.user.email}?s=40`} alt={playerEntry.user.name || playerEntry.user.email} layout="fill" className="rounded-full" />
+                                            <Image src={playerEntry.user?.profile_picture_url || `https://avatar.vercel.sh/${playerEntry.user?.email}?s=40`} alt={playerEntry.user.full_name || playerEntry.user.email} layout="fill" className="rounded-full" />
                                         </div>
                                         <div>
-                                            <p className="font-medium">{playerEntry.user?.name || playerEntry.user?.email}</p>
+                                            <p className="font-medium">{playerEntry.user?.full_name || playerEntry.user?.email}</p>
                                             <p className="text-xs text-muted-foreground">{playerEntry.user?.email}</p>
                                         </div>
                                     </div>
