@@ -207,8 +207,9 @@ function GameDetailPageInternal() {
 
   const isCurrentUserGameCreator = (currentUser?.id) === (game.booking?.user_id);
   const currentUserGamePlayerInfo = game.players.find(p => p.user?.id === currentUser?.id);
-  const courtName = game.booking.court?.name || `ID ${game.booking.court_id}`;
-  const clubName = game.booking.court?.club?.name || (game.booking.court?.club_id ? `Club ID: ${game.booking.court.club_id}` : 'Club details unavailable');
+  const courtName = game.booking?.court?.name || (game.booking ? `ID ${game.booking.court_id}` : "Court unavailable");
+  const clubName = game.booking?.court?.club?.name ||
+    (game.booking?.court?.club_id ? `Club ID: ${game.booking.court.club_id}` : 'Club details unavailable');
 
   const acceptedPlayers = game.players.filter(p => p.status === "ACCEPTED");
   const teamA = [acceptedPlayers[0], acceptedPlayers[1]]; // First two players
