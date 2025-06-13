@@ -85,17 +85,23 @@ async def read_user_bookings(
     Retrieve all bookings for the current authenticated user.
     Supports pagination, date range filtering, and sorting.
     """
-    bookings = crud.booking_crud.get_bookings_by_user(
-        db=db, 
-        user_id=current_user.id, 
-        skip=skip, 
-        limit=limit, 
-        start_date_filter=start_date_filter, 
-        end_date_filter=end_date_filter,
-        sort_by=sort_by,
-        sort_desc=sort_desc
-    )
-    return bookings
+    try:
+        bookings = crud.booking_crud.get_bookings_by_user(
+            db=db, 
+            user_id=current_user.id, 
+            skip=skip, 
+            limit=limit, 
+            start_date_filter=start_date_filter, 
+            end_date_filter=end_date_filter,
+            sort_by=sort_by,
+            sort_desc=sort_desc
+        )
+        return bookings
+    except Exception as e:
+        import traceback
+        print('ERROR in /api/v1/bookings:', e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{booking_id}", response_model=schemas.Booking)
 async def read_booking_details(
