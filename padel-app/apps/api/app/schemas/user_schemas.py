@@ -41,6 +41,7 @@ class User(UserBase):
     profile_picture_url: Optional[str] = None
     is_active: Optional[bool] = None
     role: UserRole # Add role to the main response schema
+    full_name: Optional[str] = None
     # model_config needed here too if this schema is created from an ORM model instance
     model_config = {"from_attributes": True}
 
