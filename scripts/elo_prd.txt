@@ -1,0 +1,56 @@
+<context>
+# Overview
+This document describes the requirements for introducing a comprehensive **ELO rating system** into the PadelGo application. The system will rate players on a scale from **1.0 (beginner)** to **7.0 (professional)** and update after every recorded game. The rating will influence matchmaking, provide bragging rights via a leaderboard, and display within game views.
+
+# Core Features
+- **User ELO Rating**
+    - Each `User` has an `elo_rating` field (decimal 1.0–7.0, default 1.0).
+    - Ratings update whenever a game result is submitted.
+- **Scoring Algorithm**
+    - Team rating = average of each pair’s ELO.
+    - `expected_score = 1 / (1 + 10 ** ((opp_rating - team_rating)))`.
+    - `rating_change = K * (actual_score - expected_score)` where `K` is a small constant (e.g., `0.2`).
+    - Winners receive positive change, losers negative; outcomes are dampened when a high‑rated team beats a low‑rated team.
+    - Ratings are clamped between **1.0** and **7.0**.
+- **Game Result Recording**
+    - After a match, the winning team is recorded through a new API endpoint.
+    - The backend calculates new ratings for all participants and stores the updated values.
+- **Leaderboard Page**
+    - New frontend route `/leaderboard` listing top players sorted by rating.
+    - Shows avatar, name, club (if any), and current ELO.
+- **User Profile Updates**
+    - Add `preferred_position` (enum: `LEFT` or `RIGHT`), this should also be editable when a user edits their profile.
+    - Display the user’s current `elo_rating` with a button to request manual adjustment.
+    - Tapping the rating opens an informational alert describing skill categories:
+        - **Level 1:** Beginner – just learning fundamentals.
+        - **Level 2:** Lower intermediate – developing consistency and positioning.
+        - **Level 3–4:** Intermediate – tactical play and stronger shots.
+        - **Level 4–5:** Advanced – high control, strategy, experience.
+        - **Level 6–7:** Professional – national/international competitor.
+- **Game View Enhancements**
+    - In the 2v2 layout on the game detail page, display each player’s ELO below their name.
+
+# Technical Architecture
+- **Backend**
+    - Update `User` model and Pydantic schemas with `elo_rating` and `preferred_position` fields.
+    - Create `POST /api/v1/games/{id}/result` to submit winning team and trigger rating updates.
+    - Utility function implements the ELO algorithm and persists new ratings.
+- **Frontend**
+    - Extend `AuthContext` and profile/settings pages to include the new fields.
+    - Build `/leaderboard` page using existing shadcn components.
+    - Modify game detail UI to render player ratings in the team display.
+
+# Logical Dependency Chain
+1. **Database & Schema Updates** – add new columns and enum to user model and regenerate migrations.
+2. **Backend Services & Endpoints** – implement rating calculation, result submission, and leaderboard queries.
+3. **Frontend Context & Settings** – expose ELO and preferred position fields to the React apps.
+4. **Leaderboard & Game UI** – create leaderboard page and enhance game detail view.
+
+# Risks and Mitigations
+- **Rating Inflation/Deflation**
+    - *Mitigation:* tune `K` factor and clamp ratings to remain within range 1–7.
+- **Manual Adjustment Abuse**
+    - *Mitigation:* adjustment requests generate an admin notification for approval rather than direct change.
+- **Complexity of Team Ratings**
+    - *Mitigation:* start with average-team ELO; revisit if matchmaking data suggests issues.
+</PRD>
