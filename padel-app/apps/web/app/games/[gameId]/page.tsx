@@ -33,7 +33,7 @@ const PlayerSlot = ({ player, onInvite }: { player?: GamePlayer, onInvite: () =>
                         className="rounded-full object-cover"
                     />
                 </div>
-                <span className="text-sm font-medium text-center truncate w-24">{player.user?.full_name || 'Player'}</span>
+                <span className="text-sm font-medium text-center truncate w-24">{player.user?.full_name || player.user?.email || 'Unknown'}</span>
             </div>
         );
     }
@@ -136,8 +136,9 @@ function GameDetailPageInternal() {
           status: p.status,
           user: {
             id: p.user?.id ?? p.user_id,
-            full_name: p.user?.full_name ?? p.user?.email ?? 'Unknown',
+            full_name: p.user?.full_name ?? '',
             profile_picture_url: p.user?.profile_picture_url ?? null,
+            email: p.user?.email ?? '', // Always include email for fallback
           },
         })),
         booking: {
@@ -252,12 +253,19 @@ function GameDetailPageInternal() {
 
   const isCurrentUserGameCreator = (currentUser?.id) === (game.booking?.user_id);
   const currentUserGamePlayerInfo = (game.players ?? []).find(p => p.user_id === currentUser?.id);
-  const courtName = game.booking?.court?.name || (game.booking ? `ID ${game.booking.court_id}` : "Court unavailable");
-  const clubName = game.booking?.court?.club?.name || 'Club details unavailable';
+  const courtName = game.booking?.court?.name || (game.booking?.court?.id ? `Court ID: ${game.booking.court.id}` : (game.booking ? `Court ID: ${game.booking.court_id}` : 'Court unavailable'));
+  const clubName = game.booking?.court?.club?.name || (game.booking?.court?.club?.id ? `Club ID: ${game.booking.court.club.id}` : 'Club details unavailable');
 
+  // Always show 4 slots: fill with accepted players, then null for invite
   const acceptedPlayers = (game.players ?? []).filter(p => p.status === "ACCEPTED");
-  const teamA = [acceptedPlayers[0], acceptedPlayers[1]]; // First two players
-  const teamB = [acceptedPlayers[2], acceptedPlayers[3]]; // Next two players
+  const playerSlots: (GamePlayer | undefined)[] = [
+    acceptedPlayers[0],
+    acceptedPlayers[1],
+    acceptedPlayers[2],
+    acceptedPlayers[3],
+  ];
+  const teamA = [playerSlots[0], playerSlots[1]];
+  const teamB = [playerSlots[2], playerSlots[3]];
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
@@ -327,7 +335,7 @@ function GameDetailPageInternal() {
                                             <Image src={playerEntry.user?.profile_picture_url || `/default-avatar.png`} alt={playerEntry.user.full_name} layout="fill" className="rounded-full" />
                                         </div>
                                         <div>
-                                            <p className="font-medium">{playerEntry.user.full_name}</p>
+                                            <p className="font-medium">{playerEntry.user.full_name || playerEntry.user.email || 'Unknown'}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
