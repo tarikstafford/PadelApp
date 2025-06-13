@@ -85,6 +85,7 @@ function UserProfilePage() {
                         <AvatarImage src={user.profile_picture_url || ''} alt={user.full_name || 'User'} />
                         <AvatarFallback>{formData.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
+                    <ProfilePictureUpload onUploadSuccess={fetchUser} />
                     {!isEditing ? (
                         <>
                             <CardTitle className="text-2xl">{user.full_name || 'Padel Player'}</CardTitle>
