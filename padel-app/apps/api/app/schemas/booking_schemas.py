@@ -40,3 +40,7 @@ class Booking(BookingBase):
 # For more detailed DB representation if needed (can often be same as Booking)
 class BookingInDB(Booking):
     pass 
+
+# --- Fix for Pydantic forward reference ---
+from .game_schemas import GameResponse as GameSchema
+Booking.model_rebuild() 
