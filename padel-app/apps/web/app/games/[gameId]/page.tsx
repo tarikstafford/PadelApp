@@ -205,7 +205,7 @@ function GameDetailPageInternal() {
   if (error) { return <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center px-4"><AlertTriangle className="h-12 w-12 text-destructive mb-3" /><h2 className="text-xl font-semibold text-destructive mb-2">Error loading game details</h2><p className="text-sm text-muted-foreground mb-4">{error}</p><Button variant="outline" onClick={() => router.push('/bookings')}>Back to My Bookings</Button></div>; }
   if (!game) { return <div className="text-center py-10"><p className="text-xl text-muted-foreground">Game not found.</p><Link href="/bookings"><Button variant="link" className="mt-2"><ArrowLeft className="mr-2 h-4 w-4" /> Back to My Bookings</Button></Link></div>; }
 
-  const isCurrentUserGameCreator = currentUser?.id === game.booking.user_id;
+  const isCurrentUserGameCreator = (currentUser?.id) === (game.booking?.user_id);
   const currentUserGamePlayerInfo = game.players.find(p => p.user.id === currentUser?.id);
   const courtName = game.booking.court?.name || `ID ${game.booking.court_id}`;
   const clubName = game.booking.court?.club?.name || (game.booking.court?.club_id ? `Club ID: ${game.booking.court.club_id}` : 'Club details unavailable');
