@@ -94,9 +94,9 @@ export default function ProfilePictureUpload({ onUploadSuccess }: ProfilePicture
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 flex flex-col items-center text-center">
       <Label>Profile Picture</Label>
-      <div className="flex items-center space-x-4">
+      <div className="flex flex-col items-center space-y-2">
         <img 
           src={previewUrl || currentProfilePic} 
           alt="Profile" 
@@ -120,8 +120,6 @@ export default function ProfilePictureUpload({ onUploadSuccess }: ProfilePicture
       </div>
       {selectedFile && previewUrl && (
         <div className="space-y-2 mt-2">
-          {/* <p className="text-sm text-muted-foreground">Preview:</p> */}
-          {/* <img src={previewUrl} alt="Preview" className="w-20 h-20 rounded-md border object-cover"/> */}
           <p className="text-sm text-muted-foreground">Selected: {selectedFile.name}</p>
           <Button 
             type="button" 
