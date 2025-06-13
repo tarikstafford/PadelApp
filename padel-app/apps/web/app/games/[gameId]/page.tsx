@@ -132,13 +132,13 @@ function GameDetailPageInternal() {
         id: rawData.id,
         game_type: rawData.game_type,
         players: (rawData.players || []).map((p: any) => ({
-          user_id: p.user?.id ?? p.user_id,
-          status: p.status,
+          user_id: p.player?.id,
+          status: (p.status || '').toUpperCase(),
           user: {
-            id: p.user?.id ?? p.user_id,
-            full_name: p.user?.full_name ?? '',
-            profile_picture_url: p.user?.profile_picture_url ?? null,
-            email: p.user?.email ?? '', // Always include email for fallback
+            id: p.player?.id,
+            full_name: p.player?.full_name ?? '',
+            profile_picture_url: p.player?.profile_picture_url ?? null,
+            email: p.player?.email ?? '',
           },
         })),
         booking: {
