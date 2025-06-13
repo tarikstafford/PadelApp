@@ -57,7 +57,7 @@ export default function BookingsPage() {
               <CardTitle>Booking for {booking.court.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p><strong>User:</strong> {booking.user.name} ({booking.user.email})</p>
+              <p><strong>User:</strong> {booking.user.full_name} ({booking.user.email})</p>
               <p><strong>Time:</strong> {format(new Date(booking.start_time), "PPP p")} - {format(new Date(booking.end_time), "p")}</p>
               <p><strong>Status:</strong> {booking.status}</p>
               <p><strong>Price:</strong> ${booking.total_price}</p>

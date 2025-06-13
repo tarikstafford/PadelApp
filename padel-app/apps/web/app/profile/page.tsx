@@ -22,7 +22,7 @@ function UserProfilePage() {
 
     useEffect(() => {
         if (user) {
-            setFormData({ name: user.name || '', email: user.email || '' });
+            setFormData({ name: user.full_name || '', email: user.email || '' });
         }
     }, [user]);
 
@@ -82,12 +82,12 @@ function UserProfilePage() {
             <Card>
                 <CardHeader className="text-center">
                     <Avatar className="w-24 h-24 mx-auto mb-4">
-                        <AvatarImage src={user.profile_picture_url || ''} alt={user.name || 'User'} />
+                        <AvatarImage src={user.profile_picture_url || ''} alt={user.full_name || 'User'} />
                         <AvatarFallback>{formData.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
                     {!isEditing ? (
                         <>
-                            <CardTitle className="text-2xl">{user.name || 'Padel Player'}</CardTitle>
+                            <CardTitle className="text-2xl">{user.full_name || 'Padel Player'}</CardTitle>
                             <CardDescription>{user.email}</CardDescription>
                         </>
                     ) : (

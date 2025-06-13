@@ -49,8 +49,8 @@ export default function Header() {
                 <DropdownMenu>
                   <DropdownMenuTrigger>
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.profile_picture_url || ''} alt={user.name || 'User'} />
-                      <AvatarFallback>{user.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                      <AvatarImage src={user.profile_picture_url || ''} alt={user.full_name || 'User'} />
+                      <AvatarFallback>{user.full_name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">

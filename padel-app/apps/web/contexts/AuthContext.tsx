@@ -9,7 +9,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''; // Get base URL from
 interface User {
   id?: number; // Changed from string to number to match backend User model ID type
   email: string;
-  name?: string;
+  full_name?: string;
   profile_picture_url?: string; // Added profile_picture_url
   // Add other user properties as needed
 }
