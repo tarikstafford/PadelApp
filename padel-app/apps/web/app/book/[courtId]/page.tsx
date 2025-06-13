@@ -38,7 +38,7 @@ interface BookingDetail {
 }
 
 interface GamePlayer {
-    user: { id: number; name?: string | null; email: string; };
+    user: { id: number; full_name?: string | null; email: string; };
     status: string;
 }
 
