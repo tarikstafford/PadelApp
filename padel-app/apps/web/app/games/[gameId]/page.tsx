@@ -55,13 +55,13 @@ const PlayerSlot = ({ player, onInvite }: { player?: GamePlayer, onInvite: () =>
             <div className="flex flex-col items-center space-y-2">
                 <div className="relative w-24 h-24">
                     <Image
-                        src={player.user.profile_picture_url || `https://avatar.vercel.sh/${player.user.email}?s=96`}
-                        alt={player.user.name || player.user.email}
+                        src={player.user?.profile_picture_url || (player.user?.email ? `https://avatar.vercel.sh/${player.user.email}?s=96` : "/default-avatar.png")}
+                        alt={player.user?.name || player.user?.email || "Unknown User"}
                         layout="fill"
                         className="rounded-full object-cover"
                     />
                 </div>
-                <span className="text-sm font-medium text-center truncate w-24">{player.user.name || 'Player'}</span>
+                <span className="text-sm font-medium text-center truncate w-24">{player.user?.name || 'Player'}</span>
             </div>
         );
     }
