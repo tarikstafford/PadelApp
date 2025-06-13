@@ -155,7 +155,7 @@ function GameDetailPageInternal() {
   };
 
   const handleManageJoinRequest = async (playerUserId: number, newStatus: "ACCEPTED" | "DECLINED") => {
-    if (!game || !currentUser || !accessToken || game.booking.user_id !== currentUser.id) {
+    if (!game || !currentUser || !accessToken || game.booking?.user_id !== currentUser.id) {
         toast.error("Action not allowed or missing data.");
         return;
     }
@@ -206,12 +206,12 @@ function GameDetailPageInternal() {
   if (!game) { return <div className="text-center py-10"><p className="text-xl text-muted-foreground">Game not found.</p><Link href="/bookings"><Button variant="link" className="mt-2"><ArrowLeft className="mr-2 h-4 w-4" /> Back to My Bookings</Button></Link></div>; }
 
   const isCurrentUserGameCreator = (currentUser?.id) === (game.booking?.user_id);
-  const currentUserGamePlayerInfo = game.players.find(p => p.user?.id === currentUser?.id);
+  const currentUserGamePlayerInfo = (game.players ?? []).find(p => p.user?.id === currentUser?.id);
   const courtName = game.booking?.court?.name || (game.booking ? `ID ${game.booking.court_id}` : "Court unavailable");
   const clubName = game.booking?.court?.club?.name ||
     (game.booking?.court?.club_id ? `Club ID: ${game.booking.court.club_id}` : 'Club details unavailable');
 
-  const acceptedPlayers = game.players.filter(p => p.status === "ACCEPTED");
+  const acceptedPlayers = (game.players ?? []).filter(p => p.status === "ACCEPTED");
   const teamA = [acceptedPlayers[0], acceptedPlayers[1]]; // First two players
   const teamB = [acceptedPlayers[2], acceptedPlayers[3]]; // Next two players
 
@@ -238,8 +238,12 @@ function GameDetailPageInternal() {
         <CardContent className="space-y-4">
             <div>
                 <h3 className="text-lg font-semibold mb-1 flex items-center"><CalendarIcon className="mr-2 h-5 w-5 text-muted-foreground"/> Date & Time</h3>
-                <p className="text-sm ml-7">{format(parseISO(game.booking.start_time), 'PPP (EEEE)')}</p>
-                <p className="text-sm ml-7">{format(parseISO(game.booking.start_time), 'HH:mm')} - {format(parseISO(game.booking.end_time), 'HH:mm')}</p>
+                <p className="text-sm ml-7">{game.booking?.start_time
+                  ? format(parseISO(game.booking.start_time), 'PPP (EEEE)')
+                  : "Start time unavailable"}</p>
+                <p className="text-sm ml-7">{game.booking?.start_time && game.booking?.end_time
+                  ? `${format(parseISO(game.booking.start_time), 'HH:mm')} - ${format(parseISO(game.booking.end_time), 'HH:mm')}`
+                  : "Time unavailable"}</p>
             </div>
             <Separator />
             <div>
@@ -289,8 +293,8 @@ function GameDetailPageInternal() {
                                         <Badge variant={getPlayerStatusVariant(playerEntry.status)}>{playerEntry.status}</Badge>
                                         {isCurrentUserGameCreator && playerEntry.status === "REQUESTED_TO_JOIN" && (
                                             <div className="flex space-x-2 ml-2">
-                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "ACCEPTED")} disabled={isManagingPlayer[playerEntry.user.id] || game.players.filter(p=>p.status === "ACCEPTED").length >= MAX_PLAYERS_PER_GAME}>
-                                                    {isManagingPlayer[playerEntry.user.id] && game.players.filter(p=>p.status === "ACCEPTED").length < MAX_PLAYERS_PER_GAME ? <Loader2 className="h-3 w-3 animate-spin"/> : <CheckCircleIcon className="h-3 w-3"/>} Approve
+                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "ACCEPTED")} disabled={isManagingPlayer[playerEntry.user.id] || (game.players?.filter(p=>p.status === "ACCEPTED").length ?? 0) >= MAX_PLAYERS_PER_GAME}>
+                                                    {isManagingPlayer[playerEntry.user.id] && (game.players?.filter(p=>p.status === "ACCEPTED").length ?? 0) < MAX_PLAYERS_PER_GAME ? <Loader2 className="h-3 w-3 animate-spin"/> : <CheckCircleIcon className="h-3 w-3"/>} Approve
                                                 </Button>
                                                 <Button variant="destructive" size="sm" className="px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "DECLINED")} disabled={isManagingPlayer[playerEntry.user.id]}>
                                                     {isManagingPlayer[playerEntry.user.id] ? <Loader2 className="h-3 w-3 animate-spin"/> : <XCircleIcon className="h-3 w-3" />} Decline
