@@ -32,7 +32,7 @@ interface GamePlayer {
     status: string; // "ACCEPTED", "INVITED", "DECLINED"
 }
 interface BookingForGame {
-    id: number;
+    booking_id: number;
     court_id: number;
     user_id: number; // Ensure this is present for creator check
     start_time: string; // ISO string
