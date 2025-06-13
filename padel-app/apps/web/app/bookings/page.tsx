@@ -254,10 +254,14 @@ function BookingsPageInternal() {
                       </h4>
                       <div className="flex flex-wrap items-center gap-2">
                         {booking.game.players.map((player) => (
-                          <div key={player.user_id} className="flex items-center gap-2" title={player.user.full_name}>
-                             <Avatar className="h-8 w-8">
-                              <AvatarImage src={player.user.profile_picture_url || ''} alt={player.user.full_name} />
-                              <AvatarFallback>{player.user.full_name.charAt(0)}</AvatarFallback>
+                          <div
+                            className="flex items-center gap-2"
+                            title={player.user?.full_name || "Unknown User"}
+                            key={player.user_id}
+                          >
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={player.user?.profile_picture_url || ""} alt={player.user?.full_name || "Unknown User"} />
+                              <AvatarFallback>{(player.user?.full_name?.charAt(0) || "U")}</AvatarFallback>
                             </Avatar>
                           </div>
                         ))}
