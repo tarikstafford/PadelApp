@@ -20,34 +20,6 @@ import { Label } from '@workspace/ui/components/label';
 const MAX_PLAYERS_PER_GAME = 4; // Define the constant here
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-// Interfaces matching backend schemas
-interface UserForGame {
-    id: number;
-    full_name?: string | null;
-    email: string;
-    profile_picture_url?: string | null;
-}
-interface GamePlayer {
-    user: UserForGame;
-    status: string; // "ACCEPTED", "INVITED", "DECLINED"
-}
-interface BookingForGame {
-    booking_id: number;
-    court_id: number;
-    user_id: number; // Ensure this is present for creator check
-    start_time: string; // ISO string
-    end_time: string;   // ISO string
-    // Potentially add court and club names if backend enriches this further
-    court?: { id: number; name?: string | null, club_id?: number, club?: { id: number; name?: string | null; address?: string | null; city?: string | null; } };
-}
-interface GameDetail {
-    id: number;
-    booking: BookingForGame;
-    game_type: "PRIVATE" | "PUBLIC";
-    skill_level?: string | null;
-    players: GamePlayer[];
-}
-
 // PlayerSlot Component
 const PlayerSlot = ({ player, onInvite }: { player?: GamePlayer, onInvite: () => void }) => {
     if (player) {
@@ -61,7 +33,7 @@ const PlayerSlot = ({ player, onInvite }: { player?: GamePlayer, onInvite: () =>
                         className="rounded-full object-cover"
                     />
                 </div>
-                <span className="text-sm font-medium text-center truncate w-24">{player.user?.full_name || player.user?.email || 'Player'}</span>
+                <span className="text-sm font-medium text-center truncate w-24">{player.user?.full_name || 'Player'}</span>
             </div>
         );
     }
@@ -75,13 +47,53 @@ const PlayerSlot = ({ player, onInvite }: { player?: GamePlayer, onInvite: () =>
     );
 };
 
+// --- Interfaces copied from bookings/page.tsx for consistency ---
+interface Club {
+  id: number;
+  name: string;
+}
+
+interface Court {
+  id: number;
+  name: string;
+  club: Club;
+}
+
+interface GamePlayer {
+  user_id: number;
+  status: string;
+  user: {
+    id: number;
+    full_name: string;
+    profile_picture_url: string | null;
+  };
+}
+
+interface Game {
+  id: number;
+  game_type: 'PUBLIC' | 'PRIVATE';
+  players: GamePlayer[];
+  booking: Booking;
+}
+
+interface Booking {
+  id: number;
+  court_id: number;
+  user_id: number;
+  start_time: string;
+  end_time: string;
+  status: string;
+  court: Court;
+  game: Game | null;
+}
+
 function GameDetailPageInternal() {
   const params = useParams();
   const router = useRouter();
   const { user: currentUser, accessToken } = useAuth(); // Renamed to currentUser for clarity
   const gameId = params.gameId as string;
 
-  const [game, setGame] = useState<GameDetail | null>(null);
+  const [game, setGame] = useState<Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRespondingToInvite, setIsRespondingToInvite] = useState(false);
@@ -109,11 +121,43 @@ function GameDetailPageInternal() {
         headers: { 'Authorization': `Bearer ${accessToken}` },
       });
       if (!response.ok) {
-        const errorData: { detail?: string } = await response.json().catch(() => ({}));
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || "Failed to fetch game details");
       }
-      const data: GameDetail = await response.json();
-      setGame(data);
+      // Normalize the data to match the interfaces above
+      const rawData = await response.json();
+      // Defensive normalization for nested court/club/player
+      const normalizedGame: Game = {
+        id: rawData.id,
+        game_type: rawData.game_type,
+        players: (rawData.players || []).map((p: any) => ({
+          user_id: p.user?.id ?? p.user_id,
+          status: p.status,
+          user: {
+            id: p.user?.id ?? p.user_id,
+            full_name: p.user?.full_name ?? p.user?.email ?? 'Unknown',
+            profile_picture_url: p.user?.profile_picture_url ?? null,
+          },
+        })),
+        booking: {
+          id: rawData.booking?.id ?? rawData.booking_id,
+          court_id: rawData.booking?.court_id ?? rawData.court_id,
+          user_id: rawData.booking?.user_id ?? rawData.user_id,
+          start_time: rawData.booking?.start_time ?? rawData.start_time,
+          end_time: rawData.booking?.end_time ?? rawData.end_time,
+          status: rawData.booking?.status ?? rawData.status ?? 'CONFIRMED',
+          court: rawData.booking?.court || {
+            id: rawData.booking?.court?.id ?? rawData.court_id ?? 0,
+            name: rawData.booking?.court?.name ?? 'Unknown Court',
+            club: rawData.booking?.court?.club || {
+              id: rawData.booking?.court?.club?.id ?? 0,
+              name: rawData.booking?.court?.club?.name ?? 'Unknown Club',
+            },
+          },
+          game: null, // Prevent circular reference
+        },
+      };
+      setGame(normalizedGame as Game);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unexpected error occurred.";
       console.error(`Error fetching game ${gameId} details:`, error);
@@ -206,10 +250,9 @@ function GameDetailPageInternal() {
   if (!game) { return <div className="text-center py-10"><p className="text-xl text-muted-foreground">Game not found.</p><Link href="/bookings"><Button variant="link" className="mt-2"><ArrowLeft className="mr-2 h-4 w-4" /> Back to My Bookings</Button></Link></div>; }
 
   const isCurrentUserGameCreator = (currentUser?.id) === (game.booking?.user_id);
-  const currentUserGamePlayerInfo = (game.players ?? []).find(p => p.user?.id === currentUser?.id);
+  const currentUserGamePlayerInfo = (game.players ?? []).find(p => p.user_id === currentUser?.id);
   const courtName = game.booking?.court?.name || (game.booking ? `ID ${game.booking.court_id}` : "Court unavailable");
-  const clubName = game.booking?.court?.club?.name ||
-    (game.booking?.court?.club_id ? `Club ID: ${game.booking.court.club_id}` : 'Club details unavailable');
+  const clubName = game.booking?.court?.club?.name || 'Club details unavailable';
 
   const acceptedPlayers = (game.players ?? []).filter(p => p.status === "ACCEPTED");
   const teamA = [acceptedPlayers[0], acceptedPlayers[1]]; // First two players
@@ -229,7 +272,6 @@ function GameDetailPageInternal() {
                 <CardDescription>
                     {game.game_type === 'PUBLIC' ? <Users className="inline mr-1 h-4 w-4 text-muted-foreground"/> : <ShieldCheck className="inline mr-1 h-4 w-4 text-muted-foreground"/>} 
                     {game.game_type.charAt(0) + game.game_type.slice(1).toLowerCase()} Game
-                    {game.skill_level && ` - Skill Level: ${game.skill_level}`}
                 </CardDescription>
             </div>
             {/* TODO: Add an Edit Game button for game creator */}
@@ -278,14 +320,13 @@ function GameDetailPageInternal() {
                         <h4 className="text-md font-semibold mb-2">Player Management</h4>
                         <ul className="space-y-2">
                             {game.players.map(playerEntry => (
-                                <li key={playerEntry.user.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
+                                <li key={playerEntry.user_id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
                                     <div className="flex items-center space-x-3 mb-2 sm:mb-0">
                                         <div className="relative h-10 w-10">
-                                            <Image src={playerEntry.user?.profile_picture_url || `https://avatar.vercel.sh/${playerEntry.user?.email}?s=40`} alt={playerEntry.user.full_name || playerEntry.user.email} layout="fill" className="rounded-full" />
+                                            <Image src={playerEntry.user?.profile_picture_url || `/default-avatar.png`} alt={playerEntry.user.full_name} layout="fill" className="rounded-full" />
                                         </div>
                                         <div>
-                                            <p className="font-medium">{playerEntry.user?.full_name || playerEntry.user?.email}</p>
-                                            <p className="text-xs text-muted-foreground">{playerEntry.user?.email}</p>
+                                            <p className="font-medium">{playerEntry.user.full_name}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -293,11 +334,11 @@ function GameDetailPageInternal() {
                                         <Badge variant={getPlayerStatusVariant(playerEntry.status)}>{playerEntry.status}</Badge>
                                         {isCurrentUserGameCreator && playerEntry.status === "REQUESTED_TO_JOIN" && (
                                             <div className="flex space-x-2 ml-2">
-                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "ACCEPTED")} disabled={isManagingPlayer[playerEntry.user.id] || (game.players?.filter(p=>p.status === "ACCEPTED").length ?? 0) >= MAX_PLAYERS_PER_GAME}>
-                                                    {isManagingPlayer[playerEntry.user.id] && (game.players?.filter(p=>p.status === "ACCEPTED").length ?? 0) < MAX_PLAYERS_PER_GAME ? <Loader2 className="h-3 w-3 animate-spin"/> : <CheckCircleIcon className="h-3 w-3"/>} Approve
+                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user_id, "ACCEPTED")} disabled={isManagingPlayer[playerEntry.user_id] || (game.players?.filter(p=>p.status === "ACCEPTED").length ?? 0) >= MAX_PLAYERS_PER_GAME}>
+                                                    {isManagingPlayer[playerEntry.user_id] && (game.players?.filter(p=>p.status === "ACCEPTED").length ?? 0) < MAX_PLAYERS_PER_GAME ? <Loader2 className="h-3 w-3 animate-spin"/> : <CheckCircleIcon className="h-3 w-3"/>} Approve
                                                 </Button>
-                                                <Button variant="destructive" size="sm" className="px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "DECLINED")} disabled={isManagingPlayer[playerEntry.user.id]}>
-                                                    {isManagingPlayer[playerEntry.user.id] ? <Loader2 className="h-3 w-3 animate-spin"/> : <XCircleIcon className="h-3 w-3" />} Decline
+                                                <Button variant="destructive" size="sm" className="px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user_id, "DECLINED")} disabled={isManagingPlayer[playerEntry.user_id]}>
+                                                    {isManagingPlayer[playerEntry.user_id] ? <Loader2 className="h-3 w-3 animate-spin"/> : <XCircleIcon className="h-3 w-3" />} Decline
                                                 </Button>
                                             </div>
                                         )}
