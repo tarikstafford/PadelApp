@@ -54,11 +54,19 @@ export const apiClient = {
 
   post: async <T>(path: string, body: any, options?: { headers?: Record<string, string> }): Promise<T> => {
     try {
-      console.log('API Client POST Request:', { path, body });
+      const isFormData = body instanceof FormData;
+      const headers = options?.headers || getAuthHeaders();
+      
+      // Do not set Content-Type for FormData, browser does it with boundary
+      if (isFormData && headers instanceof Headers) {
+        (headers as Headers).delete('Content-Type');
+      }
+
+      console.log('API Client POST Request:', { path, body: isFormData ? 'FormData' : body });
       const response = await fetch(`${getApiUrl()}${path}`, {
         method: 'POST',
-        headers: options?.headers || getAuthHeaders(),
-        body: options?.headers ? body : JSON.stringify(body),
+        headers: headers,
+        body: isFormData ? body : JSON.stringify(body),
       });
       if (!response.ok) {
         throw await response.json();

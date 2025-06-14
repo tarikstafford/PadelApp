@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { usePathname } from "next/navigation";
-import LogoutButton from "../auth/LogoutButton";
+import { UserNav } from "../auth/UserNav";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -48,7 +48,7 @@ export function DashboardHeader() {
     <header className="flex items-center justify-between h-16 px-4 border-b">
       <div>{/* Add any header content here */}</div>
       <div>
-        <AuthStatus />
+        <UserNav />
       </div>
     </header>
   );
@@ -83,7 +83,6 @@ export function DashboardSidebar() {
       </nav>
       {isAuthenticated && (
         <div className="mt-auto">
-          <LogoutButton />
         </div>
       )}
     </aside>

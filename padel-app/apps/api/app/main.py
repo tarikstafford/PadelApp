@@ -1,8 +1,10 @@
 import cloudinary
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.routers import (
@@ -27,16 +29,21 @@ app = FastAPI(
 # Add Authentication Middleware
 app.add_middleware(AuthenticationMiddleware)
 
-# CORS Middleware Configuration
-# This allows the frontend (running on a different domain) to communicate with the backend.
-# In a real production environment, you would want to restrict origins to your actual frontend URL.
-# For this project, allowing all origins is acceptable.
+# Custom exception handler for Pydantic validation errors
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body},
+    )
+
+# Set all CORS enabled origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Temporarily allow all origins for debugging
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"], # Allows all methods
-    allow_headers=["*"], # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Mount static files directory

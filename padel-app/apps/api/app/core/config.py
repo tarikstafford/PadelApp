@@ -1,9 +1,13 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, AnyHttpUrl
+from typing import List
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "PadelGo API"
     API_V1_STR: str = "/api/v1"
+
+    # CORS settings
+    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:3000", "http://localhost:3001"]
 
     # Database settings - No default value, will fail loudly if not in environment
     DATABASE_URL: str = Field(..., env="DATABASE_URL")

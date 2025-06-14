@@ -29,7 +29,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   opening_hours: z.string().optional(),
   amenities: z.string().optional(),
-  image_url: z.string().url().optional().or(z.literal('')),
+  image_url: z.string().optional(),
 });
 
 interface Step2Props {

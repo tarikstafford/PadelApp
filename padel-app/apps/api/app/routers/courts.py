@@ -28,7 +28,9 @@ def create_court_for_club(
                 detail="You do not have permission to add a court to this club.",
             )
 
-    new_court = crud.court_crud.create_court(db=db, court=court_in)
+    new_court = crud.court_crud.create_court(
+        db=db, court_in=court_in, club_id=court_in.club_id
+    )
     return new_court
 
 @router.get("/{court_id}/availability", response_model=List[schemas.TimeSlot])
