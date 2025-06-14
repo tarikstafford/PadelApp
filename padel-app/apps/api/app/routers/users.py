@@ -62,4 +62,24 @@ async def search_users(
     Search for users by name or email.
     """
     users = crud.user_crud.search_users(db, query=query, limit=limit, current_user_id=current_user.id)
-    return users 
+    return users
+
+@router.post("/{user_id}/request-elo-adjustment", status_code=201)
+def request_elo_adjustment(
+    user_id: int,
+    request: schemas.EloAdjustmentRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user),
+):
+    """
+    Request a manual adjustment of a user's ELO rating.
+    """
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only request an ELO adjustment for yourself.",
+        )
+    crud.elo_adjustment_request_crud.create_elo_adjustment_request(
+        db=db, request=request, user_id=user_id
+    )
+    return {"message": "ELO adjustment request submitted successfully."} 

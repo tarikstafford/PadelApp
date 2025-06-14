@@ -22,7 +22,9 @@ def create_user(db: Session, user: UserCreate) -> UserModel:
         hashed_password=hashed_password,
         full_name=user.full_name,
         is_active=user.is_active if user.is_active is not None else True,
-        role=user.role
+        role=user.role,
+        elo_rating=user.elo_rating if hasattr(user, 'elo_rating') else 1.0,
+        preferred_position=user.preferred_position if hasattr(user, 'preferred_position') else None
     )
     db.add(db_user)
     db.commit()
@@ -32,6 +34,10 @@ def create_user(db: Session, user: UserCreate) -> UserModel:
 def update_user(db: Session, db_user: UserModel, user_in: UserUpdate) -> UserModel:
     """Update a user's details."""
     update_data = user_in.model_dump(exclude_unset=True) # Pydantic V2
+
+    # Exclude elo_rating from direct updates
+    if "elo_rating" in update_data:
+        del update_data["elo_rating"]
 
     if "password" in update_data and update_data["password"]:
         hashed_password = get_password_hash(update_data["password"])

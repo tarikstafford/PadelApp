@@ -52,6 +52,16 @@ class GameInDB(GameResponse):
     # Example: Might include internal fields not sent to client
     pass
 
+# --- Game Result Schemas ---
+class GameResultRequest(BaseModel):
+    winning_team_id: int
+
+class UserWithRating(UserSchema):
+    elo_rating: float
+
+class GameWithRatingsResponse(GameResponse):
+    players: List[UserWithRating] = []
+
 # --- Invitation Schema ---
 class UserInviteRequest(BaseModel):
     user_id_to_invite: int

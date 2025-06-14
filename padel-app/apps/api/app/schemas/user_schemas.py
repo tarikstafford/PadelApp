@@ -1,6 +1,7 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from app.models.user_role import UserRole # Import the enum
+from app.models import PreferredPosition
 
 # Schema for creating a club admin
 class AdminUserCreate(BaseModel):
@@ -15,6 +16,8 @@ class UserBase(BaseModel):
     profile_picture_url: Optional[str] = None
     is_active: Optional[bool] = True
     role: Optional[UserRole] = UserRole.PLAYER
+    elo_rating: float = Field(default=1.0, ge=1.0, le=7.0)
+    preferred_position: Optional[PreferredPosition] = None
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
@@ -27,6 +30,8 @@ class UserUpdate(UserBase):
     full_name: Optional[str] = None
     profile_picture_url: Optional[str] = None
     is_active: Optional[bool] = None
+    elo_rating: Optional[float] = Field(default=None, ge=1.0, le=7.0)
+    preferred_position: Optional[PreferredPosition] = None
 
 class UserInDBBase(UserBase):
     id: int
@@ -42,6 +47,8 @@ class User(UserBase):
     is_active: Optional[bool] = None
     role: UserRole # Add role to the main response schema
     full_name: Optional[str] = None
+    elo_rating: float = Field(default=1.0, ge=1.0, le=7.0)
+    preferred_position: Optional[PreferredPosition] = None
     # model_config needed here too if this schema is created from an ORM model instance
     model_config = {"from_attributes": True}
 
@@ -55,4 +62,8 @@ class UserSearchResult(BaseModel):
     full_name: str
     profile_picture_url: Optional[str] = None
 
-    model_config = {"from_attributes": True} 
+    model_config = {"from_attributes": True}
+
+class EloAdjustmentRequest(BaseModel):
+    requested_rating: float = Field(..., ge=1.0, le=7.0)
+    reason: str = Field(..., min_length=10, max_length=500) 

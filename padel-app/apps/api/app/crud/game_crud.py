@@ -38,7 +38,21 @@ def get_game(db: Session, game_id: int) -> Optional[GameModel]:
         .filter(GameModel.id == game_id)
         .options(
             selectinload(GameModel.booking).selectinload(BookingModel.court).selectinload(CourtModel.club),
-            selectinload(GameModel.players).selectinload(GamePlayerModel.player)
+            selectinload(GameModel.players).selectinload(GamePlayerModel.player).selectinload(UserModel.elo_rating)
+        )
+        .first()
+    )
+
+def get_game_with_teams(db: Session, game_id: int) -> Optional[GameModel]:
+    """
+    Retrieve a single game by its ID, eager loading teams and their players.
+    """
+    return (
+        db.query(GameModel)
+        .filter(GameModel.id == game_id)
+        .options(
+            selectinload(GameModel.team1).selectinload('players'),
+            selectinload(GameModel.team2).selectinload('players')
         )
         .first()
     )

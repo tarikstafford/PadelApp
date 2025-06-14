@@ -13,6 +13,7 @@ from app.routers import (
     games_router,
     users_router,
     admin_router,
+    leaderboard_router,
 )
 from app.middleware.auth import AuthenticationMiddleware
 
@@ -50,6 +51,7 @@ app.include_router(bookings_router, prefix=f"{settings.API_V1_STR}/bookings", ta
 app.include_router(games_router, prefix=f"{settings.API_V1_STR}/games", tags=["Games"]) # Added games_router
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"]) # Added users_router
 app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
+app.include_router(leaderboard_router, prefix=f"{settings.API_V1_STR}/leaderboard", tags=["Leaderboard"])
 
 @app.on_event("startup")
 async def startup_event():

@@ -11,6 +11,8 @@ export type User = {
   profile_picture_url?: string;
   is_active: boolean;
   role: UserRole;
+  elo_rating: number;
+  preferred_position?: "LEFT" | "RIGHT";
 };
 
 export type Club = {
@@ -71,12 +73,23 @@ export type GamePlayer = {
   id: number;
   status: "invited" | "accepted";
   user: User;
+  elo_rating: number;
+};
+
+export type GameTeam = {
+  id: number;
+  name: string;
+  players: GamePlayer[];
 };
 
 export type Game = {
   id: number;
   created_at: string;
   players: GamePlayer[];
+  team1?: GameTeam;
+  team2?: GameTeam;
+  winning_team_id?: number;
+  result_submitted?: boolean;
 };
 
 export type BookingDetails = {
@@ -116,4 +129,13 @@ export type CourtData = {
   is_indoor?: boolean;
   price_per_hour?: number;
   club_id: number;
+};
+
+export type EloAdjustmentRequest = {
+  id: number;
+  user_id: number;
+  requested_rating: number;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
 }; 
