@@ -11,6 +11,8 @@ interface User {
   email: string;
   full_name?: string;
   profile_picture_url?: string; // Added profile_picture_url
+  elo_rating: number;
+  preferred_position?: "LEFT" | "RIGHT";
   // Add other user properties as needed
 }
 
@@ -27,6 +29,8 @@ export interface AuthContextType {
     register: (name: string, email: string, password: string) => Promise<void>;
     isLoading: boolean;
     fetchUser: () => Promise<void>;
+    requestEloAdjustment: (requestedRating: number, reason: string) => Promise<void>;
+    updatePreferredPosition: (position: "LEFT" | "RIGHT") => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -122,6 +126,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Optionally log the user in directly after registration
     };
 
+    const requestEloAdjustment = async (requestedRating: number, reason: string) => {
+        const token = accessToken || (typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null);
+        if (!token) throw new Error("Authentication token not found.");
+        const response = await fetch(`${API_BASE_URL}/api/v1/users/me/elo-adjustment-requests`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ requested_rating: requestedRating, reason }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to request ELO adjustment');
+        }
+    };
+
+    const updatePreferredPosition = async (position: "LEFT" | "RIGHT") => {
+        const token = accessToken || (typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null);
+        if (!token) throw new Error("Authentication token not found.");
+        const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ preferred_position: position }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to update preferred position');
+        }
+        await fetchAndUpdateUser(); // Refresh user data
+    };
+
     const value = {
         user,
         setUser,
@@ -134,6 +167,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         register,
         fetchUser: fetchAndUpdateUser,
+        requestEloAdjustment,
+        updatePreferredPosition,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -16,6 +16,26 @@ import { Separator } from '@workspace/ui/components/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@workspace/ui/components/dialog';
 import { Input } from '@workspace/ui/components/input';
 import { Label } from '@workspace/ui/components/label';
+import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog"
+import { apiClient } from "@/lib/api";
+import { Game } from "@/lib/types";
 
 const MAX_PLAYERS_PER_GAME = 4; // Define the constant here
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -101,6 +121,7 @@ function GameDetailPageInternal() {
   const [isManagingPlayer, setIsManagingPlayer] = useState<Record<number, boolean>>({}); // { playerUserId: isLoading }
   const [inviteLink, setInviteLink] = useState('');
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const generateInviteLink = () => {
     const link = `${window.location.origin}/games/${gameId}`;
@@ -246,6 +267,20 @@ function GameDetailPageInternal() {
         default: return null;
     }
   };
+
+  const handleSubmitResult = async (winningTeamId: number) => {
+    setSubmitting(true);
+    try {
+      await apiClient.post(`/games/${gameId}/result`, { winning_team_id: winningTeamId });
+      toast.success("Game result submitted successfully!");
+      fetchGameData();
+    } catch (error) {
+      console.error("Failed to submit game result", error);
+      toast.error("Failed to submit game result. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (isLoading) { return <div className="flex justify-center items-center min-h-[calc(100vh-200px)]"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>; }
   if (error) { return <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center px-4"><AlertTriangle className="h-12 w-12 text-destructive mb-3" /><h2 className="text-xl font-semibold text-destructive mb-2">Error loading game details</h2><p className="text-sm text-muted-foreground mb-4">{error}</p><Button variant="outline" onClick={() => router.push('/bookings')}>Back to My Bookings</Button></div>; }
@@ -406,6 +441,55 @@ function GameDetailPageInternal() {
             </div>
         </DialogContent>
       </Dialog>
+
+      {!game.result_submitted && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Submit Result</h2>
+          <div className="flex space-x-4">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button disabled={submitting}>Team 1 Won</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently submit the game result and update player ELO ratings.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleSubmitResult(game.team1!.id)}>Continue</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button disabled={submitting}>Team 2 Won</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently submit the game result and update player ELO ratings.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleSubmitResult(game.team2!.id)}>Continue</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      )}
+
+      {game.result_submitted && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Result Submitted</h2>
+          <p>Winning Team: {game.winning_team_id === game.team1?.id ? 'Team 1' : 'Team 2'}</p>
+        </div>
+      )}
     </div>
   );
 }
