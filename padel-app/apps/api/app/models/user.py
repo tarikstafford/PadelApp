@@ -39,7 +39,7 @@ class User(Base):
     bookings = relationship("Booking", back_populates="user")
     
     # Relationship to GamePlayer entries (one-to-many)
-    games = relationship("GamePlayer", back_populates="player")
+    games = relationship("GamePlayer", back_populates="user")
 
     # New relationship to Club (one-to-one)
     owned_club = relationship("Club", back_populates="owner", uselist=False, cascade="all, delete-orphan")

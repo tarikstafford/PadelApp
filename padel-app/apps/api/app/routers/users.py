@@ -51,6 +51,16 @@ async def upload_profile_picture(
         # Generic error for other issues (e.g., cloud storage connection)
         raise HTTPException(status_code=500, detail="An error occurred during file upload.")
 
+@router.get("/me/elo-adjustment-requests", response_model=List[schemas.EloAdjustmentRequest])
+async def read_user_elo_adjustment_requests(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Retrieve ELO adjustment requests for the current user.
+    """
+    return crud.elo_adjustment_request_crud.get_elo_adjustment_requests_by_user(db, user_id=current_user.id)
+
 @router.get("/search", response_model=List[schemas.UserSearchResult])
 async def search_users(
     query: str = Query(..., min_length=2, max_length=50),
@@ -79,7 +89,14 @@ def request_elo_adjustment(
             status_code=403,
             detail="You can only request an ELO adjustment for yourself.",
         )
+    
+    # Check the user's current ELO to store it with the request
+    current_elo = current_user.elo_rating
+    
     crud.elo_adjustment_request_crud.create_elo_adjustment_request(
-        db=db, request=request, user_id=user_id
+        db=db, 
+        request=request, 
+        user_id=user_id,
+        current_elo=current_elo
     )
     return {"message": "ELO adjustment request submitted successfully."} 

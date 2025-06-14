@@ -64,11 +64,14 @@ def create_booking(db: Session, booking_in: BookingCreate, user_id: int) -> Book
 
 def get_booking(db: Session, booking_id: int) -> Optional[BookingModel]:
     """Retrieve a single booking by its ID."""
-    return db.query(BookingModel).options(
-        joinedload(BookingModel.user),
-        joinedload(BookingModel.court),
-        joinedload(BookingModel.game)
-    ).filter(BookingModel.id == booking_id).first()
+    return (
+        db.query(BookingModel).filter(BookingModel.id == booking_id)
+        .options(
+            joinedload(BookingModel.court).joinedload(CourtModel.club),
+            joinedload(BookingModel.game).joinedload(GameModel.players).joinedload(GamePlayerModel.user)
+        )
+        .first()
+    )
 
 def get_bookings_by_user(
     db: Session,
@@ -174,6 +177,32 @@ def get_bookings_by_club_and_date(db: Session, club_id: int, target_date: date) 
             BookingModel.start_time <= end_datetime
         )
         .all()
+    )
+
+def create_booking_with_game(db: Session, booking_in: BookingCreate, user_id: int) -> BookingModel:
+    """Create a new booking in the database with a game."""
+    end_time = booking_in.start_time + timedelta(minutes=SLOT_INTERVAL_MINUTES)
+    
+    db_booking = BookingModel(
+        court_id=booking_in.court_id,
+        user_id=user_id,
+        start_time=booking_in.start_time,
+        end_time=end_time,
+        status=BookingStatus.CONFIRMED
+    )
+    db.add(db_booking)
+    db.commit()
+    db.refresh(db_booking)
+
+    # Re-fetch the booking with relationships loaded to return the full object
+    return (
+        db.query(BookingModel)
+        .options(
+            joinedload(BookingModel.user),
+            joinedload(BookingModel.court)
+        )
+        .filter(BookingModel.id == db_booking.id)
+        .first()
     )
 
 # Placeholder for get_booking

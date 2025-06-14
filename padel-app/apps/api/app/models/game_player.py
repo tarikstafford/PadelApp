@@ -17,14 +17,13 @@ class GamePlayer(Base):
 
     game_id = Column(Integer, ForeignKey("games.id"), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    status = Column(SAEnum(GamePlayerStatus), default=GamePlayerStatus.INVITED, nullable=False)
+    status = Column(SAEnum(GamePlayerStatus), nullable=False, default=GamePlayerStatus.INVITED)
 
     # Relationship to Game model
     game = relationship("Game", back_populates="players")
 
     # Relationship to User model
-    player = relationship("User" #, back_populates="game_participations" # Add to User model later
-                          )
+    user = relationship("User", back_populates="games")
 
     def __repr__(self):
-        return f"<GamePlayer(game_id={self.game_id}, user_id={self.user_id}, status='{self.status}')>" 
+        return f"<GamePlayer(game_id={self.game_id}, user_id={self.user_id}, status='{self.status.value}')>" 

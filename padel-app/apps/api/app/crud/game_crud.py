@@ -37,8 +37,8 @@ def get_game(db: Session, game_id: int) -> Optional[GameModel]:
         db.query(GameModel)
         .filter(GameModel.id == game_id)
         .options(
-            selectinload(GameModel.booking).selectinload(BookingModel.court).selectinload(CourtModel.club),
-            selectinload(GameModel.players).selectinload(GamePlayerModel.player).selectinload(UserModel.elo_rating)
+            joinedload(GameModel.booking).joinedload(BookingModel.court).joinedload(CourtModel.club),
+            joinedload(GameModel.players).joinedload(GamePlayerModel.player)
         )
         .first()
     )
@@ -51,8 +51,8 @@ def get_game_with_teams(db: Session, game_id: int) -> Optional[GameModel]:
         db.query(GameModel)
         .filter(GameModel.id == game_id)
         .options(
-            selectinload(GameModel.team1).selectinload('players'),
-            selectinload(GameModel.team2).selectinload('players')
+            joinedload(GameModel.team1).joinedload('players'),
+            joinedload(GameModel.team2).joinedload('players')
         )
         .first()
     )
@@ -99,8 +99,8 @@ def get_public_games(
         .offset(skip)
         .limit(limit)
         .options(
-            selectinload(GameModel.booking).selectinload(BookingModel.court).selectinload(CourtModel.club),
-            selectinload(GameModel.players).selectinload(GamePlayerModel.player)
+            joinedload(GameModel.booking).joinedload(BookingModel.court).joinedload(CourtModel.club),
+            joinedload(GameModel.players).joinedload(GamePlayerModel.player)
         )
         .all()
     )
@@ -127,7 +127,7 @@ def get_game_by_booking(db: Session, booking_id: int) -> Optional[GameModel]:
         db.query(GameModel)
         .filter(GameModel.booking_id == booking_id)
         .options(
-            selectinload(GameModel.players).selectinload(GamePlayerModel.player)
+            joinedload(GameModel.players).joinedload(GamePlayerModel.player)
         )
         .first()
     )

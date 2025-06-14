@@ -84,6 +84,11 @@ function UserProfilePage() {
         }
     };
 
+    const handleUploadSuccess = () => {
+        toast.success("Profile picture updated!");
+        fetchUser();
+    };
+
     const canMakeRequest = () => {
         if (requests.some(req => req.status === 'pending')) {
             return false;
@@ -109,10 +114,7 @@ function UserProfilePage() {
     return (
         <div className="container mx-auto p-4">
             <div className="flex items-center space-x-4 mb-8">
-                <Avatar className="h-24 w-24">
-                    <AvatarImage src={user.profile_picture_url || undefined} />
-                    <AvatarFallback>{user.full_name?.substring(0, 2)}</AvatarFallback>
-                </Avatar>
+                <ProfilePictureUpload onUploadSuccess={handleUploadSuccess} />
                 <div>
                     <h1 className="text-3xl font-bold">{user.full_name}</h1>
                     <p className="text-gray-500">{user.email}</p>

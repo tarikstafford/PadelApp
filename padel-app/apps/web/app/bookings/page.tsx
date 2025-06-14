@@ -249,18 +249,19 @@ function BookingsPageInternal() {
                   {/* Display players if a game exists */}
                   {booking.game && booking.game.players.length > 0 && (
                     <div className="mt-4">
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center">
-                        <Users className="mr-2 h-4 w-4" /> Players in Game
+                      <h4 className="font-semibold text-sm mb-2 flex items-center">
+                        <Users className="mr-2 h-4 w-4" />
+                        Players ({booking.game.players.length} / 4)
                       </h4>
                       <div className="flex flex-wrap items-center gap-2">
                         {booking.game.players.map((player) => (
                           <div
+                            key={player.user.id}
                             className="flex items-center gap-2"
                             title={player.user?.full_name || "Unknown User"}
-                            key={player.user_id}
                           >
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={player.user?.profile_picture_url || ""} alt={player.user?.full_name || "Unknown User"} />
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={player.user.profile_picture_url || undefined} />
                               <AvatarFallback>{(player.user?.full_name?.charAt(0) || "U")}</AvatarFallback>
                             </Avatar>
                           </div>
