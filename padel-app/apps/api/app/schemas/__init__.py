@@ -9,6 +9,7 @@ from .booking_schemas import Booking, BookingCreate
 from .game_schemas import GameCreate, GameResponse, GamePlayerResponse, UserInviteRequest, InvitationResponseRequest, GameResultRequest, GameWithRatingsResponse, UserWithRating
 from .team_schemas import Team, TeamCreate, TeamUpdate
 from .leaderboard_schemas import LeaderboardResponse, LeaderboardUserResponse
+from .elo_adjustment_request_schemas import EloAdjustmentRequest, EloAdjustmentRequestCreate
 
 __all__ = [
     "User",
@@ -46,4 +47,6 @@ __all__ = [
     "TeamUpdate",
     "LeaderboardResponse",
     "LeaderboardUserResponse",
+    "EloAdjustmentRequest",
+    "EloAdjustmentRequestCreate",
 ] 

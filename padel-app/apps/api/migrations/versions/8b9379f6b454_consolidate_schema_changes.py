@@ -12,8 +12,8 @@ import sqlalchemy as sa
 # revision identifiers, used by Alembic.
 revision = '8b9379f6b454'
 down_revision = '89a9b93cd5cb'
-branch_labels = 'None'
-depends_on = 'None'
+branch_labels = None
+depends_on = None
 
 
 def upgrade() -> None:
@@ -28,12 +28,12 @@ def upgrade() -> None:
     op.create_table('elo_adjustment_requests',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('current_rating', sa.Float(), nullable=False),
-    sa.Column('requested_rating', sa.Float(), nullable=False),
-    sa.Column('reason', sa.String(), nullable=False),
+    sa.Column('current_elo', sa.Integer(), nullable=False),
+    sa.Column('requested_elo', sa.Integer(), nullable=False),
+    sa.Column('reason', sa.String(), nullable=True),
     sa.Column('status', sa.Enum('PENDING', 'APPROVED', 'REJECTED', name='eloadjustmentrequeststatus'), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
