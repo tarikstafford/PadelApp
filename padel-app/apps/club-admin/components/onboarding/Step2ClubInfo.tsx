@@ -8,6 +8,7 @@ import { Button } from "@workspace/ui/components/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -26,6 +27,9 @@ const formSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   description: z.string().optional(),
+  opening_hours: z.string().optional(),
+  amenities: z.string().optional(),
+  image_url: z.string().url().optional().or(z.literal('')),
 });
 
 interface Step2Props {
@@ -48,13 +52,16 @@ export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, form
       phone: formData.phone || "",
       email: formData.email || "",
       description: formData.description || "",
+      opening_hours: formData.opening_hours || "",
+      amenities: formData.amenities || "",
+      image_url: formData.image_url || "",
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const newClub = await createClub(values);
+      const newClub = await createClub(values, formData.access_token);
       updateFormData({ ...values, clubId: newClub.id });
       setCookie("clubId", newClub.id);
       nextStep();
@@ -164,6 +171,38 @@ export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, form
                     disabled={isLoading}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="opening_hours"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Opening Hours</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Mon-Fri: 9am-10pm" {...field} disabled={isLoading} />
+                </FormControl>
+                <FormDescription>
+                  Enter the typical weekly opening hours for your club.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="amenities"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Amenities</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., parking, showers, pro-shop" {...field} disabled={isLoading} />
+                </FormControl>
+                <FormDescription>
+                  List key amenities separated by commas.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

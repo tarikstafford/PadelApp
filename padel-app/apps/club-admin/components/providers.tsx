@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
-import { ToastProvider } from "@workspace/ui/components/toast";
+import { Toaster } from "sonner";
 
 export const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
-    <ToastProvider>
+    <>
+      <Toaster position="top-center" richColors />
       {children}
-    </ToastProvider>
+    </>
   );
 }; 

@@ -15,12 +15,29 @@ const navItems = [
 ];
 
 export function DashboardPage({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const pathname = usePathname();
+
+  // While loading, show a blank page or a spinner
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  // For unauthenticated users or users on auth pages, don't show the dashboard layout
+  if (!user || pathname === '/login' || pathname === '/register') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen">
       <DashboardSidebar />
       <div className="flex flex-col flex-1">
         <DashboardHeader />
-        <main className="flex-1 p-8">{children}</main>
+        <main className="flex-1 p-8 bg-gray-50/50">{children}</main>
       </div>
     </div>
   );

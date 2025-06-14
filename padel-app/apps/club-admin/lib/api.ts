@@ -16,7 +16,8 @@ import {
 } from './types';
 
 const getApiUrl = () => {
-  return process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  return `${baseUrl}/api/v1`;
 };
 
 const getAuthHeaders = (): HeadersInit => {
@@ -53,6 +54,7 @@ export const apiClient = {
 
   post: async <T>(path: string, body: any, options?: { headers?: Record<string, string> }): Promise<T> => {
     try {
+      console.log('API Client POST Request:', { path, body });
       const response = await fetch(`${getApiUrl()}${path}`, {
         method: 'POST',
         headers: options?.headers || getAuthHeaders(),
@@ -169,12 +171,20 @@ export const registerAdmin = async (data: AdminRegistrationData): Promise<AuthRe
   return apiClient.post<AuthResponse>('/auth/register-admin', data);
 };
 
-export const createClub = async (data: ClubData): Promise<Club> => {
-  return apiClient.post<Club>('/clubs', data);
+export const createClub = async (data: ClubData, token?: string): Promise<Club> => {
+  const headers = new Headers(getAuthHeaders());
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return apiClient.post<Club>('/clubs', data, { headers: headers as any });
 };
 
-export const createCourt = async (data: CourtData): Promise<Court> => {
-  return apiClient.post<Court>('/courts', data);
+export const createCourt = async (data: CourtData, token?: string): Promise<Court> => {
+  const headers = new Headers(getAuthHeaders());
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return apiClient.post<Court>('/courts', data, { headers: headers as any });
 };
 
 export const getMe = async (): Promise<User> => {

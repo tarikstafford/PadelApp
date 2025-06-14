@@ -4,7 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 
 interface DecodedToken {
   sub: string;
-  role: string;
+  role?: string;
   exp: number;
 }
 
@@ -25,6 +25,7 @@ export function middleware(request: NextRequest) {
   if (token) {
     try {
       const decodedToken: DecodedToken = jwtDecode(token);
+      console.log("Decoded Token:", decodedToken);
 
       // Handle the specific case of a club admin during onboarding
       if (decodedToken.role === 'club_admin' && !clubId) {
@@ -33,7 +34,7 @@ export function middleware(request: NextRequest) {
           return NextResponse.next();
         }
         // If they are anywhere else, force them to the register page.
-        return NextResponse.redirect(new URL('/register', request.url));
+        return NextResponse.redirect(new URL('/register?step=2', request.url));
       }
 
       // For all other logged-in users (or fully onboarded admins),

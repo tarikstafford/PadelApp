@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 
 from .court_schemas import Court # Import Court schema for use in ClubWithCourts
 from .user_schemas import User as UserSchema # Import for nesting owner details
@@ -16,6 +16,12 @@ class ClubBase(BaseModel):
     opening_hours: Optional[str] = None
     amenities: Optional[str] = None
     image_url: Optional[str] = None
+
+    @validator("email", pre=True)
+    def empty_str_to_none(cls, v):
+        if v == "":
+            return None
+        return v
 
 # Properties for club and admin registration
 class ClubRegistrationSchema(ClubBase):

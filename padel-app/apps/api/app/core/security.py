@@ -32,13 +32,20 @@ def get_password_hash(password: str) -> str:
     """Hashes a plain password."""
     return pwd_context.hash(password)
 
-def create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    subject: Union[str, Any], 
+    expires_delta: Optional[timedelta] = None,
+    role: Optional[str] = None
+) -> str:
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
     to_encode = {"exp": expire, "sub": str(subject), "token_type": "access"}
+    if role:
+        to_encode["role"] = role
+        
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt 
 
@@ -72,6 +79,7 @@ def decode_token_payload(token: str) -> Optional[TokenPayload]:
         token_data = TokenPayload(
             sub=payload["sub"],
             exp=payload["exp"],
+            role=payload.get("role"),
             token_type=payload.get("token_type")
         )
         

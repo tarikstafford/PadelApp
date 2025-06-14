@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -18,6 +19,7 @@ async def create_club(
     Create a new club. Must be authenticated as a CLUB_ADMIN.
     A user can only own one club.
     """
+    logging.warning(f"Creating club for user: {current_user.email}, role: {current_user.role}, owned_club: {current_user.owned_club}")
     if current_user.role != models.UserRole.CLUB_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

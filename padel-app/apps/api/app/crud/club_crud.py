@@ -43,7 +43,19 @@ def get_clubs(
 
 # Placeholder for create_club
 def create_club(db: Session, club: ClubCreate, owner_id: int) -> ClubModel:
-    db_club = ClubModel(**club.model_dump(), owner_id=owner_id)
+    db_club = ClubModel(
+        name=club.name,
+        address=club.address,
+        city=club.city,
+        postal_code=club.postal_code,
+        phone=club.phone,
+        email=club.email,
+        description=club.description,
+        opening_hours=club.opening_hours,
+        amenities=club.amenities,
+        image_url=club.image_url,
+        owner_id=owner_id
+    )
     db.add(db_club)
     db.commit()
     db.refresh(db_club)

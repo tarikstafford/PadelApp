@@ -35,7 +35,7 @@ async def register_admin(
     new_user = crud.user_crud.create_user(db=db, user=user_to_create)
 
     # Generate tokens
-    access_token = security.create_access_token(subject=new_user.email)
+    access_token = security.create_access_token(subject=new_user.email, role=new_user.role.value)
     refresh_token = security.create_refresh_token(subject=new_user.email)
     
     return {
@@ -84,7 +84,8 @@ async def login_for_access_token(
         )
     
     access_token = security.create_access_token(
-        subject=user.email # Using email as subject for simplicity, user.id is also common
+        subject=user.email, # Using email as subject for simplicity, user.id is also common
+        role=user.role.value
     )
     refresh_token = security.create_refresh_token(
         subject=user.email
@@ -95,6 +96,13 @@ async def login_for_access_token(
         "token_type": "bearer",
         "role": user.role,
     }
+
+@router.get("/users/me", response_model=user_schemas.User)
+async def read_users_me(current_user: models.User = Depends(security.get_current_active_user)):
+    """
+    Get current user's profile.
+    """
+    return current_user
 
 @router.post("/refresh-token", response_model=token_schemas.Token)
 async def refresh_access_token(
