@@ -13,7 +13,7 @@ from app.models.team import Team
 
 router = APIRouter()
 
-@router.post("", response_model=schemas.GameResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=schemas.Game, status_code=status.HTTP_201_CREATED)
 async def create_new_game(
     game_in: schemas.GameCreate,
     db: Session = Depends(get_db),
@@ -70,7 +70,7 @@ async def create_new_game(
     return game_with_players
 
 
-@router.get("/{game_id}", response_model=schemas.GameResponse)
+@router.get("/{game_id}", response_model=schemas.Game)
 async def read_game_details(
     game_id: int,
     db: Session = Depends(get_db),
@@ -97,7 +97,7 @@ async def read_game_details(
 
 MAX_PLAYERS_PER_GAME = 4
 
-@router.post("/{game_id}/invitations", response_model=schemas.GamePlayerResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{game_id}/invitations", response_model=schemas.GamePlayer, status_code=status.HTTP_201_CREATED)
 async def invite_player_to_game(
     game_id: int,
     invite_request: schemas.UserInviteRequest,
@@ -141,7 +141,7 @@ async def invite_player_to_game(
 
     return new_game_player_orm 
 
-@router.put("/{game_id}/invitations/{invited_user_id}", response_model=schemas.GamePlayerResponse)
+@router.put("/{game_id}/invitations/{invited_user_id}", response_model=schemas.GamePlayer)
 async def respond_to_game_invitation(
     game_id: int,
     invited_user_id: int,
@@ -187,7 +187,7 @@ async def respond_to_game_invitation(
 
     return updated_game_player_orm 
 
-@router.get("/public", response_model=List[schemas.GameResponse])
+@router.get("/public", response_model=List[schemas.Game])
 async def read_public_games(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0),
@@ -202,7 +202,7 @@ async def read_public_games(
     )
     return public_games 
 
-@router.post("/{game_id}/join", response_model=schemas.GamePlayerResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{game_id}/join", response_model=schemas.GamePlayer, status_code=status.HTTP_201_CREATED)
 async def request_to_join_game(
     game_id: int,
     db: Session = Depends(get_db),
@@ -238,7 +238,7 @@ async def request_to_join_game(
 
     return new_game_player
 
-@router.put("/{game_id}/players/{player_user_id}/status", response_model=schemas.GamePlayerResponse)
+@router.put("/{game_id}/players/{player_user_id}/status", response_model=schemas.GamePlayer)
 async def manage_game_player_status(
     game_id: int,
     player_user_id: int,

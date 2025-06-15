@@ -1,0 +1,50 @@
+# Overview
+This document outlines the requirements for implementing an interactive bookings calendar in the admin dashboard. The calendar will provide a comprehensive view of all club bookings, allowing administrators to easily manage schedules. This feature requires enhancing the backend to support date-range queries and integrating a new calendar component on the frontend.
+
+# Core Features
+- **Interactive Calendar View**
+    - Display all club bookings on a full-fledged calendar with month, week, and day views.
+    - Fetch booking data efficiently for the visible date range.
+- **Booking Details**
+    - Clicking on a booking event will open a dialog or sheet showing detailed information (e.g., user, time, status).
+- **Efficient Data Loading**
+    - The backend will support fetching bookings for a specified date range (`start_date` to `end_date`), minimizing the number of API requests.
+- **Seamless UI/UX**
+    - The calendar will be integrated into the existing admin dashboard.
+    - The third-party calendar component will be styled to match the application's `shadcn/ui` theme.
+- **Future Enhancements (Optional)**
+    - Allow admins to create or modify bookings directly from the calendar interface via drag-and-drop or resizing.
+
+# Technical Architecture
+- **Backend (Padel-App API)**
+    - **Endpoint Enhancement:** Modify the existing `GET /admin/club/{club_id}/schedule` endpoint in `padel-app/apps/api/app/routers/admin.py` to accept optional `start_date` and `end_date` query parameters for range-based queries.
+    - **New Convenience Endpoint:** Create `GET /admin/my-club/schedule` that retrieves the admin's `club_id` from the session and calls the enhanced schedule endpoint.
+    - **Database Logic:** Update the underlying database query function to filter bookings by a date range.
+- **Frontend (Club-Admin App)**
+    - **Dependency:** Integrate the `FullCalendar` library (`@fullcalendar/react`, `@fullcalendar/daygrid`, `@fullcalendar/timegrid`, `@fullcalendar/interaction`).
+    - **Component:** Create a new `CalendarView.tsx` component in `padel-app/apps/club-admin/components/bookings/` to encapsulate all calendar logic, setup, and styling.
+    - **Data Fetching:** Implement logic within `CalendarView.tsx` to call the `/admin/my-club/schedule` endpoint and transform the returned bookings into FullCalendar's event format.
+    - **Integration:** Render the `CalendarView` component on the main dashboard page at `padel-app/apps/club-admin/app/dashboard/page.tsx`.
+- **Frontend (Player Web Platform)**
+    - **Availability Endpoint Enhancement:** To ensure a consistent and efficient scheduling model across all platforms, modify the player-facing `GET /api/v1/courts/{court_id}/availability` endpoint in `padel-app/apps/api/app/routers/courts.py`.
+    - **Date Range Support:** This endpoint should be updated to accept optional `start_date` and `end_date` parameters, returning all available slots within that range. This aligns with the backend changes for the admin view and improves performance for players browsing availability across multiple days.
+
+# Logical Dependency Chain
+1. **Backend API Enhancement:** Update the `schedule` endpoint and database logic to support date ranges.
+2. **Backend Convenience Endpoint:** Create the new `/my-club/schedule` endpoint for easier frontend consumption.
+3. **Player-Facing API Enhancement:** Update the `/api/v1/courts/{court_id}/availability` endpoint to support date ranges.
+4. **Frontend Dependencies:** Install `FullCalendar` and its associated plugins for the admin portal.
+5. **Frontend Component Creation:** Develop the `CalendarView.tsx` component, including data fetching and transformation.
+6. **Frontend Integration:** Place the new calendar component onto the admin dashboard page.
+7. **(Optional) Interactivity:** Implement `onClick` handlers and dialogs for viewing booking details.
+
+# Risks and Mitigations
+- **Performance with Large Datasets**
+    - *Risk:* Fetching thousands of bookings for a wide date range could lead to slow API responses and frontend rendering.
+    - *Mitigation:* Implement pagination or server-side filtering on the backend if performance becomes an issue. Initially, the date-range enhancement is a primary mitigation against per-day fetching.
+- **UI Theme Mismatch**
+    - *Risk:* The default styling of the third-party `FullCalendar` library may not align with the project's `shadcn/ui` theme.
+    - *Mitigation:* Utilize `FullCalendar`'s extensive theming and styling APIs, along with custom CSS, to ensure a consistent look and feel.
+- **Data Transformation Complexity**
+    - *Risk:* Mapping the API booking data to FullCalendar's event object format might have edge cases (e.g., different booking types, statuses).
+    - *Mitigation:* Start with a robust transformation function that handles known cases and includes error handling for unexpected data structures. 

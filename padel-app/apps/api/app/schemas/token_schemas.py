@@ -8,11 +8,10 @@ class Token(BaseModel):
     token_type: str = "bearer"
     role: Optional[UserRole] = None
 
-class TokenPayload(BaseModel):
-    sub: Optional[str] = None # Subject of the token (e.g., user_id or email)
-    exp: Optional[int] = None # Expiry time (timestamp)
-    role: Optional[str] = None
-    token_type: Optional[str] = None # To differentiate between access and refresh tokens if needed in payload 
+class TokenData(BaseModel):
+    sub: Optional[str] = None
+    role: Optional[UserRole] = None
+    token_type: Optional[str] = None
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str 

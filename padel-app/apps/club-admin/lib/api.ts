@@ -4,7 +4,6 @@ import { showErrorToast } from './notifications';
 import {
   DashboardSummary,
   Booking,
-  BookingDetails,
   Game,
   Court,
   Club,
@@ -14,6 +13,7 @@ import {
   User,
   CourtData
 } from './types';
+import { format } from 'date-fns';
 
 const getApiUrl = () => {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -57,15 +57,13 @@ export const apiClient = {
       const isFormData = body instanceof FormData;
       const headers = options?.headers || getAuthHeaders();
       
-      // Do not set Content-Type for FormData, browser does it with boundary
       if (isFormData && headers instanceof Headers) {
         (headers as Headers).delete('Content-Type');
       }
 
-      console.log('API Client POST Request:', { path, body: isFormData ? 'FormData' : body });
       const response = await fetch(`${getApiUrl()}${path}`, {
         method: 'POST',
-        headers: headers,
+        headers: headers as HeadersInit,
         body: isFormData ? body : JSON.stringify(body),
       });
       if (!response.ok) {
@@ -122,36 +120,29 @@ export const fetchDashboardSummary = async (clubId: number): Promise<DashboardSu
   return apiClient.get(`/admin/club/${clubId}/dashboard-summary`);
 };
 
-export const fetchBookings = async (
-  clubId: number,
-  params: {
-    start_date?: string;
-    end_date?: string;
-    court_id?: number;
-    status?: string;
-    search?: string;
-    page?: number;
-    pageSize?: number;
-  }
-): Promise<{ bookings: Booking[]; pageCount: number }> => {
-  if (!clubId) {
-    throw new Error("Club ID is required to fetch bookings.");
-  }
-  return apiClient.get(`/admin/club/${clubId}/bookings`, params);
+export const fetchBookings = async (startDate: Date, endDate: Date): Promise<Booking[]> => {
+  const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+  const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+  
+  const response = await apiClient.get<{ bookings: Booking[] }>(
+    `/admin/my-club/schedule`, { start_date: formattedStartDate, end_date: formattedEndDate }
+  );
+  
+  return response.bookings || [];
 };
 
 export const fetchGameDetails = async (bookingId: number): Promise<Game> => {
   if (!bookingId) {
     throw new Error("Booking ID is required to fetch game details.");
   }
-  return apiClient.get<Game>(`/admin/bookings/${bookingId}/game`);
+  return apiClient.get(`/admin/bookings/${bookingId}/game`);
 };
 
 export const fetchCourts = async (clubId: number): Promise<Court[]> => {
   if (!clubId) {
     throw new Error("Club ID is required to fetch courts.");
   }
-  return apiClient.get<Court[]>(`/admin/club/${clubId}/courts`);
+  return apiClient.get(`/admin/club/${clubId}/courts`);
 };
 
 export const fetchCourtSchedule = async (clubId: number, date: string): Promise<{ courts: Court[]; bookings: Booking[] }> => {
@@ -165,18 +156,18 @@ export const fetchClubDetails = async (clubId: number): Promise<Club> => {
   if (!clubId) {
     throw new Error("Club ID is required to fetch club details.");
   }
-  return apiClient.get<Club>(`/admin/club/${clubId}`);
+  return apiClient.get(`/admin/club/${clubId}`);
 };
 
 export const updateClub = async (clubId: number, data: Partial<Club>): Promise<Club> => {
   if (!clubId) {
     throw new Error("Club ID is required to update club details.");
   }
-  return apiClient.put<Club>(`/admin/club/${clubId}`, data);
+  return apiClient.put(`/admin/club/${clubId}`, data);
 };
 
 export const registerAdmin = async (data: AdminRegistrationData): Promise<AuthResponse> => {
-  return apiClient.post<AuthResponse>('/auth/register-admin', data);
+  return apiClient.post('/auth/register-admin', data);
 };
 
 export const createClub = async (data: ClubData, token?: string): Promise<Club> => {

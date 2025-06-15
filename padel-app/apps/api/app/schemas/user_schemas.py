@@ -56,6 +56,18 @@ class User(UserBase):
 class UserInDB(UserInDBBase):
     pass # Inherits all fields from UserInDBBase, including hashed_password
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserWithElo(BaseModel):
+    id: int
+    full_name: str
+    elo_rating: float
+
+    class Config:
+        from_attributes = True
+
 # Schema for user search results
 class UserSearchResult(BaseModel):
     id: int

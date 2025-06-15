@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date, datetime
@@ -96,15 +96,64 @@ async def read_club_courts(
 @router.get("/club/{club_id}/schedule", dependencies=[Depends(ClubAdminChecker())])
 async def read_club_schedule(
     club_id: int,
-    date: date,
+    start_date: Optional[date] = Query(None, description="Start date for fetching schedule. Defaults to today if no dates are provided."),
+    end_date: Optional[date] = Query(None, description="End date for fetching schedule. Defaults to start_date if not provided."),
     db: Session = Depends(get_db),
 ):
     """
-    Retrieve the courts and bookings for a specific club on a given date.
+    Retrieve the courts and bookings for a specific club on a given date or date range.
+    If no dates are provided, it returns the schedule for the current day.
     """
+    today = date.today()
+    s_date = start_date or today
+    e_date = end_date or s_date
+
+    if s_date > e_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="End date cannot be earlier than start date."
+        )
+
     courts = crud.court_crud.get_courts_by_club(db=db, club_id=club_id)
-    bookings = crud.booking_crud.get_bookings_by_club_and_date(db, club_id=club_id, target_date=date)
+    bookings = crud.booking_crud.get_bookings_by_club(
+        db, 
+        club_id=club_id, 
+        start_date_filter=s_date, 
+        end_date_filter=e_date
+    )
     return {"courts": courts, "bookings": bookings}
+
+@router.get("/my-club/schedule", response_model=dict)
+async def get_my_club_schedule(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_active_user),
+):
+    """
+    Retrieve the schedule for the current admin's club.
+    This is a convenience endpoint that gets the club_id from the session.
+    It forwards any query params to the main schedule endpoint.
+    """
+    if not current_admin.owned_club:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The current admin does not own a club."
+        )
+
+    # Convert query params to a dictionary
+    query_params = dict(request.query_params)
+
+    # Call the existing endpoint logic, but as a function
+    # We need to ensure dependencies are resolved correctly or passed explicitly
+    # A cleaner way is to refactor the logic of read_club_schedule if it becomes complex
+    # For now, we'll call it and pass what's needed.
+    # The `Depends` will be re-evaluated, which is fine.
+    return await read_club_schedule(
+        club_id=current_admin.owned_club.id,
+        start_date=query_params.get("start_date"),
+        end_date=query_params.get("end_date"),
+        db=db
+    )
 
 @router.get("/my-club/courts", response_model=List[court_schemas.Court])
 async def read_owned_club_courts(

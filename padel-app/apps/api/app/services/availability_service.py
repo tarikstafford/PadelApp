@@ -1,64 +1,52 @@
-from typing import List, Tuple
+import datetime
+from typing import List
 from sqlalchemy.orm import Session
-from datetime import date, datetime, time, timedelta
-
-from app import crud, schemas # For schemas.TimeSlot and crud.booking_crud
-from app.models import Court # To potentially check court existence or specific court opening hours in future
+from app import crud
+from app.models import Court
+from app.schemas.court_schemas import AvailabilityResponse, DailyAvailability, TimeSlot
+from app.utils.availability import get_time_slots
 
 # Define default operating hours for slot generation (can be made dynamic later)
-DEFAULT_OPENING_TIME = time(8, 0)  # 8:00 AM
-DEFAULT_CLOSING_TIME = time(22, 0) # 10:00 PM (slots up to 21:30 will be generated)
-SLOT_INTERVAL_MINUTES = 30
+DEFAULT_OPENING_TIME = datetime.time(9, 0)  # 9:00 AM
+DEFAULT_CLOSING_TIME = datetime.time(22, 0) # 10:00 PM (slots up to 21:30 will be generated)
+SLOT_DURATION_MINUTES = 90
 
-def _generate_daily_time_slots(
-    target_date: date, 
-    opening_time: time = DEFAULT_OPENING_TIME, 
-    closing_time: time = DEFAULT_CLOSING_TIME, 
-    interval_minutes: int = SLOT_INTERVAL_MINUTES
-) -> List[Tuple[datetime, datetime]]:
-    """Generates all possible time slots for a given date within operating hours."""
-    slots = []
-    current_slot_start_dt = datetime.combine(target_date, opening_time)
-    closing_dt = datetime.combine(target_date, closing_time)
-    slot_delta = timedelta(minutes=interval_minutes)
-
-    while current_slot_start_dt < closing_dt:
-        slot_end_dt = current_slot_start_dt + slot_delta
-        # Ensure the slot doesn't exceed the closing time
-        if slot_end_dt <= closing_dt:
-            slots.append((current_slot_start_dt, slot_end_dt))
-        current_slot_start_dt += slot_delta
-    return slots
-
-def get_court_availability(
-    db: Session, 
-    court_id: int, 
-    target_date: date
-) -> List[schemas.TimeSlot]:
+async def get_court_availability(
+    db: Session, *, court_id: int, start_date: datetime.date, end_date: datetime.date
+) -> AvailabilityResponse:
     """
-    Calculates the availability of a court for a given date by checking against existing bookings.
+    Get the availability of a court for a given date range.
     """
-    # Optional: Fetch court to verify existence or use court-specific opening hours in future
-    # court = crud.court_crud.get_court(db, court_id=court_id)
-    # if not court:
-    #     # Or raise HTTPException if preferred to handle in router
-    #     return [] 
+    db_court = crud.court.get(db, id=court_id)
+    if not db_court:
+        # Or raise HTTPException(status_code=404, detail="Court not found")
+        return AvailabilityResponse(days=[])
 
-    potential_slots = _generate_daily_time_slots(target_date)
-    booked_slots_models = crud.booking_crud.get_bookings_for_court_on_date(
-        db, court_id=court_id, target_date=target_date
-    )
+    # Fallback to defaults if club-specific times are not set
+    opening_time = db_court.club.opening_time or DEFAULT_OPENING_TIME
+    closing_time = db_court.club.closing_time or DEFAULT_CLOSING_TIME
+    slot_duration = SLOT_DURATION_MINUTES  # This could also be a court/club setting
 
-    # Create a set of booked start times for efficient lookup
-    # Assuming bookings are exactly on the 30-min marks and for the SLOT_INTERVAL_MINUTES duration.
-    # More complex logic would be needed if bookings can have variable durations or start off-interval.
-    booked_start_times = {booking.start_time for booking in booked_slots_models}
-
-    availability_slots = []
-    for start_dt, end_dt in potential_slots:
-        is_available = start_dt not in booked_start_times
-        availability_slots.append(
-            schemas.TimeSlot(start_time=start_dt, end_time=end_dt, is_available=is_available)
+    availability_by_day: List[DailyAvailability] = []
+    current_date = start_date
+    while current_date <= end_date:
+        bookings_for_day = crud.booking.get_by_court_and_date(
+            db, court_id=court_id, target_date=current_date
         )
-    
-    return availability_slots 
+        booked_start_times = {b.start_time.time() for b in bookings_for_day}
+
+        all_slots: List[TimeSlot] = []
+        for interval_start, _ in get_time_slots(
+            opening_time, closing_time, slot_duration
+        ):
+            is_booked = interval_start in booked_start_times
+            all_slots.append(
+                TimeSlot(time=interval_start.strftime("%H:%M"), booked=is_booked)
+            )
+
+        availability_by_day.append(
+            DailyAvailability(date=current_date, slots=all_slots)
+        )
+        current_date += datetime.timedelta(days=1)
+
+    return AvailabilityResponse(days=availability_by_day)

@@ -1,7 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr, validator
 
-from .court_schemas import Court # Import Court schema for use in ClubWithCourts
 from .user_schemas import User as UserSchema # Import for nesting owner details
 
 # Shared properties
@@ -54,8 +53,12 @@ class Club(ClubInDBBase):
 
 # Properties to return to client (club info with its courts)
 class ClubWithCourts(Club):
-    courts: List[Court] = []
+    courts: List["Court"] = []
 
 # Properties stored in DB
 class ClubInDB(ClubInDBBase):
     pass 
+
+# Late import to resolve circular dependency
+from .court_schemas import Court
+ClubWithCourts.model_rebuild() 

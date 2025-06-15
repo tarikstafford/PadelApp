@@ -2,6 +2,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 from decimal import Decimal
 from app.models.court import SurfaceType, CourtAvailabilityStatus
+from datetime import datetime, date
 
 # Shared properties
 class CourtBase(BaseModel):
@@ -31,8 +32,26 @@ class CourtInDBBase(CourtBase):
 
 # Properties to return to client
 class Court(CourtInDBBase):
-    pass
+    id: int
+    club_id: int
+    club: "Club" # Use string literal for forward reference
 
-# Properties stored in DB
-class CourtInDB(CourtInDBBase):
-    pass 
+    model_config = {"from_attributes": True}
+
+# --- TimeSlot Schema for Availability ---
+class TimeSlot(BaseModel):
+    start_time: datetime
+    end_time: datetime
+    is_available: bool
+
+class DailyAvailability(BaseModel):
+    date: date
+    slots: List[TimeSlot]
+
+class AvailabilityResponse(BaseModel):
+    availability: List[DailyAvailability]
+
+
+# Forward reference resolution
+from .club_schemas import Club
+Court.model_rebuild() 

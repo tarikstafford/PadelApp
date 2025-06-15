@@ -5,7 +5,7 @@ from datetime import datetime
 # Forward reference for Game schema
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .game_schemas import GameResponse as GameSchema
+    from .game_schemas import Game as GameSchema
 
 from .user_schemas import User
 from .court_schemas import Court
@@ -25,6 +25,11 @@ class BookingBase(BaseModel):
 class BookingCreate(BookingBase):
     pass
 
+class BookingUpdate(BaseModel):
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    status: Optional[BookingStatus] = None
+
 # Properties to return to client
 class Booking(BookingBase):
     id: int
@@ -42,5 +47,5 @@ class BookingInDB(Booking):
     pass 
 
 # --- Fix for Pydantic forward reference ---
-from .game_schemas import GameResponse as GameSchema
+from .game_schemas import Game as GameSchema
 Booking.model_rebuild() 

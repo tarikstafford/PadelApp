@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.schemas.token_schemas import TokenPayload
+from app.schemas.token_schemas import TokenData
 from app.models.user import User as UserModel # Renamed to avoid conflict
 from app import crud # To get user_crud
 from app.database import get_db # To get db session for get_current_user
@@ -58,7 +58,7 @@ def create_refresh_token(subject: Union[str, Any], expires_delta: Optional[timed
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
-def decode_token_payload(token: str) -> Optional[TokenPayload]:
+def decode_token_payload(token: str) -> Optional[TokenData]:
     """
     Decodes the JWT token and returns the payload if valid.
     Raises HTTPException for invalid tokens (expired, bad signature, etc.).
@@ -76,9 +76,8 @@ def decode_token_payload(token: str) -> Optional[TokenPayload]:
             )
         
         # Pydantic will also validate the types (e.g. exp is int)
-        token_data = TokenPayload(
+        token_data = TokenData(
             sub=payload["sub"],
-            exp=payload["exp"],
             role=payload.get("role"),
             token_type=payload.get("token_type")
         )
