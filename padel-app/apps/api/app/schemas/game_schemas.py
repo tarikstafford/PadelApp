@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, validator, Field
+from pydantic import BaseModel, EmailStr, validator
 from datetime import datetime # Though not directly in these schemas, good for context
 
 # Forward reference for Booking schema
@@ -22,10 +22,10 @@ class GamePlayerCreate(GamePlayerBase):
     pass
 
 class GamePlayerResponse(BaseModel):
-    user: UserSchema = Field(..., alias='player') # Nested user details, maps from ORM's 'player'
+    user: UserSchema # Nested user details
     status: GamePlayerStatus
 
-    model_config = {"from_attributes": True, "populate_by_name": True}
+    model_config = {"from_attributes": True}
 
 # --- Game Schemas ---
 class GameBase(BaseModel):

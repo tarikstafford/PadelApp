@@ -33,9 +33,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@workspace/ui/components/alert-dialog"
+} from "@workspace/ui/components/alert-dialog";
 import { apiClient } from "@/lib/api";
-import { Game } from "@/lib/types";
+import { Game, GamePlayer, Booking } from "@/lib/types";
 
 const MAX_PLAYERS_PER_GAME = 4; // Define the constant here
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -67,46 +67,7 @@ const PlayerSlot = ({ player, onInvite }: { player?: GamePlayer, onInvite: () =>
     );
 };
 
-// --- Interfaces copied from bookings/page.tsx for consistency ---
-interface Club {
-  id: number;
-  name: string;
-}
-
-interface Court {
-  id: number;
-  name: string;
-  club: Club;
-}
-
-interface GamePlayer {
-  user_id: number;
-  status: string;
-  user: {
-    id: number;
-    full_name: string;
-    profile_picture_url: string | null;
-    email: string;
-  };
-}
-
-interface Game {
-  id: number;
-  game_type: 'PUBLIC' | 'PRIVATE';
-  players: GamePlayer[];
-  booking: Booking;
-}
-
-interface Booking {
-  id: number;
-  court_id: number;
-  user_id: number;
-  start_time: string;
-  end_time: string;
-  status: string;
-  court: Court;
-  game: Game | null;
-}
+// Interfaces are now imported from @/lib/types
 
 function GameDetailPageInternal() {
   const params = useParams();
@@ -148,20 +109,21 @@ function GameDetailPageInternal() {
       }
       // Normalize the data to match the interfaces above
       const rawData = await response.json();
-      // Defensive normalization for nested court/club/player
+      
+      const normalizedPlayers = (rawData.players || []).map((p: GamePlayer) => ({
+        status: (p.status || '').toUpperCase(),
+        user: p.user || {
+            id: 0,
+            full_name: 'Unknown Player',
+            profile_picture_url: null,
+            email: ''
+        }
+      }));
+
       const normalizedGame: Game = {
         id: rawData.id,
         game_type: rawData.game_type,
-        players: (rawData.players || []).map((p: any) => ({
-          user_id: p.player?.id,
-          status: (p.status || '').toUpperCase(),
-          user: {
-            id: p.player?.id,
-            full_name: p.player?.full_name ?? '',
-            profile_picture_url: p.player?.profile_picture_url ?? null,
-            email: p.player?.email ?? '',
-          },
-        })),
+        players: normalizedPlayers,
         booking: {
           id: rawData.booking?.id ?? rawData.booking_id,
           court_id: rawData.booking?.court_id ?? rawData.court_id,
@@ -179,6 +141,10 @@ function GameDetailPageInternal() {
           },
           game: null, // Prevent circular reference
         },
+        result_submitted: rawData.result_submitted,
+        winning_team_id: rawData.winning_team_id,
+        team1: rawData.team1,
+        team2: rawData.team2,
       };
       setGame(normalizedGame as Game);
     } catch (error: unknown) {
@@ -287,7 +253,7 @@ function GameDetailPageInternal() {
   if (!game) { return <div className="text-center py-10"><p className="text-xl text-muted-foreground">Game not found.</p><Link href="/bookings"><Button variant="link" className="mt-2"><ArrowLeft className="mr-2 h-4 w-4" /> Back to My Bookings</Button></Link></div>; }
 
   const isCurrentUserGameCreator = (currentUser?.id) === (game.booking?.user_id);
-  const currentUserGamePlayerInfo = (game.players ?? []).find(p => p.user_id === currentUser?.id);
+  const currentUserGamePlayerInfo = (game.players ?? []).find((p: GamePlayer) => p.user.id === currentUser?.id);
   const courtName = game.booking?.court?.name || (game.booking?.court?.id ? `Court ID: ${game.booking.court.id}` : (game.booking ? `Court ID: ${game.booking.court_id}` : 'Court unavailable'));
   const clubName = game.booking?.court?.club?.name || (game.booking?.court?.club?.id ? `Club ID: ${game.booking.court.club.id}` : 'Club details unavailable');
 
@@ -363,11 +329,11 @@ function GameDetailPageInternal() {
                     <div className="mt-6">
                         <h4 className="text-md font-semibold mb-2">Player Management</h4>
                         <ul className="space-y-2">
-                            {game.players.map(playerEntry => (
-                                <li key={playerEntry.user_id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
+                            {game.players.map((playerEntry: GamePlayer) => (
+                                <li key={playerEntry.user.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
                                     <div className="flex items-center space-x-3 mb-2 sm:mb-0">
                                         <div className="relative h-10 w-10">
-                                            <Image src={playerEntry.user?.profile_picture_url || `/default-avatar.png`} alt={playerEntry.user.full_name} layout="fill" className="rounded-full" />
+                                            <Image src={playerEntry.user.profile_picture_url || `/default-avatar.png`} alt={playerEntry.user.full_name} layout="fill" className="rounded-full" />
                                         </div>
                                         <div>
                                             <p className="font-medium">{playerEntry.user.full_name || playerEntry.user.email || 'Unknown'}</p>
@@ -378,11 +344,11 @@ function GameDetailPageInternal() {
                                         <Badge variant={getPlayerStatusVariant(playerEntry.status)}>{playerEntry.status}</Badge>
                                         {isCurrentUserGameCreator && playerEntry.status === "REQUESTED_TO_JOIN" && (
                                             <div className="flex space-x-2 ml-2">
-                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user_id, "ACCEPTED")} disabled={isManagingPlayer[playerEntry.user_id] || (game.players?.filter(p=>p.status === "ACCEPTED").length ?? 0) >= MAX_PLAYERS_PER_GAME}>
-                                                    {isManagingPlayer[playerEntry.user_id] && (game.players?.filter(p=>p.status === "ACCEPTED").length ?? 0) < MAX_PLAYERS_PER_GAME ? <Loader2 className="h-3 w-3 animate-spin"/> : <CheckCircleIcon className="h-3 w-3"/>} Approve
+                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "ACCEPTED")} disabled={isManagingPlayer[playerEntry.user.id] || game.players.filter((p: GamePlayer) => p.status === 'ACCEPTED').length >= MAX_PLAYERS_PER_GAME}>
+                                                    {isManagingPlayer[playerEntry.user.id] && (game.players.filter((p: GamePlayer) => p.status === 'ACCEPTED').length) < MAX_PLAYERS_PER_GAME ? <Loader2 className="h-3 w-3 animate-spin"/> : <CheckCircleIcon className="h-3 w-3"/>} Approve
                                                 </Button>
-                                                <Button variant="destructive" size="sm" className="px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user_id, "DECLINED")} disabled={isManagingPlayer[playerEntry.user_id]}>
-                                                    {isManagingPlayer[playerEntry.user_id] ? <Loader2 className="h-3 w-3 animate-spin"/> : <XCircleIcon className="h-3 w-3" />} Decline
+                                                <Button variant="destructive" size="sm" className="px-2 py-1 h-auto text-xs" onClick={() => handleManageJoinRequest(playerEntry.user.id, "DECLINED")} disabled={isManagingPlayer[playerEntry.user.id]}>
+                                                    {isManagingPlayer[playerEntry.user.id] ? <Loader2 className="h-3 w-3 animate-spin"/> : <XCircleIcon className="h-3 w-3" />} Decline
                                                 </Button>
                                             </div>
                                         )}

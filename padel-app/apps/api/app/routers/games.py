@@ -136,9 +136,8 @@ async def invite_player_to_game(
         db=db, game_id=game_id, user_id=user_to_invite.id, status=GamePlayerStatus.INVITED
     )
     
-    db.refresh(new_game_player_orm, attribute_names=["player"])
-    if not new_game_player_orm.player:
-        new_game_player_orm.player = user_to_invite
+    # Manually attach the loaded user to the relationship for the response
+    new_game_player_orm.user = user_to_invite
 
     return new_game_player_orm 
 
@@ -183,9 +182,8 @@ async def respond_to_game_invitation(
         db=db, game_player=game_player_record, status=response_in.status
     )
 
-    db.refresh(updated_game_player_orm, attribute_names=["player"])
-    if not updated_game_player_orm.player:
-         updated_game_player_orm.player = current_user
+    # Manually attach the loaded user to the relationship for the response
+    updated_game_player_orm.user = current_user
 
     return updated_game_player_orm 
 
@@ -232,12 +230,11 @@ async def request_to_join_game(
         )
 
     new_game_player = crud.game_player_crud.add_player_to_game(
-        db=db, game_id=game_id, user_id=current_user.id, status=GamePlayerStatus.REQUESTED_TO_JOIN
+        db=db, game_id=game_id, user_id=current_user.id, status=GamePlayerStatus.ACCEPTED
     )
-
-    db.refresh(new_game_player, attribute_names=["player"])
-    if not new_game_player.player:
-        new_game_player.player = current_user
+    
+    # Manually attach the loaded user to the relationship for the response
+    new_game_player.user = current_user
 
     return new_game_player
 
@@ -278,7 +275,9 @@ async def manage_game_player_status(
         db=db, game_player=game_player_to_manage, status=status_update.status
     )
     
-    db.refresh(updated_game_player, attribute_names=["player"])
+    # Manually attach the loaded user to the relationship for the response
+    updated_game_player.user = current_user
+
     return updated_game_player
 
 def validate_game_exists(db: Session, game_id: int) -> models.Game:
