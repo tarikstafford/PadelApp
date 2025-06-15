@@ -87,9 +87,7 @@ def get_bookings_by_user(
     query = db.query(BookingModel).filter(BookingModel.user_id == user_id)
     query = query.options(
         joinedload(BookingModel.court).joinedload(CourtModel.club),
-        joinedload(BookingModel.game)
-        .selectinload(GameModel.players)
-        .selectinload(GamePlayerModel.user)
+        joinedload(BookingModel.game).selectinload(GameModel.players).joinedload(GamePlayerModel.user)
     )
 
     if start_date_filter:

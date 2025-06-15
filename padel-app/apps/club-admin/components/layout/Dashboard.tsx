@@ -1,6 +1,5 @@
 "use client";
 
-import AuthStatus from "../auth/AuthStatus";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
@@ -11,7 +10,6 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/courts", label: "Courts" },
   { href: "/bookings", label: "Bookings" },
-  { href: "/leaderboard", label: "Leaderboard" },
 ];
 
 export function DashboardPage({ children }: { children: React.ReactNode }) {

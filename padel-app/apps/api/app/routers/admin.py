@@ -210,6 +210,40 @@ async def delete_owned_club_court(
     court = crud.court_crud.remove_court(db=db, court_id=court_id)
     return court
 
+@router.get("/my-club/bookings", response_model=List[booking_schemas.Booking])
+async def read_owned_club_bookings(
+    *,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_active_user),
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    court_id: Optional[int] = None,
+    status: Optional[BookingStatus] = None,
+    skip: int = 0,
+    limit: int = 100,
+):
+    """
+    Retrieve bookings for the club owned by the current admin user.
+    """
+    club = current_admin.owned_club
+    if not club:
+        raise HTTPException(
+            status_code=404,
+            detail="The current admin does not own a club.",
+        )
+
+    bookings = crud.booking_crud.get_bookings_by_club(
+        db,
+        club_id=club.id,
+        skip=skip,
+        limit=limit,
+        start_date_filter=start_date,
+        end_date_filter=end_date,
+        court_id_filter=court_id,
+        status_filter=status,
+    )
+    return bookings
+
 @router.get("/club/{club_id}/bookings", response_model=List[booking_schemas.Booking], dependencies=[Depends(ClubAdminChecker())])
 async def read_club_bookings(
     *,
