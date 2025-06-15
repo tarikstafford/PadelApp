@@ -1,20 +1,26 @@
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, HttpUrl
+from datetime import time
 
 from .user_schemas import User as UserSchema # Import for nesting owner details
+
+# No longer import Court directly to prevent circular dependency
+# from .court_schemas import Court
 
 # Shared properties
 class ClubBase(BaseModel):
     name: str
+    description: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     postal_code: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[EmailStr] = None
-    description: Optional[str] = None # Changed from Text in model to str for Pydantic
-    opening_hours: Optional[str] = None
+    opening_time: Optional[time] = None
+    closing_time: Optional[time] = None
+    opening_hours_display: Optional[str] = None
     amenities: Optional[str] = None
-    image_url: Optional[str] = None
+    image_url: Optional[HttpUrl] = None
 
     @validator("email", pre=True)
     def empty_str_to_none(cls, v):
@@ -30,7 +36,8 @@ class ClubRegistrationSchema(ClubBase):
 
 # Properties to receive on club creation
 class ClubCreate(ClubBase):
-    pass # All fields from ClubBase are needed/optional as defined there
+    name: str
+    owner_id: int
 
 # Alias for creating a club via the admin route, where owner_id is derived
 ClubCreateForAdmin = ClubCreate
@@ -49,16 +56,35 @@ class ClubInDBBase(ClubBase):
 
 # Properties to return to client (basic club info)
 class Club(ClubInDBBase):
-    pass # Inherits all from ClubInDBBase
+    # This will now be populated via the relationship
+    courts: List["Court"] = []
+    
+    class Config:
+        model_config = {"from_attributes": True}
 
 # Properties to return to client (club info with its courts)
 class ClubWithCourts(Club):
-    courts: List["Court"] = []
+    pass
 
 # Properties stored in DB
 class ClubInDB(ClubInDBBase):
     pass 
 
-# Late import to resolve circular dependency
+class ScheduleResponse(BaseModel):
+    courts: List["Court"]
+    bookings: List["Booking"]
+
+    model_config = {"from_attributes": True}
+
+# A slimmed-down version for lists where full details are not needed.
+class ClubBasicInfo(BaseModel):
+    id: int
+    name: str
+    city: Optional[str] = None
+    image_url: Optional[HttpUrl] = None
+
+    model_config = {"from_attributes": True}
+
+# Forward reference resolution
 from .court_schemas import Court
-ClubWithCourts.model_rebuild() 
+Club.model_rebuild() 

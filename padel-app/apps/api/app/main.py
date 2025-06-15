@@ -32,9 +32,14 @@ app.add_middleware(AuthenticationMiddleware)
 # Custom exception handler for Pydantic validation errors
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    try:
+        body_str = exc.body.decode('utf-8')
+    except (AttributeError, UnicodeDecodeError):
+        body_str = "Could not decode request body"
+
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "body": exc.body},
+        content={"detail": exc.errors(), "body": body_str},
     )
 
 # Set all CORS enabled origins

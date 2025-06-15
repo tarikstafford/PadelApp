@@ -3,6 +3,10 @@ from pydantic import BaseModel
 from decimal import Decimal
 from app.models.court import SurfaceType, CourtAvailabilityStatus
 from datetime import datetime, date
+from .user_schemas import User
+from app.models import BookingStatus
+# No longer import Club directly to prevent circular dependency
+# from .club_schemas import Club
 
 # Shared properties
 class CourtBase(BaseModel):
@@ -34,23 +38,30 @@ class CourtInDBBase(CourtBase):
 class Court(CourtInDBBase):
     id: int
     club_id: int
-    club: "Club" # Use string literal for forward reference
+    club: "Club" # Use a forward reference (string) to avoid circular import
 
     model_config = {"from_attributes": True}
 
-# --- TimeSlot Schema for Availability ---
-class TimeSlot(BaseModel):
-    start_time: datetime
-    end_time: datetime
+# --- TimeSlot Schemas for Availability ---
+class BookingTimeSlot(BaseModel):
+    start_time: str
+    end_time: str
     is_available: bool
+
+class CalendarTimeSlot(BaseModel):
+    time: str
+    booked: bool
 
 class DailyAvailability(BaseModel):
     date: date
-    slots: List[TimeSlot]
+    slots: List[CalendarTimeSlot]
 
 class AvailabilityResponse(BaseModel):
-    availability: List[DailyAvailability]
+    days: List[DailyAvailability]
 
+class CourtWithBookings(Court):
+    # Add any additional properties specific to CourtWithBookings
+    pass
 
 # Forward reference resolution
 from .club_schemas import Club

@@ -29,10 +29,10 @@ function UserProfilePage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user) {
+        if (user && accessToken) {
             setFormData({ name: user.full_name || '', email: user.email || '' });
             apiClient
-                .get<EloAdjustmentRequest[]>("/users/me/elo-adjustment-requests")
+                .get<EloAdjustmentRequest[]>("/users/me/elo-adjustment-requests", undefined, accessToken)
                 .then((data) => {
                     setRequests(data);
                 })
@@ -43,7 +43,7 @@ function UserProfilePage() {
                     setLoading(false);
                 });
         }
-    }, [user]);
+    }, [user, accessToken]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;

@@ -20,26 +20,26 @@ const getApiUrl = () => {
   return `${baseUrl}/api/v1`;
 };
 
-const getAuthHeaders = (): HeadersInit => {
+const getAuthHeaders = (token?: string | null): HeadersInit => {
   const headers = new Headers();
   headers.append('Content-Type', 'application/json');
 
-  const token = getCookie('token');
-  if (token) {
-    headers.append('Authorization', `Bearer ${token}`);
+  const authToken = token || getCookie('token');
+  if (authToken) {
+    headers.append('Authorization', `Bearer ${authToken}`);
   }
   return headers;
 };
 
 export const apiClient = {
-  get: async <T>(path: string, params?: Record<string, any>): Promise<T> => {
+  get: async <T>(path: string, params?: Record<string, any>, token?: string | null): Promise<T> => {
     try {
       const url = new URL(`${getApiUrl()}${path}`);
       if (params) {
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
       }
       const response = await fetch(url.toString(), {
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(token),
       });
       if (!response.ok) {
         throw await response.json();
@@ -52,10 +52,10 @@ export const apiClient = {
     }
   },
 
-  post: async <T>(path: string, body: any, options?: { headers?: Record<string, string> }): Promise<T> => {
+  post: async <T>(path: string, body: any, options?: { headers?: Record<string, string>, token?: string | null }): Promise<T> => {
     try {
       const isFormData = body instanceof FormData;
-      const headers = options?.headers || getAuthHeaders();
+      const headers = options?.headers || getAuthHeaders(options?.token);
       
       // Do not set Content-Type for FormData, browser does it with boundary
       if (isFormData && headers instanceof Headers) {
@@ -79,11 +79,11 @@ export const apiClient = {
     }
   },
 
-  put: async <T>(path: string, body: any): Promise<T> => {
+  put: async <T>(path: string, body: any, token?: string | null): Promise<T> => {
     try {
       const response = await fetch(`${getApiUrl()}${path}`, {
         method: 'PUT',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(token),
         body: JSON.stringify(body),
       });
       if (!response.ok) {
@@ -97,11 +97,11 @@ export const apiClient = {
     }
   },
 
-  delete: async <T>(path: string): Promise<T> => {
+  delete: async <T>(path: string, token?: string | null): Promise<T> => {
     try {
       const response = await fetch(`${getApiUrl()}${path}`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: getAuthHeaders(token),
       });
       if (!response.ok) {
         throw await response.json();
@@ -180,7 +180,7 @@ export const registerAdmin = async (data: AdminRegistrationData): Promise<AuthRe
 };
 
 export const createClub = async (data: ClubData, token?: string): Promise<Club> => {
-  const headers = new Headers(getAuthHeaders());
+  const headers = new Headers(getAuthHeaders(token));
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
@@ -188,7 +188,7 @@ export const createClub = async (data: ClubData, token?: string): Promise<Club> 
 };
 
 export const createCourt = async (data: CourtData, token?: string): Promise<Court> => {
-  const headers = new Headers(getAuthHeaders());
+  const headers = new Headers(getAuthHeaders(token));
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }

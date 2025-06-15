@@ -93,7 +93,7 @@ async def read_club_courts(
     courts = crud.court_crud.get_courts_by_club(db=db, club_id=club_id)
     return courts
 
-@router.get("/club/{club_id}/schedule", dependencies=[Depends(ClubAdminChecker())])
+@router.get("/club/{club_id}/schedule", response_model=club_schemas.ScheduleResponse, dependencies=[Depends(ClubAdminChecker())])
 async def read_club_schedule(
     club_id: int,
     start_date: Optional[date] = Query(None, description="Start date for fetching schedule. Defaults to today if no dates are provided."),
@@ -123,7 +123,7 @@ async def read_club_schedule(
     )
     return {"courts": courts, "bookings": bookings}
 
-@router.get("/my-club/schedule", response_model=dict)
+@router.get("/my-club/schedule", response_model=club_schemas.ScheduleResponse)
 async def get_my_club_schedule(
     request: Request,
     db: Session = Depends(get_db),
@@ -142,16 +142,28 @@ async def get_my_club_schedule(
 
     # Convert query params to a dictionary
     query_params = dict(request.query_params)
+    start_date_str = query_params.get("start_date")
+    end_date_str = query_params.get("end_date")
 
-    # Call the existing endpoint logic, but as a function
-    # We need to ensure dependencies are resolved correctly or passed explicitly
-    # A cleaner way is to refactor the logic of read_club_schedule if it becomes complex
-    # For now, we'll call it and pass what's needed.
-    # The `Depends` will be re-evaluated, which is fine.
+    s_date = None
+    e_date = None
+
+    try:
+        if start_date_str:
+            s_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        if end_date_str:
+            e_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid date format. Please use YYYY-MM-DD."
+        )
+
+    # Call the existing endpoint logic
     return await read_club_schedule(
         club_id=current_admin.owned_club.id,
-        start_date=query_params.get("start_date"),
-        end_date=query_params.get("end_date"),
+        start_date=s_date,
+        end_date=e_date,
         db=db
     )
 

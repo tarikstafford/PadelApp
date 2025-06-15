@@ -7,6 +7,7 @@ from app import schemas, crud, models
 from app.database import get_db
 from app.services import availability_service
 from app.core import security
+from app.schemas import BookingTimeSlot
 
 router = APIRouter()
 
@@ -33,50 +34,33 @@ def create_court_for_club(
     )
     return new_court
 
-@router.get("/{court_id}/availability", response_model=schemas.AvailabilityResponse)
-async def get_court_availability_slots(
+@router.get(
+    "/{court_id}/availability",
+    response_model=List[schemas.CalendarTimeSlot],
+    dependencies=[Depends(security.get_current_active_user)],
+    summary="Get Court Availability",
+    description="Retrieve the availability for a specific court for a given date.",
+)
+def get_court_availability(
     court_id: int,
-    start_date: Optional[date] = Query(None, description="Start date for availability range (YYYY-MM-DD). Defaults to today."),
-    end_date: Optional[date] = Query(None, description="End date for availability range (YYYY-MM-DD). Defaults to start_date."),
-    db: Session = Depends(get_db)
+    date: date,
+    db: Session = Depends(get_db),
 ):
-    """
-    Retrieve available 30-minute time slots for a specific court over a date range.
-    """
-    # Validate court existence
     court = crud.court_crud.get_court(db, court_id=court_id)
     if not court:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Court with id {court_id} not found"
-        )
-    
-    # Date logic and validation
-    today = date.today()
-    s_date = start_date or today
-    e_date = end_date or s_date
-
-    if s_date > e_date:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="End date cannot be earlier than start date."
-        )
-
-    if (e_date - s_date).days > 30: # Example limit: 31 days
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The requested date range cannot exceed 31 days."
-        )
+        raise HTTPException(status_code=404, detail="Court not found")
 
     try:
-        availability = availability_service.get_court_availability_for_range(
-            db=db, court_id=court_id, start_date=s_date, end_date=e_date
+        availability_slots = availability_service.get_court_availability_for_day(
+            db=db, court_id=court_id, target_date=date
         )
-        return availability
+        return availability_slots
     except Exception as e:
-        # Log the exception e for debugging purposes
-        print(f"Error calculating availability for court {court_id} from {s_date} to {e_date}: {e}")
+        print(e) # Temporary print for debugging
+        # It's good practice to log the error.
+        # import logging
+        # logging.error(f"Error fetching availability for court {court_id} on {date}: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=500,
             detail="An unexpected error occurred while calculating court availability."
         ) 

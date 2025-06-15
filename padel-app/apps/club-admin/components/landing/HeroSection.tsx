@@ -14,9 +14,14 @@ export default function HeroSection() {
           <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
             Focus on your players, we'll handle the rest.
           </p>
-          <Button asChild size="lg">
-            <Link href="/register">Sign Up for Free</Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <Button asChild size="lg">
+              <Link href="/register">Sign Up for Free</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/login">Login</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </section>

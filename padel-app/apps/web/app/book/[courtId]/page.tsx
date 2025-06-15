@@ -120,14 +120,23 @@ function BookingPageInternal() {
   }, [courtId, courtNameParam, clubNameParam]);
 
   const fetchTimeSlots = useCallback(async () => {
-    if (!selectedDate || !courtId) return;
+    if (!selectedDate || !courtId || !accessToken) return;
     setIsLoadingSlots(true);
     setErrorSlots(null);
     setSelectedTimeSlot(null);
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      const response = await fetch(`${API_BASE_URL}/api/v1/courts/${courtId}/availability?target_date=${formattedDate}`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/courts/${courtId}/availability?date=${formattedDate}`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+        },
+      });
       if (!response.ok) {
+        if (response.status === 401) {
+            toast.error("Authentication failed. Please log in again.");
+            // Optionally, trigger re-authentication or redirect
+            return;
+        }
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch time slots" }));
         const errorMessage = typeof errorData.detail === 'string' ? errorData.detail : "Failed to fetch time slots";
         throw new Error(errorMessage);
@@ -142,7 +151,7 @@ function BookingPageInternal() {
     } finally {
       setIsLoadingSlots(false);
     }
-  }, [selectedDate, courtId]);
+  }, [selectedDate, courtId, accessToken]);
 
   useEffect(() => {
     fetchTimeSlots();

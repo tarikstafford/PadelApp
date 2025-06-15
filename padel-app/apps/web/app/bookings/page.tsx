@@ -232,7 +232,7 @@ function BookingsPageInternal() {
         <div className="space-y-4">
           {bookings.map((booking) => (
             <Card key={booking.id} className="transition-shadow flex flex-col">
-              <Link href={`/bookings/${booking.id}`} passHref legacyBehavior>
+              <Link href={`/bookings/${booking.id}`}>
                 <div className="cursor-pointer hover:bg-muted/50 rounded-t-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center">

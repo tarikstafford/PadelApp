@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from app import crud
 from app.models import Court
-from app.schemas.court_schemas import AvailabilityResponse, DailyAvailability, TimeSlot
+from app.schemas.court_schemas import AvailabilityResponse, DailyAvailability, BookingTimeSlot, CalendarTimeSlot
 from app.utils.availability import get_time_slots
 
 # Define default operating hours for slot generation (can be made dynamic later)
@@ -11,13 +11,57 @@ DEFAULT_OPENING_TIME = datetime.time(9, 0)  # 9:00 AM
 DEFAULT_CLOSING_TIME = datetime.time(22, 0) # 10:00 PM (slots up to 21:30 will be generated)
 SLOT_DURATION_MINUTES = 90
 
-async def get_court_availability(
+def get_court_availability_for_day(
+    db: Session, *, court_id: int, target_date: datetime.date
+) -> List[BookingTimeSlot]:
+    """
+    Get the availability of a court for a single day.
+    """
+    db_court = crud.court_crud.get_court(db, court_id=court_id)
+    if not db_court:
+        return []
+
+    opening_time = db_court.club.opening_time or DEFAULT_OPENING_TIME
+    closing_time = db_court.club.closing_time or DEFAULT_CLOSING_TIME
+    
+    bookings_for_day = crud.booking_crud.get_by_court_and_date(
+        db, court_id=court_id, target_date=target_date
+    )
+    booked_start_times = {b.start_time for b in bookings_for_day}
+
+    all_slots: List[BookingTimeSlot] = []
+    
+    now = datetime.datetime.now()
+    
+    for slot_start_time, slot_end_time in get_time_slots(
+        opening_time, closing_time, SLOT_DURATION_MINUTES
+    ):
+        
+        slot_start_datetime = datetime.datetime.combine(target_date, slot_start_time)
+
+        is_booked = slot_start_datetime in booked_start_times
+        
+        is_in_past = slot_start_datetime < now
+        
+        # A slot is available if it's not booked and not in the past.
+        is_available = not is_booked and not is_in_past
+
+        all_slots.append(
+            BookingTimeSlot(
+                start_time=slot_start_datetime.isoformat(), 
+                end_time=datetime.datetime.combine(target_date, slot_end_time).isoformat(),
+                is_available=is_available
+            )
+        )
+    return all_slots
+
+async def get_court_availability_for_range(
     db: Session, *, court_id: int, start_date: datetime.date, end_date: datetime.date
 ) -> AvailabilityResponse:
     """
     Get the availability of a court for a given date range.
     """
-    db_court = crud.court.get(db, id=court_id)
+    db_court = crud.court_crud.get_court(db, court_id=court_id)
     if not db_court:
         # Or raise HTTPException(status_code=404, detail="Court not found")
         return AvailabilityResponse(days=[])
@@ -30,18 +74,18 @@ async def get_court_availability(
     availability_by_day: List[DailyAvailability] = []
     current_date = start_date
     while current_date <= end_date:
-        bookings_for_day = crud.booking.get_by_court_and_date(
+        bookings_for_day = crud.booking_crud.get_by_court_and_date(
             db, court_id=court_id, target_date=current_date
         )
         booked_start_times = {b.start_time.time() for b in bookings_for_day}
 
-        all_slots: List[TimeSlot] = []
+        all_slots: List[CalendarTimeSlot] = []
         for interval_start, _ in get_time_slots(
             opening_time, closing_time, slot_duration
         ):
             is_booked = interval_start in booked_start_times
             all_slots.append(
-                TimeSlot(time=interval_start.strftime("%H:%M"), booked=is_booked)
+                CalendarTimeSlot(time=interval_start.strftime("%H:%M"), booked=is_booked)
             )
 
         availability_by_day.append(

@@ -62,13 +62,22 @@ export function transformBookingsToEvents(bookings: Booking[]): CalendarEvent[] 
       return null;
     }
 
+    // Validate that start_time and end_time are valid dates
+    const startTime = new Date(start_time);
+    const endTime = new Date(end_time);
+
+    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+      console.warn("transformBookingsToEvents: skipping booking with invalid start_time or end_time", booking);
+      return null;
+    }
+
     const colors = getBookingStatusColors(status);
     
     const event: CalendarEvent = {
       id: `booking-${id}`,
       title: `${court.name}: ${user.name || user.email}`,
-      start: start_time,
-      end: end_time,
+      start: startTime,
+      end: endTime,
       backgroundColor: colors.background,
       borderColor: colors.border,
       textColor: colors.text,

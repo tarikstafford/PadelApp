@@ -42,10 +42,19 @@ export const apiClient = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
-        throw await response.json();
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          errorBody = { detail: `Request failed with status ${response.status}` };
+        }
+        throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error) {
+    } catch (error: any) {
+      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
+        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+      }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
       throw formattedError;
@@ -67,10 +76,19 @@ export const apiClient = {
         body: isFormData ? body : JSON.stringify(body),
       });
       if (!response.ok) {
-        throw await response.json();
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          errorBody = { detail: `Request failed with status ${response.status}` };
+        }
+        throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error) {
+    } catch (error: any) {
+      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
+        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+      }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
       throw formattedError;
@@ -85,10 +103,19 @@ export const apiClient = {
         body: JSON.stringify(body),
       });
       if (!response.ok) {
-        throw await response.json();
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          errorBody = { detail: `Request failed with status ${response.status}` };
+        }
+        throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error) {
+    } catch (error: any) {
+      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
+        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+      }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
       throw formattedError;
@@ -102,10 +129,19 @@ export const apiClient = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
-        throw await response.json();
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          errorBody = { detail: `Request failed with status ${response.status}` };
+        }
+        throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error) {
+    } catch (error: any) {
+      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
+        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+      }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
       throw formattedError;
@@ -124,7 +160,7 @@ export const fetchBookings = async (startDate: Date, endDate: Date): Promise<Boo
   const formattedStartDate = format(startDate, 'yyyy-MM-dd');
   const formattedEndDate = format(endDate, 'yyyy-MM-dd');
   
-  const response = await apiClient.get<{ bookings: Booking[] }>(
+  const response = await apiClient.get<{ courts: Court[], bookings: Booking[] }>(
     `/admin/my-club/schedule`, { start_date: formattedStartDate, end_date: formattedEndDate }
   );
   
