@@ -36,7 +36,7 @@ def create_court_for_club(
 
 @router.get(
     "/{court_id}/availability",
-    response_model=List[schemas.CalendarTimeSlot],
+    response_model=List[schemas.BookingTimeSlot],
     dependencies=[Depends(security.get_current_active_user)],
     summary="Get Court Availability",
     description="Retrieve the availability for a specific court for a given date.",
@@ -44,6 +44,7 @@ def create_court_for_club(
 def get_court_availability(
     court_id: int,
     date: date,
+    duration: Optional[int] = Query(90, enum=[60, 90]),
     db: Session = Depends(get_db),
 ):
     court = crud.court_crud.get_court(db, court_id=court_id)
@@ -52,7 +53,7 @@ def get_court_availability(
 
     try:
         availability_slots = availability_service.get_court_availability_for_day(
-            db=db, court_id=court_id, target_date=date
+            db=db, court_id=court_id, target_date=date, duration=duration
         )
         return availability_slots
     except Exception as e:

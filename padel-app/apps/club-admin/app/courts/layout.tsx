@@ -2,7 +2,7 @@
 
 import { DashboardPage } from "@/components/layout/Dashboard";
 
-export default function AdminLayout({
+export default function CourtsLayout({
   children,
 }: {
   children: React.ReactNode;

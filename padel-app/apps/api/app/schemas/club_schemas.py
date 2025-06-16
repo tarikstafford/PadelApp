@@ -7,6 +7,13 @@ from .user_schemas import User as UserSchema # Import for nesting owner details
 # No longer import Court directly to prevent circular dependency
 # from .court_schemas import Court
 
+# Forward declaration for CourtBase to be used in Club schema
+class CourtBase(BaseModel):
+    id: int
+    name: str
+
+    model_config = {"from_attributes": True}
+
 # Shared properties
 class ClubBase(BaseModel):
     name: str
@@ -20,11 +27,11 @@ class ClubBase(BaseModel):
     closing_time: Optional[time] = None
     opening_hours_display: Optional[str] = None
     amenities: Optional[str] = None
-    image_url: Optional[HttpUrl] = None
+    image_url: Optional[str] = None # Allow string for now, HttpUrl is too strict for data entry
 
-    @validator("email", pre=True)
+    @validator("email", "image_url", pre=True)
     def empty_str_to_none(cls, v):
-        if v == "":
+        if v == "" or v is None:
             return None
         return v
 
@@ -34,13 +41,13 @@ class ClubRegistrationSchema(ClubBase):
     admin_name: Optional[str] = None
     admin_password: str
 
-# Properties to receive on club creation
+# Properties to receive on club creation via a direct call (e.g., by a superuser)
 class ClubCreate(ClubBase):
-    name: str
     owner_id: int
 
-# Alias for creating a club via the admin route, where owner_id is derived
-ClubCreateForAdmin = ClubCreate
+# Properties to receive on club creation via the admin route, where owner_id is derived
+class ClubCreateForAdmin(ClubBase):
+    name: str # Make sure name is explicitly required
 
 # Properties to receive on club update
 class ClubUpdate(ClubBase):
@@ -56,8 +63,7 @@ class ClubInDBBase(ClubBase):
 
 # Properties to return to client (basic club info)
 class Club(ClubInDBBase):
-    # This will now be populated via the relationship
-    courts: List["Court"] = []
+    courts: List[CourtBase] = [] # Use the simplified CourtBase to break the cycle
     
     class Config:
         model_config = {"from_attributes": True}

@@ -23,7 +23,7 @@ class BookingBase(BaseModel):
 # Properties to receive on booking creation
 # user_id will be taken from the authenticated user in the endpoint
 class BookingCreate(BookingBase):
-    pass
+    duration: int # Duration in minutes, e.g., 60 or 90
 
 class BookingUpdate(BaseModel):
     start_time: Optional[datetime] = None

@@ -41,32 +41,23 @@ def get_clubs(
 
     return query.offset(skip).limit(limit).all()
 
-# Placeholder for create_club
-def create_club(db: Session, club: ClubCreate, owner_id: int) -> ClubModel:
+def create_club(db: Session, club: ClubCreate) -> ClubModel:
+    """Create a new club."""
     db_club = ClubModel(
-        name=club.name,
-        address=club.address,
-        city=club.city,
-        postal_code=club.postal_code,
-        phone=club.phone,
-        email=club.email,
-        description=club.description,
-        opening_hours=club.opening_hours,
-        amenities=club.amenities,
-        image_url=club.image_url,
-        owner_id=owner_id
+        **club.model_dump(exclude={"owner_id"}), 
+        owner_id=club.owner_id
     )
     db.add(db_club)
     db.commit()
     db.refresh(db_club)
     return db_club
 
-# Placeholder for update_club
-def update_club(db: Session, db_club: ClubModel, club_in: ClubUpdate) -> ClubModel:
-    update_data = club_in.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_club, key, value)
-    db.add(db_club)
+def update_club(db: Session, db_obj: ClubModel, obj_in: ClubUpdate) -> ClubModel:
+    """Update a club's details."""
+    update_data = obj_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_obj, field, value)
+    db.add(db_obj)
     db.commit()
-    db.refresh(db_club)
-    return db_club 
+    db.refresh(db_obj)
+    return db_obj 

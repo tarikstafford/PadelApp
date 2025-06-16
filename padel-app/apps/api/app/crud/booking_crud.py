@@ -13,7 +13,6 @@ from app.schemas.booking_schemas import BookingCreate
 # Import SLOT_INTERVAL_MINUTES, ideally from a shared config or constants file
 # For now, let's assume it's accessible or define it locally if needed for CRUD clarity.
 # from app.services.availability_service import SLOT_INTERVAL_MINUTES # Or define/import from elsewhere
-SLOT_INTERVAL_MINUTES = 30 # Defining locally for now, can be refactored
 
 def get_bookings_for_court_on_date(
     db: Session, 
@@ -38,7 +37,7 @@ def get_bookings_for_court_on_date(
 
 def create_booking(db: Session, booking_in: BookingCreate, user_id: int) -> BookingModel:
     """Create a new booking in the database."""
-    end_time = booking_in.start_time + timedelta(minutes=SLOT_INTERVAL_MINUTES)
+    end_time = booking_in.start_time + timedelta(minutes=booking_in.duration)
     
     db_booking = BookingModel(
         court_id=booking_in.court_id,
@@ -181,7 +180,7 @@ def get_bookings_by_club_and_date(db: Session, club_id: int, target_date: date) 
 
 def create_booking_with_game(db: Session, booking_in: BookingCreate, user_id: int) -> BookingModel:
     """Create a new booking in the database with a game."""
-    end_time = booking_in.start_time + timedelta(minutes=SLOT_INTERVAL_MINUTES)
+    end_time = booking_in.start_time + timedelta(minutes=booking_in.duration)
     
     db_booking = BookingModel(
         court_id=booking_in.court_id,

@@ -6,7 +6,6 @@ import { Providers } from "@/components/providers"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { Toaster } from "@workspace/ui/components/sonner"
 import ErrorBoundary from "@/components/ErrorBoundary"
-import { DashboardPage } from "@/components/layout/Dashboard"
 import { v4 as uuidv4 } from 'uuid'
 
 const fontSans = Geist({
@@ -39,7 +38,7 @@ export default function RootLayout({
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
           <Providers>
             <AuthProvider>
-              <DashboardPage>{children}</DashboardPage>
+              {children}
               <Toaster richColors position="top-right" />
             </AuthProvider>
           </Providers>

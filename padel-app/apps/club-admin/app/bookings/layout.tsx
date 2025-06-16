@@ -2,7 +2,7 @@
 
 import { DashboardPage } from "@/components/layout/Dashboard";
 
-export default function AdminLayout({
+export default function BookingsLayout({
   children,
 }: {
   children: React.ReactNode;

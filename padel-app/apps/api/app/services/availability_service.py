@@ -9,10 +9,9 @@ from app.utils.availability import get_time_slots
 # Define default operating hours for slot generation (can be made dynamic later)
 DEFAULT_OPENING_TIME = datetime.time(9, 0)  # 9:00 AM
 DEFAULT_CLOSING_TIME = datetime.time(22, 0) # 10:00 PM (slots up to 21:30 will be generated)
-SLOT_DURATION_MINUTES = 90
 
 def get_court_availability_for_day(
-    db: Session, *, court_id: int, target_date: datetime.date
+    db: Session, *, court_id: int, target_date: datetime.date, duration: int = 90
 ) -> List[BookingTimeSlot]:
     """
     Get the availability of a court for a single day.
@@ -24,22 +23,22 @@ def get_court_availability_for_day(
     opening_time = db_court.club.opening_time or DEFAULT_OPENING_TIME
     closing_time = db_court.club.closing_time or DEFAULT_CLOSING_TIME
     
-    bookings_for_day = crud.booking_crud.get_by_court_and_date(
+    bookings_for_day = crud.booking_crud.get_bookings_for_court_on_date(
         db, court_id=court_id, target_date=target_date
     )
-    booked_start_times = {b.start_time for b in bookings_for_day}
+    booked_start_times = {b.start_time.time() for b in bookings_for_day}
 
     all_slots: List[BookingTimeSlot] = []
     
     now = datetime.datetime.now()
     
     for slot_start_time, slot_end_time in get_time_slots(
-        opening_time, closing_time, SLOT_DURATION_MINUTES
+        opening_time, closing_time, duration
     ):
         
         slot_start_datetime = datetime.datetime.combine(target_date, slot_start_time)
 
-        is_booked = slot_start_datetime in booked_start_times
+        is_booked = slot_start_time in booked_start_times
         
         is_in_past = slot_start_datetime < now
         
@@ -69,12 +68,12 @@ async def get_court_availability_for_range(
     # Fallback to defaults if club-specific times are not set
     opening_time = db_court.club.opening_time or DEFAULT_OPENING_TIME
     closing_time = db_court.club.closing_time or DEFAULT_CLOSING_TIME
-    slot_duration = SLOT_DURATION_MINUTES  # This could also be a court/club setting
+    slot_duration = 90  # This could also be a court/club setting
 
     availability_by_day: List[DailyAvailability] = []
     current_date = start_date
     while current_date <= end_date:
-        bookings_for_day = crud.booking_crud.get_by_court_and_date(
+        bookings_for_day = crud.booking_crud.get_bookings_for_court_on_date(
             db, court_id=court_id, target_date=current_date
         )
         booked_start_times = {b.start_time.time() for b in bookings_for_day}

@@ -208,7 +208,7 @@ async def create_owned_club_court(
     court = crud.court_crud.create_court(db=db, court_in=court_in, club_id=club.id)
     return court
 
-@router.put("/my-club/courts/{court_id}", response_model=court_schemas.Court, dependencies=[Depends(ClubAdminChecker())])
+@router.put("/my-club/courts/{court_id}", response_model=court_schemas.Court)
 async def update_owned_club_court(
     *,
     db: Session = Depends(get_db),
@@ -237,7 +237,33 @@ async def update_owned_club_court(
             detail="Court not found or not owned by the admin's club.",
         )
 
-    court = crud.court_crud.update_court(db=db, db_obj=court, obj_in=court_in)
+    court = crud.court_crud.update_court(db=db, db_court=court, court_in=court_in)
+    return court
+
+@router.get("/my-club/courts/{court_id}", response_model=court_schemas.Court)
+async def read_owned_club_court(
+    *,
+    db: Session = Depends(get_db),
+    court_id: int,
+    current_admin: User = Depends(get_current_active_user),
+):
+    """
+    Get a specific court for the club owned by the current admin user.
+    """
+    club = current_admin.owned_club
+    if not club:
+        raise HTTPException(
+            status_code=404,
+            detail="The current admin does not own a club.",
+        )
+    
+    court = crud.court_crud.get_court(db=db, court_id=court_id)
+    if not court or court.club_id != club.id:
+        raise HTTPException(
+            status_code=404,
+            detail="Court not found or not owned by the admin's club.",
+        )
+
     return court
 
 @router.delete("/my-club/courts/{court_id}", response_model=court_schemas.Court, dependencies=[Depends(ClubAdminChecker())])
@@ -395,7 +421,13 @@ async def create_my_club(
             detail="This admin already owns a club.",
         )
     
-    new_club = crud.club_crud.create_club(db=db, club=club_in, owner_id=current_admin.id)
+    # Construct the ClubCreate object with the owner_id from the token
+    club_to_create = club_schemas.ClubCreate(
+        **club_in.model_dump(),
+        owner_id=current_admin.id
+    )
+
+    new_club = crud.club_crud.create_club(db=db, club=club_to_create)
     return new_club
 
 @router.get("/club/{club_id}/dashboard-summary", dependencies=[Depends(ClubAdminChecker())])

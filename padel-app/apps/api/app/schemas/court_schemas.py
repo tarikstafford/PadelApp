@@ -8,6 +8,13 @@ from app.models import BookingStatus
 # No longer import Club directly to prevent circular dependency
 # from .club_schemas import Club
 
+# Forward declaration for a simplified Club schema
+class ClubBase(BaseModel):
+    id: int
+    name: str
+    
+    model_config = {"from_attributes": True}
+
 # Shared properties
 class CourtBase(BaseModel):
     name: str
@@ -38,7 +45,7 @@ class CourtInDBBase(CourtBase):
 class Court(CourtInDBBase):
     id: int
     club_id: int
-    club: "Club" # Use a forward reference (string) to avoid circular import
+    club: ClubBase # Use the simplified ClubBase to break the cycle
 
     model_config = {"from_attributes": True}
 
@@ -61,8 +68,4 @@ class AvailabilityResponse(BaseModel):
 
 class CourtWithBookings(Court):
     # Add any additional properties specific to CourtWithBookings
-    pass
-
-# Forward reference resolution
-from .club_schemas import Club
-Court.model_rebuild() 
+    pass 
