@@ -323,8 +323,15 @@ async def submit_game_result(
     # Update ratings using EloRatingService
     elo_rating_service.update_ratings(winning_players, losing_players, 1, 0)
 
-    # Persist the changes
+    # Set the winning team on the game
+    game.winning_team_id = winning_team.id
+
+    # Add the game and all updated player objects to the session
     db.add(game)
+    db.add_all(winning_players)
+    db.add_all(losing_players)
+
+    # Persist all changes to the database
     db.commit()
     db.refresh(game)
 

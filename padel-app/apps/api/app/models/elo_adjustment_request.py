@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SAEnum, DateTime, func
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SAEnum, DateTime, func, Float
 from sqlalchemy.orm import relationship
 import enum
 from app.database import Base
@@ -14,8 +14,8 @@ class EloAdjustmentRequest(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     
-    current_elo = Column(Integer, nullable=False)
-    requested_elo = Column(Integer, nullable=False)
+    current_elo = Column(Float, nullable=False)
+    requested_elo = Column(Float, nullable=False)
     reason = Column(String, nullable=True)
     
     status = Column(

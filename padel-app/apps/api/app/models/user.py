@@ -8,11 +8,6 @@ from .team import team_players
 from .preferred_position import PreferredPosition
 from .elo_adjustment_request import EloAdjustmentRequest
 
-# Define PreferredPosition enum in UPPERCASE
-class PreferredPosition(str, enum.Enum):
-    LEFT = "LEFT"
-    RIGHT = "RIGHT"
-
 class User(Base):
     __tablename__ = "users"
 

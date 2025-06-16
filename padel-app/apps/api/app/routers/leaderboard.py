@@ -16,8 +16,9 @@ def get_leaderboard(
     """
     Retrieve a leaderboard of users, sorted by ELO rating.
     """
-    users = crud.leaderboard_crud.get_leaderboard_users(db, skip=skip, limit=limit)
-    total = crud.leaderboard_crud.get_leaderboard_users_count(db)
+    leaderboard_data = crud.leaderboard_crud.get_leaderboard_users(db, skip=skip, limit=limit)
+    users = leaderboard_data["users"]
+    total = leaderboard_data["total"]
 
     formatted_users = [
         schemas.LeaderboardUserResponse(
