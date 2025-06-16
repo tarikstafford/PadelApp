@@ -62,7 +62,7 @@ export default function Step3AddCourt({ prevStep, formData }: Step3Props) {
         setIsLoading(false);
         return;
       }
-      await createCourt({ ...values, club_id: formData.clubId });
+      await createCourt({ ...values, club_id: formData.clubId }, formData.access_token);
       toast.success("Onboarding complete! Welcome to your dashboard.");
       router.push("/dashboard");
     } catch (error) {

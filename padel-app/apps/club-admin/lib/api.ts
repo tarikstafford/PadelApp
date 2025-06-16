@@ -4,7 +4,6 @@ import { showErrorToast } from './notifications';
 import {
   DashboardSummary,
   Booking,
-  BookingDetails,
   Game,
   Court,
   Club,
@@ -14,9 +13,11 @@ import {
   User,
   CourtData
 } from './types';
+import { format } from 'date-fns';
 
 const getApiUrl = () => {
-  return process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  return `${baseUrl}/api/v1`;
 };
 
 const getAuthHeaders = (): HeadersInit => {
@@ -41,31 +42,58 @@ export const apiClient = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
-        throw await response.json();
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          errorBody = { detail: `Request failed with status ${response.status}` };
+        }
+        throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error) {
+    } catch (error: any) {
+      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
+        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+      }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
       throw formattedError;
     }
   },
 
-  post: async <T>(path: string, body: any, options?: { headers?: Record<string, string> }): Promise<T> => {
+  post: async <T>(path: string, body: any, options?: { headers?: Record<string, string>; silenceError?: boolean }): Promise<T> => {
     try {
+      const isFormData = body instanceof FormData;
+      const headers = options?.headers || getAuthHeaders();
+      
+      if (isFormData && headers instanceof Headers) {
+        (headers as Headers).delete('Content-Type');
+      }
+
       const response = await fetch(`${getApiUrl()}${path}`, {
         method: 'POST',
-        headers: options?.headers || getAuthHeaders(),
-        body: options?.headers ? body : JSON.stringify(body),
+        headers: headers as HeadersInit,
+        body: isFormData ? body : JSON.stringify(body),
       });
+
       if (!response.ok) {
-        throw await response.json();
+        // Always try to parse the error body
+        const errorBody = await response.json().catch(() => ({ 
+          detail: `Request failed with status ${response.status} and no JSON error body.` 
+        }));
+        throw errorBody; // Throw the original error body from the API
       }
       return response.json() as Promise<T>;
-    } catch (error) {
+    } catch (error: any) {
+      // If we are explicitly silencing errors, just rethrow without logging/toasting
+      if (options?.silenceError) {
+        throw error;
+      }
+      
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
-      throw formattedError;
+      // Re-throw the original error so the calling function can inspect it
+      throw error;
     }
   },
 
@@ -77,10 +105,19 @@ export const apiClient = {
         body: JSON.stringify(body),
       });
       if (!response.ok) {
-        throw await response.json();
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          errorBody = { detail: `Request failed with status ${response.status}` };
+        }
+        throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error) {
+    } catch (error: any) {
+      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
+        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+      }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
       throw formattedError;
@@ -94,10 +131,19 @@ export const apiClient = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) {
-        throw await response.json();
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          errorBody = { detail: `Request failed with status ${response.status}` };
+        }
+        throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error) {
+    } catch (error: any) {
+      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
+        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+      }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
       throw formattedError;
@@ -112,36 +158,29 @@ export const fetchDashboardSummary = async (clubId: number): Promise<DashboardSu
   return apiClient.get(`/admin/club/${clubId}/dashboard-summary`);
 };
 
-export const fetchBookings = async (
-  clubId: number,
-  params: {
-    start_date?: string;
-    end_date?: string;
-    court_id?: number;
-    status?: string;
-    search?: string;
-    page?: number;
-    pageSize?: number;
-  }
-): Promise<{ bookings: Booking[]; pageCount: number }> => {
-  if (!clubId) {
-    throw new Error("Club ID is required to fetch bookings.");
-  }
-  return apiClient.get(`/admin/club/${clubId}/bookings`, params);
+export const fetchBookings = async (startDate: Date, endDate: Date): Promise<Booking[]> => {
+  const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+  const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+  
+  const response = await apiClient.get<{ courts: Court[], bookings: Booking[] }>(
+    `/admin/my-club/schedule`, { start_date: formattedStartDate, end_date: formattedEndDate }
+  );
+  
+  return response.bookings || [];
 };
 
 export const fetchGameDetails = async (bookingId: number): Promise<Game> => {
   if (!bookingId) {
     throw new Error("Booking ID is required to fetch game details.");
   }
-  return apiClient.get<Game>(`/admin/bookings/${bookingId}/game`);
+  return apiClient.get(`/admin/bookings/${bookingId}/game`);
 };
 
 export const fetchCourts = async (clubId: number): Promise<Court[]> => {
   if (!clubId) {
     throw new Error("Club ID is required to fetch courts.");
   }
-  return apiClient.get<Court[]>(`/admin/club/${clubId}/courts`);
+  return apiClient.get(`/admin/club/${clubId}/courts`);
 };
 
 export const fetchCourtSchedule = async (clubId: number, date: string): Promise<{ courts: Court[]; bookings: Booking[] }> => {
@@ -155,28 +194,36 @@ export const fetchClubDetails = async (clubId: number): Promise<Club> => {
   if (!clubId) {
     throw new Error("Club ID is required to fetch club details.");
   }
-  return apiClient.get<Club>(`/admin/club/${clubId}`);
+  return apiClient.get(`/admin/club/${clubId}`);
 };
 
 export const updateClub = async (clubId: number, data: Partial<Club>): Promise<Club> => {
   if (!clubId) {
     throw new Error("Club ID is required to update club details.");
   }
-  return apiClient.put<Club>(`/admin/club/${clubId}`, data);
+  return apiClient.put(`/admin/club/${clubId}`, data);
 };
 
 export const registerAdmin = async (data: AdminRegistrationData): Promise<AuthResponse> => {
-  return apiClient.post<AuthResponse>('/auth/register-admin', data);
+  return apiClient.post('/auth/register', data);
 };
 
-export const createClub = async (data: ClubData): Promise<Club> => {
-  return apiClient.post<Club>('/clubs', data);
+export const createClub = async (data: ClubData, token?: string): Promise<Club> => {
+  const headers = getAuthHeaders();
+  if (token && headers instanceof Headers) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return apiClient.post('/admin/my-club', data, { headers: headers as Record<string, string> });
 };
 
-export const createCourt = async (data: CourtData): Promise<Court> => {
-  return apiClient.post<Court>('/courts', data);
+export const createCourt = async (data: CourtData, token?: string): Promise<Court> => {
+  const headers = getAuthHeaders();
+  if (token && headers instanceof Headers) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return apiClient.post('/courts', data, { headers: headers as Record<string, string> });
 };
 
 export const getMe = async (): Promise<User> => {
-  return apiClient.get<User>('/auth/users/me');
+  return apiClient.get('/auth/users/me');
 }; 

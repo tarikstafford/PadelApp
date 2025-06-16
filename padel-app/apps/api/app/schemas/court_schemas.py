@@ -2,6 +2,18 @@ from typing import Optional, List
 from pydantic import BaseModel
 from decimal import Decimal
 from app.models.court import SurfaceType, CourtAvailabilityStatus
+from datetime import datetime, date
+from .user_schemas import User
+from app.models import BookingStatus
+# No longer import Club directly to prevent circular dependency
+# from .club_schemas import Club
+
+# Forward declaration for a simplified Club schema
+class ClubBase(BaseModel):
+    id: int
+    name: str
+    
+    model_config = {"from_attributes": True}
 
 # Shared properties
 class CourtBase(BaseModel):
@@ -31,8 +43,29 @@ class CourtInDBBase(CourtBase):
 
 # Properties to return to client
 class Court(CourtInDBBase):
-    pass
+    id: int
+    club_id: int
+    club: ClubBase # Use the simplified ClubBase to break the cycle
 
-# Properties stored in DB
-class CourtInDB(CourtInDBBase):
+    model_config = {"from_attributes": True}
+
+# --- TimeSlot Schemas for Availability ---
+class BookingTimeSlot(BaseModel):
+    start_time: str
+    end_time: str
+    is_available: bool
+
+class CalendarTimeSlot(BaseModel):
+    time: str
+    booked: bool
+
+class DailyAvailability(BaseModel):
+    date: date
+    slots: List[CalendarTimeSlot]
+
+class AvailabilityResponse(BaseModel):
+    days: List[DailyAvailability]
+
+class CourtWithBookings(Court):
+    # Add any additional properties specific to CourtWithBookings
     pass 

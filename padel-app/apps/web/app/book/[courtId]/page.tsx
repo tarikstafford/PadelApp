@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import withAuth from '@/components/auth/withAuth';
 import { format, parseISO } from 'date-fns';
 import UserSearchAndInvite, { UserSearchResult } from '@/components/game/UserSearchAndInvite';
+import { ToggleGroup, ToggleGroupItem } from "@workspace/ui/components/toggle-group";
 
 interface TimeSlot {
   start_time: string;
@@ -68,6 +69,7 @@ function BookingPageInternal() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null);
+  const [duration, setDuration] = useState<60 | 90>(90);
   
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [errorSlots, setErrorSlots] = useState<string | null>(null);
@@ -120,14 +122,23 @@ function BookingPageInternal() {
   }, [courtId, courtNameParam, clubNameParam]);
 
   const fetchTimeSlots = useCallback(async () => {
-    if (!selectedDate || !courtId) return;
+    if (!selectedDate || !courtId || !accessToken) return;
     setIsLoadingSlots(true);
     setErrorSlots(null);
     setSelectedTimeSlot(null);
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      const response = await fetch(`${API_BASE_URL}/api/v1/courts/${courtId}/availability?target_date=${formattedDate}`);
+      const response = await fetch(`${API_BASE_URL}/api/v1/courts/${courtId}/availability?date=${formattedDate}&duration=${duration}`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+        },
+      });
       if (!response.ok) {
+        if (response.status === 401) {
+            toast.error("Authentication failed. Please log in again.");
+            // Optionally, trigger re-authentication or redirect
+            return;
+        }
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch time slots" }));
         const errorMessage = typeof errorData.detail === 'string' ? errorData.detail : "Failed to fetch time slots";
         throw new Error(errorMessage);
@@ -142,7 +153,7 @@ function BookingPageInternal() {
     } finally {
       setIsLoadingSlots(false);
     }
-  }, [selectedDate, courtId]);
+  }, [selectedDate, courtId, accessToken, duration]);
 
   useEffect(() => {
     fetchTimeSlots();
@@ -164,6 +175,7 @@ function BookingPageInternal() {
         body: JSON.stringify({
           court_id: parseInt(courtId, 10),
           start_time: selectedTimeSlot.start_time,
+          duration: duration,
         }),
       });
       const data = await response.json();
@@ -294,29 +306,75 @@ function BookingPageInternal() {
         {!createdBookingDetails && !createdGame && (
             <>
                 <Card>
-                    <CardHeader><CardTitle>Select Date</CardTitle></CardHeader>
-                    <CardContent className="flex justify-center">
-                        <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} className="rounded-md border" disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))} />
+                    <CardHeader>
+                        <CardTitle>1. Select Date & Duration</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col md:flex-row gap-4 items-start">
+                        <Calendar
+                            mode="single"
+                            selected={selectedDate}
+                            onSelect={setSelectedDate}
+                            className="rounded-md border"
+                            disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))}
+                        />
+                        <div className="w-full md:w-auto">
+                            <Label htmlFor="duration" className="mb-2 block font-medium">Duration</Label>
+                            <ToggleGroup 
+                                type="single" 
+                                value={duration.toString()}
+                                onValueChange={(value) => {
+                                    if (value) setDuration(parseInt(value, 10) as 60 | 90);
+                                }}
+                                aria-label="Booking duration"
+                            >
+                                <ToggleGroupItem value="60" aria-label="60 minutes">60 min</ToggleGroupItem>
+                                <ToggleGroupItem value="90" aria-label="90 minutes">90 min</ToggleGroupItem>
+                            </ToggleGroup>
+                        </div>
                     </CardContent>
                 </Card>
 
-                {selectedDate && (
-                    <Card>
-                        <CardHeader><CardTitle>Select Time Slot for {format(selectedDate, 'PPP')}</CardTitle></CardHeader>
-                        <CardContent>
-                            {isLoadingSlots && <div className="flex justify-center items-center py-6"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2 text-muted-foreground">Loading slots...</p></div>}
-                            {errorSlots && <div className="text-center py-6 text-destructive"><AlertTriangle className="mx-auto h-8 w-8 mb-2" /><p>{errorSlots}</p><Button variant="outline" onClick={fetchTimeSlots} className="mt-3">Try Again</Button></div>}
-                            {!isLoadingSlots && !errorSlots && timeSlots.length === 0 && <p className="text-center text-muted-foreground py-6">No available slots for this date.</p>}
-                            {!isLoadingSlots && !errorSlots && timeSlots.length > 0 && (
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                                    {timeSlots.map((slot) => (
-                                        <Button key={slot.start_time} variant={selectedTimeSlot?.start_time === slot.start_time ? "default" : (slot.is_available ? "outline" : "secondary")} disabled={!slot.is_available || isBooking} onClick={() => slot.is_available && setSelectedTimeSlot(slot)} className={`w-full ${!slot.is_available ? 'cursor-not-allowed opacity-50' : ''}`}>{format(parseISO(slot.start_time), 'HH:mm')}</Button>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                )}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>2. Choose a Time</CardTitle>
+                        <CardDescription>
+                            Available slots for {selectedDate ? format(selectedDate, "PPP") : "..."}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoadingSlots && (
+                          <div className="flex justify-center items-center py-10">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          </div>
+                        )}
+                        {errorSlots && (
+                          <div className="text-center py-10 px-4">
+                            <AlertTriangle className="mx-auto h-8 w-8 text-destructive mb-2" />
+                            <p className="font-semibold text-destructive">Failed to load slots</p>
+                            <p className="text-sm text-muted-foreground mb-3">{errorSlots}</p>
+                            <Button variant="outline" size="sm" onClick={fetchTimeSlots}>Try Again</Button>
+                          </div>
+                        )}
+                        {!isLoadingSlots && !errorSlots && timeSlots.length === 0 && (
+                          <p className="text-center text-muted-foreground py-10">No available slots for this day.</p>
+                        )}
+                        {!isLoadingSlots && !errorSlots && timeSlots.length > 0 && (
+                          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                            {timeSlots.map((slot) => (
+                              <Button
+                                key={slot.start_time}
+                                variant={selectedTimeSlot?.start_time === slot.start_time ? "default" : (slot.is_available ? "outline" : "secondary")}
+                                disabled={!slot.is_available || isBooking}
+                                onClick={() => slot.is_available && setSelectedTimeSlot(slot)}
+                                className="w-full"
+                              >
+                                {format(parseISO(slot.start_time), 'HH:mm')}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {selectedTimeSlot && selectedDate && courtInfo && (
                     <Card>

@@ -1,11 +1,10 @@
 "use client";
 
-import AuthStatus from "../auth/AuthStatus";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { usePathname } from "next/navigation";
-import LogoutButton from "../auth/LogoutButton";
+import { UserNav } from "../auth/UserNav";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -14,12 +13,29 @@ const navItems = [
 ];
 
 export function DashboardPage({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const pathname = usePathname();
+
+  // While loading, show a blank page or a spinner
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  // For unauthenticated users or users on auth pages, don't show the dashboard layout
+  if (!user || pathname === '/login' || pathname === '/register') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen">
       <DashboardSidebar />
       <div className="flex flex-col flex-1">
         <DashboardHeader />
-        <main className="flex-1 p-8">{children}</main>
+        <main className="flex-1 p-8 bg-gray-50/50">{children}</main>
       </div>
     </div>
   );
@@ -30,7 +46,7 @@ export function DashboardHeader() {
     <header className="flex items-center justify-between h-16 px-4 border-b">
       <div>{/* Add any header content here */}</div>
       <div>
-        <AuthStatus />
+        <UserNav />
       </div>
     </header>
   );
@@ -65,7 +81,6 @@ export function DashboardSidebar() {
       </nav>
       {isAuthenticated && (
         <div className="mt-auto">
-          <LogoutButton />
         </div>
       )}
     </aside>

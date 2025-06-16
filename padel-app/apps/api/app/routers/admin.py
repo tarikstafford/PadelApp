@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date, datetime
@@ -93,18 +93,79 @@ async def read_club_courts(
     courts = crud.court_crud.get_courts_by_club(db=db, club_id=club_id)
     return courts
 
-@router.get("/club/{club_id}/schedule", dependencies=[Depends(ClubAdminChecker())])
+@router.get("/club/{club_id}/schedule", response_model=club_schemas.ScheduleResponse, dependencies=[Depends(ClubAdminChecker())])
 async def read_club_schedule(
     club_id: int,
-    date: date,
+    start_date: Optional[date] = Query(None, description="Start date for fetching schedule. Defaults to today if no dates are provided."),
+    end_date: Optional[date] = Query(None, description="End date for fetching schedule. Defaults to start_date if not provided."),
     db: Session = Depends(get_db),
 ):
     """
-    Retrieve the courts and bookings for a specific club on a given date.
+    Retrieve the courts and bookings for a specific club on a given date or date range.
+    If no dates are provided, it returns the schedule for the current day.
     """
+    today = date.today()
+    s_date = start_date or today
+    e_date = end_date or s_date
+
+    if s_date > e_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="End date cannot be earlier than start date."
+        )
+
     courts = crud.court_crud.get_courts_by_club(db=db, club_id=club_id)
-    bookings = crud.booking_crud.get_bookings_by_club_and_date(db, club_id=club_id, target_date=date)
+    bookings = crud.booking_crud.get_bookings_by_club(
+        db, 
+        club_id=club_id, 
+        start_date_filter=s_date, 
+        end_date_filter=e_date
+    )
     return {"courts": courts, "bookings": bookings}
+
+@router.get("/my-club/schedule", response_model=club_schemas.ScheduleResponse)
+async def get_my_club_schedule(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_active_user),
+):
+    """
+    Retrieve the schedule for the current admin's club.
+    This is a convenience endpoint that gets the club_id from the session.
+    It forwards any query params to the main schedule endpoint.
+    """
+    if not current_admin.owned_club:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The current admin does not own a club."
+        )
+
+    # Convert query params to a dictionary
+    query_params = dict(request.query_params)
+    start_date_str = query_params.get("start_date")
+    end_date_str = query_params.get("end_date")
+
+    s_date = None
+    e_date = None
+
+    try:
+        if start_date_str:
+            s_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        if end_date_str:
+            e_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid date format. Please use YYYY-MM-DD."
+        )
+
+    # Call the existing endpoint logic
+    return await read_club_schedule(
+        club_id=current_admin.owned_club.id,
+        start_date=s_date,
+        end_date=e_date,
+        db=db
+    )
 
 @router.get("/my-club/courts", response_model=List[court_schemas.Court])
 async def read_owned_club_courts(
@@ -147,7 +208,7 @@ async def create_owned_club_court(
     court = crud.court_crud.create_court(db=db, court_in=court_in, club_id=club.id)
     return court
 
-@router.put("/my-club/courts/{court_id}", response_model=court_schemas.Court, dependencies=[Depends(ClubAdminChecker())])
+@router.put("/my-club/courts/{court_id}", response_model=court_schemas.Court)
 async def update_owned_club_court(
     *,
     db: Session = Depends(get_db),
@@ -176,7 +237,33 @@ async def update_owned_club_court(
             detail="Court not found or not owned by the admin's club.",
         )
 
-    court = crud.court_crud.update_court(db=db, db_obj=court, obj_in=court_in)
+    court = crud.court_crud.update_court(db=db, db_court=court, court_in=court_in)
+    return court
+
+@router.get("/my-club/courts/{court_id}", response_model=court_schemas.Court)
+async def read_owned_club_court(
+    *,
+    db: Session = Depends(get_db),
+    court_id: int,
+    current_admin: User = Depends(get_current_active_user),
+):
+    """
+    Get a specific court for the club owned by the current admin user.
+    """
+    club = current_admin.owned_club
+    if not club:
+        raise HTTPException(
+            status_code=404,
+            detail="The current admin does not own a club.",
+        )
+    
+    court = crud.court_crud.get_court(db=db, court_id=court_id)
+    if not court or court.club_id != club.id:
+        raise HTTPException(
+            status_code=404,
+            detail="Court not found or not owned by the admin's club.",
+        )
+
     return court
 
 @router.delete("/my-club/courts/{court_id}", response_model=court_schemas.Court, dependencies=[Depends(ClubAdminChecker())])
@@ -209,6 +296,40 @@ async def delete_owned_club_court(
 
     court = crud.court_crud.remove_court(db=db, court_id=court_id)
     return court
+
+@router.get("/my-club/bookings", response_model=List[booking_schemas.Booking])
+async def read_owned_club_bookings(
+    *,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_active_user),
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    court_id: Optional[int] = None,
+    status: Optional[BookingStatus] = None,
+    skip: int = 0,
+    limit: int = 100,
+):
+    """
+    Retrieve bookings for the club owned by the current admin user.
+    """
+    club = current_admin.owned_club
+    if not club:
+        raise HTTPException(
+            status_code=404,
+            detail="The current admin does not own a club.",
+        )
+
+    bookings = crud.booking_crud.get_bookings_by_club(
+        db,
+        club_id=club.id,
+        skip=skip,
+        limit=limit,
+        start_date_filter=start_date,
+        end_date_filter=end_date,
+        court_id_filter=court_id,
+        status_filter=status,
+    )
+    return bookings
 
 @router.get("/club/{club_id}/bookings", response_model=List[booking_schemas.Booking], dependencies=[Depends(ClubAdminChecker())])
 async def read_club_bookings(
@@ -300,7 +421,13 @@ async def create_my_club(
             detail="This admin already owns a club.",
         )
     
-    new_club = crud.club_crud.create_club(db=db, club=club_in, owner_id=current_admin.id)
+    # Construct the ClubCreate object with the owner_id from the token
+    club_to_create = club_schemas.ClubCreate(
+        **club_in.model_dump(),
+        owner_id=current_admin.id
+    )
+
+    new_club = crud.club_crud.create_club(db=db, club=club_to_create)
     return new_club
 
 @router.get("/club/{club_id}/dashboard-summary", dependencies=[Depends(ClubAdminChecker())])

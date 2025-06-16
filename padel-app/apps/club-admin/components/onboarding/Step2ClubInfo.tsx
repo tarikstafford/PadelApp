@@ -1,32 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Button } from "@workspace/ui/components/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@workspace/ui/components/form";
-import { Input } from "@workspace/ui/components/input";
-import { Textarea } from "@workspace/ui/components/textarea";
 import { createClub } from "@/lib/api";
 import { setCookie } from "cookies-next";
-
-const formSchema = z.object({
-  name: z.string().min(1, { message: "Club name is required" }),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  postal_code: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
-  description: z.string().optional(),
-});
+import { ClubForm, ClubFormValues } from "@/components/forms/ClubForm";
+import { Button } from "@workspace/ui/components/button";
 
 interface Step2Props {
   nextStep: () => void;
@@ -36,148 +14,54 @@ interface Step2Props {
 }
 
 export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, formData }: Step2Props) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: formData.name || "",
-      address: formData.address || "",
-      city: formData.city || "",
-      postal_code: formData.postal_code || "",
-      phone: formData.phone || "",
-      email: formData.email || "",
-      description: formData.description || "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
+  async function onSubmit(values: ClubFormValues) {
+    setIsSubmitting(true);
     try {
-      const newClub = await createClub(values);
+      // The user's access token should have been stored in the shared formData from the previous step
+      const token = formData.access_token;
+      if (!token) {
+        // Handle missing token case, maybe redirect to login or show an error
+        console.error("Authentication token is missing from form data.");
+        // Optionally, show a toast to the user.
+        setIsSubmitting(false);
+        return;
+      }
+
+      const newClub = await createClub(values, token);
       updateFormData({ ...values, clubId: newClub.id });
-      setCookie("clubId", newClub.id);
+      // We might not need this cookie if middleware isn't using it anymore, but it doesn't hurt.
+      setCookie("clubId", String(newClub.id)); 
       nextStep();
     } catch (error) {
-      // Error is already handled by apiClient
+      // Error is already handled and shown as a toast by apiClient
+      console.error("Failed to create club during onboarding:", error);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   }
 
   return (
     <>
       <h1 className="text-2xl font-bold text-center mb-8">Tell Us About Your Club</h1>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Club Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Padel Club" {...field} disabled={isLoading} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Address</FormLabel>
-                <FormControl>
-                  <Input placeholder="123 Padel St" {...field} disabled={isLoading} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Padelville" {...field} disabled={isLoading} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="postal_code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Postal Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="12345" {...field} disabled={isLoading} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone Number</FormLabel>
-                <FormControl>
-                  <Input placeholder="(123) 456-7890" {...field} disabled={isLoading} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Club Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="contact@padelclub.com" {...field} disabled={isLoading} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Tell us a little bit about your club"
-                    className="resize-none"
-                    {...field}
-                    disabled={isLoading}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="flex justify-between">
-            <Button type="button" variant="outline" onClick={prevStep} disabled={isLoading}>
-              Back
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Creating Club..." : "Next"}
-            </Button>
-          </div>
-        </form>
-      </Form>
+      <ClubForm
+        onSubmit={onSubmit}
+        defaultValues={formData}
+        isSubmitting={isSubmitting}
+        submitButtonText="Next"
+      />
+      <div className="mt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={prevStep}
+          disabled={isSubmitting}
+          className="w-full"
+        >
+          Back
+        </Button>
+      </div>
     </>
   );
 } 

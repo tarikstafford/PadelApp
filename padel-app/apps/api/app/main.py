@@ -1,8 +1,10 @@
 import cloudinary
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.routers import (
@@ -13,6 +15,7 @@ from app.routers import (
     games_router,
     users_router,
     admin_router,
+    leaderboard_router,
 )
 from app.middleware.auth import AuthenticationMiddleware
 
@@ -26,16 +29,26 @@ app = FastAPI(
 # Add Authentication Middleware
 app.add_middleware(AuthenticationMiddleware)
 
-# CORS Middleware Configuration
-# This allows the frontend (running on a different domain) to communicate with the backend.
-# In a real production environment, you would want to restrict origins to your actual frontend URL.
-# For this project, allowing all origins is acceptable.
+# Custom exception handler for Pydantic validation errors
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    try:
+        body_str = exc.body.decode('utf-8')
+    except (AttributeError, UnicodeDecodeError):
+        body_str = "Could not decode request body"
+
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": body_str},
+    )
+
+# Set all CORS enabled origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Temporarily allow all origins for debugging
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"], # Allows all methods
-    allow_headers=["*"], # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Mount static files directory
@@ -50,6 +63,7 @@ app.include_router(bookings_router, prefix=f"{settings.API_V1_STR}/bookings", ta
 app.include_router(games_router, prefix=f"{settings.API_V1_STR}/games", tags=["Games"]) # Added games_router
 app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"]) # Added users_router
 app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
+app.include_router(leaderboard_router, prefix=f"{settings.API_V1_STR}/leaderboard", tags=["Leaderboard"])
 
 @app.on_event("startup")
 async def startup_event():

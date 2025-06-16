@@ -32,8 +32,8 @@ async def create_new_booking(
     # 2. Check slot availability
     target_date_val = booking_in.start_time.date()
     try:
-        available_slots = availability_service.get_court_availability(
-            db=db, court_id=booking_in.court_id, target_date=target_date_val
+        available_slots = availability_service.get_court_availability_for_day(
+            db=db, court_id=booking_in.court_id, target_date=target_date_val, duration=booking_in.duration
         )
     except Exception as e:
         # Log e for debugging
@@ -44,8 +44,10 @@ async def create_new_booking(
         )
 
     requested_slot_available = False
+    requested_start_time_iso = booking_in.start_time.isoformat()
+
     for slot in available_slots:
-        if slot.start_time == booking_in.start_time and slot.is_available:
+        if slot.start_time == requested_start_time_iso and slot.is_available:
             requested_slot_available = True
             break
     

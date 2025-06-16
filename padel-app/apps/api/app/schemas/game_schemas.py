@@ -1,56 +1,63 @@
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, validator, Field
-from datetime import datetime # Though not directly in these schemas, good for context
+from pydantic import BaseModel
+from datetime import datetime
 
-# Forward reference for Booking schema
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from .booking_schemas import Booking
-
-# Import enums from models if they are to be used directly in schemas
 from app.models.game import GameType
+from .game_player_schemas import GamePlayer
+from .team_schemas import Team
+from .user_schemas import User as UserSchema
 from app.models.game_player import GamePlayerStatus
-from .user_schemas import User as UserSchema # For embedding user details in GamePlayerResponse
 
-# --- GamePlayer Schemas ---
-class GamePlayerBase(BaseModel):
-    user_id: int
-    status: GamePlayerStatus = GamePlayerStatus.INVITED # Default status
-
-class GamePlayerCreate(GamePlayerBase):
-    # Typically used internally or by specific invite endpoints
+# --- Team Schemas (for game context) ---
+class TeamWithPlayers(Team):
+    # Inherits from team_schemas.Team which has id, name, and players list.
     pass
-
-class GamePlayerResponse(BaseModel):
-    user: UserSchema = Field(..., alias='player') # Nested user details, maps from ORM's 'player'
-    status: GamePlayerStatus
-
-    model_config = {"from_attributes": True, "populate_by_name": True}
 
 # --- Game Schemas ---
 class GameBase(BaseModel):
-    # booking_id: int # booking_id is part of the Game model, but GameResponse will have full Booking object
     game_type: Optional[GameType] = GameType.PRIVATE
     skill_level: Optional[str] = None
 
 class GameCreate(GameBase):
     booking_id: int
 
-class GameResponse(GameBase):
+class GameUpdate(BaseModel):
+    game_type: Optional[GameType] = None
+    skill_level: Optional[str] = None
+
+class Game(GameBase):
     id: int
     club_id: int
     start_time: datetime
     end_time: datetime
-    booking_id: int # Replaces the nested booking object
-    players: List[GamePlayerResponse] = [] # List of players in the game
-    # booking: Optional[BookingSchema] # Could add if booking details are needed here too
+    booking_id: int
+    players: List[GamePlayer] = []
 
     model_config = {"from_attributes": True}
 
-# If needed for DB representation, often similar to GameResponse or includes more internal fields
-class GameInDB(GameResponse):
-    # Example: Might include internal fields not sent to client
+class GameResponse(Game):
     pass
+
+class GameWithTeams(Game):
+    teams: List[TeamWithPlayers] = []
+
+class GameInDB(Game):
+    pass
+
+# --- Game Result Schemas ---
+class GameResult(BaseModel):
+    game_id: int
+    winning_team_id: Optional[int] = None
+    score: Optional[str] = None
+
+class GameResultRequest(BaseModel):
+    winning_team_id: int
+
+class UserWithRating(UserSchema):
+    elo_rating: float
+
+class GameWithRatingsResponse(Game):
+    players: List[UserWithRating] = []
 
 # --- Invitation Schema ---
 class UserInviteRequest(BaseModel):

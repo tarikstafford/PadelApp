@@ -12,6 +12,12 @@ import { toast } from "sonner"; // Import toast
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import { Loader2 } from 'lucide-react';
+import { apiClient } from "@/lib/api";
+import { EloAdjustmentRequest } from "@/lib/types";
+import { EloAdjustmentRequestModal } from "@/components/profile/EloAdjustmentRequestModal";
+import { EloRatingDisplay } from "@/components/profile/EloRatingDisplay";
+import { PreferredPositionSelection } from "@/components/profile/PreferredPositionSelection";
+import { EloAdjustmentRequestHistory } from "@/components/profile/EloAdjustmentRequestHistory";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -19,12 +25,25 @@ function UserProfilePage() {
     const { user, isLoading, accessToken, fetchUser } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({ name: '', email: '' });
+    const [requests, setRequests] = useState<EloAdjustmentRequest[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user) {
+        if (user && accessToken) {
             setFormData({ name: user.full_name || '', email: user.email || '' });
+            apiClient
+                .get<EloAdjustmentRequest[]>("/users/me/elo-adjustment-requests", undefined, accessToken)
+                .then((data) => {
+                    setRequests(data);
+                })
+                .catch((error) => {
+                    console.error("Failed to fetch ELO adjustment requests", error);
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
         }
-    }, [user]);
+    }, [user, accessToken]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -65,6 +84,21 @@ function UserProfilePage() {
         }
     };
 
+    const handleUploadSuccess = () => {
+        toast.success("Profile picture updated!");
+        fetchUser();
+    };
+
+    const canMakeRequest = () => {
+        if (requests.some(req => req.status === 'pending')) {
+            return false;
+        }
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const recentRequest = requests.find(req => new Date(req.created_at) > thirtyDaysAgo);
+        return !recentRequest;
+    };
+
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
     }
@@ -78,57 +112,29 @@ function UserProfilePage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto py-10 px-4">
-            <Card>
-                <CardHeader className="text-center">
-                    <Avatar className="w-24 h-24 mx-auto mb-4">
-                        <AvatarImage src={user.profile_picture_url || ''} alt={user.full_name || 'User'} />
-                        <AvatarFallback>{formData.name?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-                    </Avatar>
-                    <ProfilePictureUpload onUploadSuccess={fetchUser} />
-                    {!isEditing ? (
-                        <>
-                            <CardTitle className="text-2xl">{user.full_name || 'Padel Player'}</CardTitle>
-                            <CardDescription>{user.email}</CardDescription>
-                        </>
-                    ) : (
-                        <div className="space-y-4 px-6 py-2">
-                             <div className="space-y-2 text-left">
-                                <Label htmlFor="name">Full Name</Label>
-                                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} />
-                            </div>
-                            <div className="space-y-2 text-left">
-                                <Label htmlFor="email">Email</Label>
-                                <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
-                            </div>
+        <div className="container mx-auto p-4">
+            <div className="flex items-center space-x-4 mb-8">
+                <ProfilePictureUpload onUploadSuccess={handleUploadSuccess} />
+                <div>
+                    <h1 className="text-3xl font-bold">{user.full_name}</h1>
+                    <p className="text-gray-500">{user.email}</p>
+                </div>
+            </div>
+
+            <div className="space-y-8">
+                <div>
+                    <h2 className="text-xl font-bold mb-4">Padel Details</h2>
+                    <div className="space-y-4">
+                        <EloRatingDisplay eloRating={user.elo_rating} />
+                        <div>
+                            <h3 className="text-lg font-bold">Preferred Position</h3>
+                            <PreferredPositionSelection />
                         </div>
-                    )}
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="text-center">
-                        {!isEditing ? (
-                            <Button variant="outline" onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                        ) : (
-                            <div className="flex justify-center gap-4">
-                                <Button variant="secondary" onClick={() => setIsEditing(false)}>Cancel</Button>
-                                <Button onClick={handleSave}>Save Changes</Button>
-                            </div>
-                        )}
+                        <EloAdjustmentRequestModal canMakeRequest={canMakeRequest()} />
                     </div>
-                    <div>
-                        <h3 className="text-lg font-semibold mb-2">My Bookings</h3>
-                        <div className="p-4 border rounded-lg text-center text-muted-foreground">
-                            <p>Upcoming bookings will be displayed here.</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-semibold mb-2">My Games</h3>
-                        <div className="p-4 border rounded-lg text-center text-muted-foreground">
-                            <p>Recent and upcoming games will be shown here.</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                </div>
+                <EloAdjustmentRequestHistory requests={requests} loading={loading} />
+            </div>
         </div>
     );
 }

@@ -35,7 +35,7 @@ async def register_admin(
     new_user = crud.user_crud.create_user(db=db, user=user_to_create)
 
     # Generate tokens
-    access_token = security.create_access_token(subject=new_user.email)
+    access_token = security.create_access_token(subject=new_user.email, role=new_user.role.value)
     refresh_token = security.create_refresh_token(subject=new_user.email)
     
     return {
@@ -64,14 +64,14 @@ async def register_new_user(
 
 @router.post("/login", response_model=token_schemas.Token)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), 
+    user_in: user_schemas.UserLogin, 
     db: Session = Depends(get_db)
 ):
     """
     OAuth2 compatible token login, get an access token and refresh token.
     """
-    user = crud.user_crud.get_user_by_email(db, email=form_data.username)
-    if not user or not security.verify_password(form_data.password, user.hashed_password):
+    user = crud.user_crud.get_user_by_email(db, email=user_in.email)
+    if not user or not security.verify_password(user_in.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -84,10 +84,12 @@ async def login_for_access_token(
         )
     
     access_token = security.create_access_token(
-        subject=user.email # Using email as subject for simplicity, user.id is also common
+        subject=user.email, # Using email as subject for simplicity, user.id is also common
+        role=user.role.value
     )
     refresh_token = security.create_refresh_token(
-        subject=user.email
+        subject=user.email,
+        role=user.role.value
     )
     return {
         "access_token": access_token,
@@ -95,6 +97,13 @@ async def login_for_access_token(
         "token_type": "bearer",
         "role": user.role,
     }
+
+@router.get("/users/me", response_model=user_schemas.User)
+async def read_users_me(current_user: models.User = Depends(security.get_current_active_user)):
+    """
+    Get current user's profile.
+    """
+    return current_user
 
 @router.post("/refresh-token", response_model=token_schemas.Token)
 async def refresh_access_token(
@@ -114,20 +123,19 @@ async def refresh_access_token(
             )
         
         # Subject should be present if decode_token_payload was successful and checked for sub
-        if payload.sub is None:
+        if payload.sub is None or payload.role is None:
              raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token: subject missing",
+                detail="Invalid refresh token: subject or role missing",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        new_access_token = security.create_access_token(subject=payload.sub)
+        new_access_token = security.create_access_token(subject=payload.sub, role=payload.role)
         return {
             "access_token": new_access_token,
             "token_type": "bearer",
-            # Optionally, decide if a new refresh token should be issued (token rotation)
-            # For simplicity, we are not rotating refresh tokens here.
-            "refresh_token": None # Or omit if your Token schema allows it to be optional
+            "refresh_token": token_request.refresh_token,
+            "role": payload.role,
         }
     except HTTPException as e: # Re-raise HTTPExceptions from decode_token_payload
         raise e

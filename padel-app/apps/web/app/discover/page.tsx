@@ -179,7 +179,7 @@ export default function DiscoverPage() {
       {!isLoading && !error && clubs.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {clubs.map((club) => (
-            <Link key={club.id} href={`/clubs/${club.id}`} passHref legacyBehavior>
+            <Link key={club.id} href={`/clubs/${club.id}`}>
               <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 cursor-pointer h-full flex flex-col">
                 <div className="relative w-full h-48">
                   <Image 

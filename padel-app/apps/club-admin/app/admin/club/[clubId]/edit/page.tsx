@@ -1,98 +1,59 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@workspace/ui/components/form";
-import { Input } from "@workspace/ui/components/input";
-import { Button } from "@workspace/ui/components/button";
-import { useClubDetails } from "@/hooks/useClubDetails";
-import { updateClub } from "@/lib/api";
+import { createClub, updateClub } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
-
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  postal_code: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email("Invalid email address.").optional(),
-});
+import { useState } from "react";
+import { getCookie } from "cookies-next";
+import { useClubDetails } from "@/hooks/useClubDetails";
+import { ClubForm, ClubFormValues } from "@/components/forms/ClubForm";
 
 export default function ClubEditPage() {
   const router = useRouter();
   const params = useParams();
-  const clubId = Number(params.clubId);
+  
+  const clubIdOrNew = params.clubId as string;
+  const isCreateMode = clubIdOrNew === "new";
+  const clubId = isCreateMode ? null : Number(clubIdOrNew);
+
   const { data: club, isLoading, error } = useClubDetails(clubId);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      address: "",
-      city: "",
-      postal_code: "",
-      phone: "",
-      email: "",
-    },
-  });
-
-  useEffect(() => {
-    if (club) {
-      form.reset(club);
+  const onSubmit = async (values: ClubFormValues) => {
+    setIsSubmitting(true);
+    try {
+      if (isCreateMode) {
+        const token = getCookie("token");
+        if (!token) throw new Error("Authentication token is missing.");
+        await createClub({ ...values }, token);
+        // On success, you might want to show a toast and then redirect
+        router.push(`/dashboard`);
+      } else if (clubId) {
+        await updateClub(clubId, values);
+        // On success, you might want to show a toast and then redirect
+        router.push(`/dashboard`);
+      }
+    } catch (err: any) {
+      console.error("Failed to save club. Server response:", JSON.stringify(err, null, 2));
+      // Error toast is likely handled by the apiClient, but you could add specific ones here
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [club, form]);
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    await updateClub(clubId, values);
-    router.push("/admin/club");
   };
 
   if (isLoading) return <p>Loading...</p>;
-  if (error) return <p>Failed to load club details.</p>;
+  if (error && !isCreateMode) return <p>Failed to load club details.</p>;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Edit Club Profile</h1>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Club Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Padel Club" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Address</FormLabel>
-                <FormControl>
-                  <Input placeholder="123 Main St" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit">Save Changes</Button>
-        </form>
-      </Form>
+      <h1 className="text-3xl font-bold">
+        {isCreateMode ? "Create Your Club Profile" : "Edit Club Profile"}
+      </h1>
+      <ClubForm
+        onSubmit={onSubmit}
+        defaultValues={club || {}}
+        isSubmitting={isSubmitting}
+        submitButtonText={isCreateMode ? "Create Club" : "Save Changes"}
+      />
     </div>
   );
 } 

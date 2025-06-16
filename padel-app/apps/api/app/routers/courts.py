@@ -7,6 +7,7 @@ from app import schemas, crud, models
 from app.database import get_db
 from app.services import availability_service
 from app.core import security
+from app.schemas import BookingTimeSlot
 
 router = APIRouter()
 
@@ -28,35 +29,39 @@ def create_court_for_club(
                 detail="You do not have permission to add a court to this club.",
             )
 
-    new_court = crud.court_crud.create_court(db=db, court=court_in)
+    new_court = crud.court_crud.create_court(
+        db=db, court_in=court_in, club_id=court_in.club_id
+    )
     return new_court
 
-@router.get("/{court_id}/availability", response_model=List[schemas.TimeSlot])
-async def get_court_availability_slots(
+@router.get(
+    "/{court_id}/availability",
+    response_model=List[schemas.BookingTimeSlot],
+    dependencies=[Depends(security.get_current_active_user)],
+    summary="Get Court Availability",
+    description="Retrieve the availability for a specific court for a given date.",
+)
+def get_court_availability(
     court_id: int,
-    target_date: date = Query(..., description="Target date in YYYY-MM-DD format"), # `date` type automatically handles parsing
-    db: Session = Depends(get_db)
+    date: date,
+    duration: Optional[int] = Query(90, enum=[60, 90]),
+    db: Session = Depends(get_db),
 ):
-    """
-    Retrieve available 30-minute time slots for a specific court on a given date.
-    """
-    # First, check if the court exists to provide a clear 404 if not
     court = crud.court_crud.get_court(db, court_id=court_id)
     if not court:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Court with id {court_id} not found"
-        )
-    
+        raise HTTPException(status_code=404, detail="Court not found")
+
     try:
-        availability = availability_service.get_court_availability(
-            db=db, court_id=court_id, target_date=target_date
+        availability_slots = availability_service.get_court_availability_for_day(
+            db=db, court_id=court_id, target_date=date, duration=duration
         )
-        return availability
+        return availability_slots
     except Exception as e:
-        # Log the exception e for debugging purposes
-        print(f"Error calculating availability for court {court_id} on {target_date}: {e}")
+        print(e) # Temporary print for debugging
+        # It's good practice to log the error.
+        # import logging
+        # logging.error(f"Error fetching availability for court {court_id} on {date}: {e}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=500,
             detail="An unexpected error occurred while calculating court availability."
         ) 

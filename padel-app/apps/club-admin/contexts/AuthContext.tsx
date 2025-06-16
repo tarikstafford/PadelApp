@@ -13,6 +13,8 @@ interface AuthContextType {
   register: (data: any) => Promise<void>;
   logout: () => void;
   hasRole: (role: string) => boolean;
+  updatePreferredPosition: (position: 'LEFT' | 'RIGHT') => Promise<void>;
+  requestEloAdjustment: (requestedRating: number, reason: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,14 +43,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (data: any) => {
-    const body = new URLSearchParams();
-    body.append('username', data.email);
-    body.append('password', data.password);
-
     const response = await apiClient.post<{ access_token: string; role: string }>(
       "/auth/login",
-      body,
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      { email: data.email, password: data.password }
     );
     setCookie("token", response.access_token);
     setCookie("role", response.role);
@@ -78,7 +75,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return user?.role === role;
   };
 
-  const value = { user, isAuthenticated, isLoading, login, register, logout, hasRole };
+  const updatePreferredPosition = async (position: 'LEFT' | 'RIGHT') => {
+    if (!user) return;
+    try {
+      const response = await apiClient.put<User>(`/users/me`, { preferred_position: position });
+      setUser(response);
+    } catch (error) {
+      console.error('Failed to update preferred position', error);
+      throw error;
+    }
+  };
+
+  const requestEloAdjustment = async (requestedRating: number, reason: string) => {
+    if (!user) return;
+    try {
+      await apiClient.post(`/users/${user.id}/request-elo-adjustment`, {
+        requested_rating: requestedRating,
+        reason,
+      });
+    } catch (error) {
+      console.error('Failed to request ELO adjustment', error);
+      throw error;
+    }
+  };
+
+  const value = { user, isAuthenticated, isLoading, login, register, logout, hasRole, updatePreferredPosition, requestEloAdjustment };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

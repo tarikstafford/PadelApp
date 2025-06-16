@@ -37,8 +37,22 @@ def get_game(db: Session, game_id: int) -> Optional[GameModel]:
         db.query(GameModel)
         .filter(GameModel.id == game_id)
         .options(
-            selectinload(GameModel.booking).selectinload(BookingModel.court).selectinload(CourtModel.club),
-            selectinload(GameModel.players).selectinload(GamePlayerModel.player)
+            joinedload(GameModel.booking).joinedload(BookingModel.court).joinedload(CourtModel.club),
+            joinedload(GameModel.players).joinedload(GamePlayerModel.user)
+        )
+        .first()
+    )
+
+def get_game_with_teams(db: Session, game_id: int) -> Optional[GameModel]:
+    """
+    Retrieve a single game by its ID, eager loading teams and their players.
+    """
+    return (
+        db.query(GameModel)
+        .filter(GameModel.id == game_id)
+        .options(
+            joinedload(GameModel.team1).joinedload('players'),
+            joinedload(GameModel.team2).joinedload('players')
         )
         .first()
     )
@@ -85,8 +99,8 @@ def get_public_games(
         .offset(skip)
         .limit(limit)
         .options(
-            selectinload(GameModel.booking).selectinload(BookingModel.court).selectinload(CourtModel.club),
-            selectinload(GameModel.players).selectinload(GamePlayerModel.player)
+            joinedload(GameModel.booking).joinedload(BookingModel.court).joinedload(CourtModel.club),
+            joinedload(GameModel.players).joinedload(GamePlayerModel.user)
         )
         .all()
     )
@@ -102,7 +116,7 @@ def get_recent_games_by_club(db: Session, club_id: int, limit: int = 5) -> List[
         .order_by(GameModel.created_at.desc())
         .limit(limit)
         .options(
-            selectinload(GameModel.players).selectinload(GamePlayerModel.player)
+            selectinload(GameModel.players).selectinload(GamePlayerModel.user)
         )
         .all()
     )
@@ -113,7 +127,7 @@ def get_game_by_booking(db: Session, booking_id: int) -> Optional[GameModel]:
         db.query(GameModel)
         .filter(GameModel.booking_id == booking_id)
         .options(
-            selectinload(GameModel.players).selectinload(GamePlayerModel.player)
+            joinedload(GameModel.players).joinedload(GamePlayerModel.user)
         )
         .first()
     )
