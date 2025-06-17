@@ -12,7 +12,7 @@ RUN npm install -g pnpm@10.4.1 turbo@2.4.2
 
 # Copy all source code from the build context
 # The .dockerignore file at the root will prevent copying node_modules, .turbo, .git, etc.
-COPY . .
+COPY ../.. .
 
 # Install all monorepo dependencies
 RUN pnpm install --no-frozen-lockfile
@@ -26,10 +26,11 @@ FROM node:18-alpine AS production-runner
 WORKDIR /app
 ENV NODE_ENV production
 
-# Copy the standalone Next.js server from the builder stage
-COPY --from=builder /app/apps/club-admin/.next/standalone .
-# Copy the static assets
-COPY --from=builder /app/apps/club-admin/.next/static ./apps/club-admin/.next/static
+# Copy the standalone Next.js server output from the builder stage
+COPY --from=builder /app/apps/club-admin/.next/standalone ./
+
+# Copy the static assets from the builder stage
+COPY --from=builder /app/apps/club-admin/.next/static ./.next/static
 
 # Run the Next.js server
-CMD ["node", "apps/club-admin/server.js"] 
+CMD ["node", "server.js"] 
