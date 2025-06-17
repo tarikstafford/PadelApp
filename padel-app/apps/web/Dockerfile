@@ -15,7 +15,7 @@ RUN npm install -g pnpm@10.4.1 turbo@2.4.2
 COPY . .
 
 # Install all monorepo dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Build the specific 'web' application
 # This command needs the full monorepo context to work correctly
