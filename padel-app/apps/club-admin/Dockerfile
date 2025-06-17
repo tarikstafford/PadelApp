@@ -27,9 +27,9 @@ WORKDIR /app
 ENV NODE_ENV production
 
 # Copy the standalone Next.js server from the builder stage
-COPY --from=builder /app/apps/club-admin/.next/standalone ./
+COPY --from=builder /app/apps/club-admin/.next/standalone .
 # Copy the static assets
 COPY --from=builder /app/apps/club-admin/.next/static ./apps/club-admin/.next/static
 
 # Run the Next.js server
-CMD ["node", "server.js"] 
+CMD ["node", "apps/club-admin/server.js"] 
