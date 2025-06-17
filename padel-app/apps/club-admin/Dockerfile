@@ -32,4 +32,4 @@ COPY --from=builder /app/apps/club-admin/.next/standalone .
 COPY --from=builder /app/apps/club-admin/.next/static ./apps/club-admin/.next/static
 
 # Run the Next.js server
-CMD ["node", "apps/club-admin/server.js"] 
+CMD ["node", "server.js"] 
