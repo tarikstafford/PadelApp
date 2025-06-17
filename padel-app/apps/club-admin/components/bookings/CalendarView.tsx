@@ -21,18 +21,21 @@ interface CalendarViewProps {
 }
 
 export default function CalendarView({ onDateSelect }: CalendarViewProps) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const fetchAndSetBookings = useCallback(async (start: Date, end: Date) => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user?.club_id) return;
     setLoading(true);
     try {
-      const bookings = await fetchBookings(start, end);
-      const calendarEvents = transformBookingsToEvents(bookings);
+      const data = await fetchBookings(user.club_id, {
+        start_date: start.toISOString().split("T")[0],
+        end_date: end.toISOString().split("T")[0],
+      });
+      const calendarEvents = transformBookingsToEvents(data.bookings);
       setEvents(calendarEvents);
     } catch (error: any) {
       console.error("Failed to fetch schedule", error);
@@ -40,7 +43,7 @@ export default function CalendarView({ onDateSelect }: CalendarViewProps) {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.club_id]);
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
     fetchAndSetBookings(arg.start, arg.end);

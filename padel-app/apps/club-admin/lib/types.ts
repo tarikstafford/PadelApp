@@ -13,6 +13,7 @@ export type User = {
   role: UserRole;
   elo_rating: number;
   preferred_position?: "LEFT" | "RIGHT";
+  club_id?: number;
 };
 
 export type Club = {
