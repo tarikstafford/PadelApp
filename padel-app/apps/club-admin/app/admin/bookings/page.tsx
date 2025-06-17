@@ -167,8 +167,8 @@ export default function BookingsPage() {
       </div>
       <DataTable
         columns={columns}
-        data={data?.bookings || []}
-        pageCount={data?.pageCount || 0}
+        data={data || []}
+        pageCount={-1}
         pagination={pagination}
         setPagination={setPagination}
         isLoading={isLoading}
