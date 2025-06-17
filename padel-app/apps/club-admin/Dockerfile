@@ -28,8 +28,6 @@ ENV NODE_ENV production
 
 # Copy the standalone Next.js server from the builder stage
 COPY --from=builder /app/apps/club-admin/.next/standalone ./
-# Copy the public assets
-COPY --from=builder /app/apps/club-admin/public ./apps/club-admin/public
 # Copy the static assets
 COPY --from=builder /app/apps/club-admin/.next/static ./apps/club-admin/.next/static
 
