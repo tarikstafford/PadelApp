@@ -18,4 +18,5 @@ export * from "./checkbox";
 export * from "./alert";
 export * from "./alert-dialog";
 export * from "./dropdown-menu";
-export * from "./avatar"; 
+export * from "./avatar";
+export * from "./pagination"; 
