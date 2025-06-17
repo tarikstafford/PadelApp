@@ -158,15 +158,19 @@ export const fetchDashboardSummary = async (clubId: number): Promise<DashboardSu
   return apiClient.get(`/admin/club/${clubId}/dashboard-summary`);
 };
 
-export const fetchBookings = async (startDate: Date, endDate: Date): Promise<Booking[]> => {
-  const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-  const formattedEndDate = format(endDate, 'yyyy-MM-dd');
-  
-  const response = await apiClient.get<{ courts: Court[], bookings: Booking[] }>(
-    `/admin/my-club/schedule`, { start_date: formattedStartDate, end_date: formattedEndDate }
-  );
-  
-  return response.bookings || [];
+export const fetchBookings = async (
+  clubId: number,
+  params: {
+    start_date?: string;
+    end_date?: string;
+    court_id?: number;
+    status?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }
+): Promise<{ bookings: Booking[]; pageCount: number }> => {
+  return apiClient.get(`/admin/club/${clubId}/bookings`, params);
 };
 
 export const fetchGameDetails = async (bookingId: number): Promise<Game> => {
