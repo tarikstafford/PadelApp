@@ -40,6 +40,7 @@ export type Court = {
   price_per_hour?: number;
   default_availability_status?: "Available" | "Unavailable" | "Maintenance";
   club_id: number;
+  club?: Club;
 };
 
 export type Booking = {
@@ -52,6 +53,7 @@ export type Booking = {
   court_id: number;
   user_id: number;
   court: Court;
+  game?: Game;
   user: {
     id: number;
     name: string;
@@ -71,7 +73,7 @@ export type DashboardSummary = {
 
 export type GamePlayer = {
   id: number;
-  status: "invited" | "accepted";
+  status: string;
   user: User;
   elo_rating: number;
 };
@@ -90,6 +92,9 @@ export type Game = {
   team2?: GameTeam;
   winning_team_id?: number;
   result_submitted?: boolean;
+  game_type: "PRIVATE" | "PUBLIC" | "FRIENDLY" | "COMPETITIVE";
+  booking: Booking;
+  skill_level?: string;
 };
 
 export type BookingDetails = {

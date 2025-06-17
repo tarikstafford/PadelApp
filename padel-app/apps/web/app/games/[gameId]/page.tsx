@@ -18,12 +18,6 @@ import { Input } from '@workspace/ui/components/input';
 import { Label } from '@workspace/ui/components/label';
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@workspace/ui/components/tooltip";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -122,6 +116,7 @@ function GameDetailPageInternal() {
 
       const normalizedGame: Game = {
         id: rawData.id,
+        created_at: rawData.created_at || new Date().toISOString(),
         game_type: rawData.game_type,
         players: normalizedPlayers,
         booking: {
@@ -131,6 +126,8 @@ function GameDetailPageInternal() {
           start_time: rawData.booking?.start_time ?? rawData.start_time,
           end_time: rawData.booking?.end_time ?? rawData.end_time,
           status: rawData.booking?.status ?? rawData.status ?? 'CONFIRMED',
+          total_price: rawData.booking?.total_price ?? 0,
+          notes: rawData.booking?.notes,
           court: rawData.booking?.court || {
             id: rawData.booking?.court?.id ?? rawData.court_id ?? 0,
             name: rawData.booking?.court?.name ?? 'Unknown Court',
@@ -139,7 +136,11 @@ function GameDetailPageInternal() {
               name: rawData.booking?.court?.club?.name ?? 'Unknown Club',
             },
           },
-          game: null, // Prevent circular reference
+          user: rawData.booking?.user || {
+            id: rawData.booking?.user_id ?? rawData.user_id,
+            name: 'Unknown User',
+            email: ''
+          }
         },
         result_submitted: rawData.result_submitted,
         winning_team_id: rawData.winning_team_id,
@@ -333,7 +334,7 @@ function GameDetailPageInternal() {
                                 <li key={playerEntry.user.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
                                     <div className="flex items-center space-x-3 mb-2 sm:mb-0">
                                         <div className="relative h-10 w-10">
-                                            <Image src={playerEntry.user.profile_picture_url || `/default-avatar.png`} alt={playerEntry.user.full_name} layout="fill" className="rounded-full" />
+                                            <Image src={playerEntry.user.profile_picture_url || `/default-avatar.png`} alt={playerEntry.user.full_name || 'Player'} layout="fill" className="rounded-full" />
                                         </div>
                                         <div>
                                             <p className="font-medium">{playerEntry.user.full_name || playerEntry.user.email || 'Unknown'}</p>
