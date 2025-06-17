@@ -1,3 +1,9 @@
+import os
+import sys
+
+# Add the project root to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -25,7 +31,6 @@ from app.models import ( # noqa
 target_metadata = Base.metadata
 
 # Set the database URL from environment variable or use a default for local generation
-import os
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@0.0.0.0:5432/postgres")
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
