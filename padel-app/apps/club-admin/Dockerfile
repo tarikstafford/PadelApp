@@ -25,8 +25,10 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV production
 
-# Copy the standalone Next.js server output from the builder stage
-# This copies server.js, node_modules, etc. into /app
+# Install pnpm in the final stage
+RUN npm install -g pnpm@8.15.5
+
+# Copy the standalone output, which includes a pruned package.json for production dependencies.
 COPY --from=builder /app/apps/club-admin/.next/standalone ./
 
 # Install ONLY production dependencies using the pruned package.json
