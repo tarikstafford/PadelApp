@@ -44,7 +44,7 @@ export function AvailableGamesCarousel() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiClient.get<Game[]>('/games/public?limit=10', undefined, null);
+      const data = await apiClient.get<Game[]>('/games/public?limit=10', undefined, null, false);
       setGames(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unexpected error occurred.";

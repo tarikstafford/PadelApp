@@ -20,26 +20,28 @@ const getApiUrl = () => {
   return `${baseUrl}/api/v1`;
 };
 
-const getAuthHeaders = (token?: string | null): HeadersInit => {
+const getAuthHeaders = (token?: string | null, authenticated = true): HeadersInit => {
   const headers = new Headers();
   headers.append('Content-Type', 'application/json');
 
-  const authToken = token || getCookie('token');
-  if (authToken) {
-    headers.append('Authorization', `Bearer ${authToken}`);
+  if (authenticated) {
+    const authToken = token || getCookie('token');
+    if (authToken) {
+      headers.append('Authorization', `Bearer ${authToken}`);
+    }
   }
   return headers;
 };
 
 export const apiClient = {
-  get: async <T>(path: string, params?: Record<string, any>, token?: string | null): Promise<T> => {
+  get: async <T>(path: string, params?: Record<string, any>, token?: string | null, authenticated = true): Promise<T> => {
     try {
       const url = new URL(`${getApiUrl()}${path}`);
       if (params) {
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
       }
       const response = await fetch(url.toString(), {
-        headers: getAuthHeaders(token),
+        headers: getAuthHeaders(token, authenticated),
       });
       if (!response.ok) {
         throw await response.json();
