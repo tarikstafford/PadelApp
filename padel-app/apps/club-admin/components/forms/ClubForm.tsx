@@ -31,8 +31,24 @@ export const clubFormSchema = z.object({
   closing_time: z.string().optional(),
   amenities: z.string().optional(),
   image_url: z.string().optional(),
-  image_file: z.instanceof(File).optional(),
+  image_file: z.any().optional(),
 });
+
+// Use refine on the client-side to ensure it's a file
+if (typeof window !== "undefined") {
+  (clubFormSchema as any) = clubFormSchema.refine(
+    (data) => {
+      if (data.image_file && !(data.image_file instanceof File)) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Image must be a valid file.",
+      path: ["image_file"],
+    }
+  );
+}
 
 export type ClubFormValues = z.infer<typeof clubFormSchema>;
 
