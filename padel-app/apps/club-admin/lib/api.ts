@@ -209,7 +209,7 @@ export const updateClub = async (clubId: number, data: Partial<Club> | FormData)
 };
 
 export const registerAdmin = async (data: AdminRegistrationData): Promise<AuthResponse> => {
-  return apiClient.post('/auth/register', data);
+  return apiClient.post('/auth/register-admin', data);
 };
 
 export const createClub = async (data: ClubData | FormData, token?: string): Promise<Club> => {
