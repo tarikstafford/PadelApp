@@ -93,4 +93,6 @@ class ClubBasicInfo(BaseModel):
 
 # Forward reference resolution
 from .court_schemas import Court
-Club.model_rebuild() 
+from .booking_schemas import Booking
+Club.model_rebuild()
+ScheduleResponse.model_rebuild() 

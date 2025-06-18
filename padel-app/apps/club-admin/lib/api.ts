@@ -212,7 +212,7 @@ export const registerAdmin = async (data: AdminRegistrationData): Promise<AuthRe
   return apiClient.post('/auth/register', data);
 };
 
-export const createClub = async (data: ClubData, token?: string): Promise<Club> => {
+export const createClub = async (data: ClubData | FormData, token?: string): Promise<Club> => {
   const headers = getAuthHeaders();
   if (token && headers instanceof Headers) {
     headers.set('Authorization', `Bearer ${token}`);

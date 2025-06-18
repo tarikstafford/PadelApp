@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { useForm } from "react-hook-form";
+import React, { useEffect } from "react";
+import { useForm, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@workspace/ui/components/button";
@@ -16,6 +16,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
+import ImageUploader from "../ImageUploader";
 
 // This schema can be exported and reused if needed elsewhere
 export const clubFormSchema = z.object({
@@ -30,6 +31,7 @@ export const clubFormSchema = z.object({
   closing_time: z.string().optional(),
   amenities: z.string().optional(),
   image_url: z.string().optional(),
+  image_file: z.instanceof(File).optional(),
 });
 
 export type ClubFormValues = z.infer<typeof clubFormSchema>;
@@ -38,14 +40,16 @@ interface ClubFormProps {
   onSubmit: (values: ClubFormValues) => void;
   defaultValues?: Partial<ClubFormValues>;
   isSubmitting: boolean;
-  submitButtonText?: string;
+  onValidationChange: (isValid: boolean) => void;
+  children: React.ReactNode; // For action buttons
 }
 
 export function ClubForm({ 
   onSubmit, 
   defaultValues = {},
   isSubmitting,
-  submitButtonText = "Save Changes" 
+  onValidationChange,
+  children,
 }: ClubFormProps) {
   const form = useForm<ClubFormValues>({
     resolver: zodResolver(clubFormSchema),
@@ -63,7 +67,14 @@ export function ClubForm({
       image_url: "",
       ...defaultValues,
     },
+    mode: 'onChange',
   });
+
+  const { formState: { isValid } } = form;
+
+  useEffect(() => {
+    onValidationChange(isValid);
+  }, [isValid, onValidationChange]);
 
   // This allows the form to be reset when the defaultValues prop changes (e.g., data loads)
   React.useEffect(() => {
@@ -215,9 +226,22 @@ export function ClubForm({
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : submitButtonText}
-        </Button>
+        <FormField
+          control={form.control}
+          name="image_file"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <ImageUploader 
+                  onFileChange={(file) => field.onChange(file)}
+                  defaultImageUrl={form.getValues("image_url")}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {children}
       </form>
     </Form>
   );
