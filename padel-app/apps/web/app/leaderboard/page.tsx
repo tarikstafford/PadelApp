@@ -34,7 +34,7 @@ interface LeaderboardResponse {
   total: number;
   offset: number;
   limit: number;
-  data: LeaderboardUser[];
+  users: LeaderboardUser[];
 }
 
 const LeaderboardPage = () => {
@@ -86,7 +86,7 @@ const LeaderboardPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {leaderboard?.data.map((user, index) => {
+              {leaderboard?.users.map((user, index) => {
                 const rank = (page - 1) * limit + index + 1;
                 return (
                   <TableRow key={user.id}>

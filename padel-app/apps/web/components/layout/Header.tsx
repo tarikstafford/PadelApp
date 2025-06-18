@@ -38,6 +38,9 @@ export default function Header() {
               <Link href="/discover" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 Discover
               </Link>
+              <Link href="/leaderboard" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                Leaderboard
+              </Link>
               <Link href="/bookings" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 My Bookings
               </Link>

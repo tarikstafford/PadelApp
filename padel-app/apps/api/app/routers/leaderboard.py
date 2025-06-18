@@ -17,23 +17,28 @@ def get_leaderboard(
     Retrieve a leaderboard of users, sorted by ELO rating.
     """
     leaderboard_data = crud.leaderboard_crud.get_leaderboard_users(db, skip=skip, limit=limit)
-    users = leaderboard_data["users"]
+    users = leaderboard_data["data"]
     total = leaderboard_data["total"]
 
-    formatted_users = [
-        schemas.LeaderboardUserResponse(
-            id=user.id,
-            full_name=user.full_name,
-            avatar_url=user.profile_picture_url,
-            club_name=user.club.name if user.club else None,
-            elo_rating=user.elo_rating,
+    formatted_users = []
+    for user in users:
+        club_name = None
+        if user.club_admin_entries and user.club_admin_entries[0].club:
+            club_name = user.club_admin_entries[0].club.name
+            
+        formatted_users.append(
+            schemas.LeaderboardUserResponse(
+                id=user.id,
+                full_name=user.full_name,
+                avatar_url=user.profile_picture_url,
+                club_name=club_name,
+                elo_rating=user.elo_rating,
+            )
         )
-        for user in users
-    ]
 
     return {
         "users": formatted_users,
         "total": total,
-        "skip": skip,
+        "offset": skip,
         "limit": limit,
     } 
