@@ -201,7 +201,7 @@ export const fetchClubDetails = async (clubId: number): Promise<Club> => {
   return apiClient.get(`/admin/club/${clubId}`);
 };
 
-export const updateClub = async (clubId: number, data: Partial<Club>): Promise<Club> => {
+export const updateClub = async (clubId: number, data: Partial<Club> | FormData): Promise<Club> => {
   if (!clubId) {
     throw new Error("Club ID is required to update club details.");
   }

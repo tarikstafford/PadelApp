@@ -6,6 +6,7 @@ import { useState } from "react";
 import { getCookie } from "cookies-next";
 import { useClubDetails } from "@/hooks/useClubDetails";
 import { ClubForm, ClubFormValues } from "@/components/forms/ClubForm";
+import { Button } from "@workspace/ui/components/button";
 
 export default function ClubEditPage() {
   const router = useRouter();
@@ -17,24 +18,37 @@ export default function ClubEditPage() {
 
   const { data: club, isLoading, error } = useClubDetails(clubId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
 
   const onSubmit = async (values: ClubFormValues) => {
     setIsSubmitting(true);
     try {
+      const clubData: any = { ...values };
+      let dataToSend: ClubFormValues | FormData = clubData;
+
+      if (clubData.image_file) {
+        const formData = new FormData();
+        Object.keys(clubData).forEach(key => {
+          if (key === 'image_file' && clubData[key]) {
+            formData.append(key, clubData[key]);
+          } else if (clubData[key] !== null && clubData[key] !== undefined) {
+            formData.append(key, clubData[key]);
+          }
+        });
+        dataToSend = formData;
+      }
+
       if (isCreateMode) {
         const token = getCookie("token");
         if (!token) throw new Error("Authentication token is missing.");
-        await createClub({ ...values }, token);
-        // On success, you might want to show a toast and then redirect
+        await createClub(dataToSend, token);
         router.push(`/dashboard`);
       } else if (clubId) {
-        await updateClub(clubId, values);
-        // On success, you might want to show a toast and then redirect
+        await updateClub(clubId, dataToSend);
         router.push(`/dashboard`);
       }
     } catch (err: any) {
       console.error("Failed to save club. Server response:", JSON.stringify(err, null, 2));
-      // Error toast is likely handled by the apiClient, but you could add specific ones here
     } finally {
       setIsSubmitting(false);
     }
@@ -52,8 +66,16 @@ export default function ClubEditPage() {
         onSubmit={onSubmit}
         defaultValues={club || {}}
         isSubmitting={isSubmitting}
-        submitButtonText={isCreateMode ? "Create Club" : "Save Changes"}
-      />
+        onValidationChange={setIsFormValid}
+      >
+        <Button
+          type="submit"
+          disabled={!isFormValid || isSubmitting}
+          className="w-full"
+        >
+          {isSubmitting ? "Saving..." : (isCreateMode ? "Create Club" : "Save Changes")}
+        </Button>
+      </ClubForm>
     </div>
   );
 } 
