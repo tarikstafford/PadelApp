@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from app.models.user_role import UserRole # Import the enum
 from app.models import PreferredPosition
 
@@ -18,6 +18,13 @@ class UserBase(BaseModel):
     role: Optional[UserRole] = UserRole.PLAYER
     elo_rating: float = Field(default=1.0, ge=1.0, le=7.0)
     preferred_position: Optional[PreferredPosition] = None
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def uppercase_role(cls, v):
+        if isinstance(v, str):
+            return v.upper()
+        return v
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):

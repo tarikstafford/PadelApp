@@ -1,7 +1,7 @@
 from enum import Enum
 
 class UserRole(str, Enum):
-    PLAYER = "player"
-    ADMIN = "admin"
-    SUPER_ADMIN = "super-admin"
-    CLUB_ADMIN = "club_admin" 
+    PLAYER = "PLAYER"
+    ADMIN = "ADMIN"
+    SUPER_ADMIN = "SUPER_ADMIN"
+    CLUB_ADMIN = "CLUB_ADMIN" 

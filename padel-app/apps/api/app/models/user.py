@@ -20,9 +20,9 @@ class User(Base):
     
     # New role field
     role = Column(
-        SAEnum(UserRole, name="userrole", create_enum=False, values_callable=lambda obj: [e.value for e in obj]), 
+        SAEnum(UserRole, name="userrole"), 
         nullable=False, 
-        default=UserRole.PLAYER.value, 
+        default=UserRole.PLAYER, 
         server_default=UserRole.PLAYER.value, 
         index=True
     )
