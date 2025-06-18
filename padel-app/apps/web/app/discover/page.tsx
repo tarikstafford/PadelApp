@@ -8,6 +8,8 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Loader2, AlertTriangle } from 'lucide-react'; // For loading and error icons
+import { useAuth } from '@/contexts/AuthContext';
+import { AvailableGamesCarousel } from '@/components/available-games-carousel';
 
 interface Club {
   id: number;
@@ -29,6 +31,7 @@ const ITEMS_PER_PAGE = 6;
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function DiscoverPage() {
+  const { user } = useAuth();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +110,7 @@ export default function DiscoverPage() {
 
   return (
     <div className="space-y-8">
+      {user && <AvailableGamesCarousel />}
       <header className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Discover Padel Clubs</h1>
         <p className="text-muted-foreground">
