@@ -103,10 +103,10 @@ export default function Step3AddCourt({ prevStep, formData }: Step3Props) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Turf">Turf</SelectItem>
-                    <SelectItem value="Clay">Clay</SelectItem>
-                    <SelectItem value="Hard Court">Hard Court</SelectItem>
-                    <SelectItem value="Sand">Sand</SelectItem>
+                    <SelectItem value="TURF">Turf</SelectItem>
+                    <SelectItem value="CLAY">Clay</SelectItem>
+                    <SelectItem value="HARD_COURT">Hard Court</SelectItem>
+                    <SelectItem value="SAND">Sand</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

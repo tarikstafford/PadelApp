@@ -45,13 +45,13 @@ async def register_admin(
         "role": new_user.role,
     }
 
-@router.post("/register", response_model=user_schemas.User, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=token_schemas.Token, status_code=status.HTTP_201_CREATED)
 async def register_new_user(
     user_in: user_schemas.UserCreate, 
     db: Session = Depends(get_db)
 ):
     """
-    Create new user.
+    Create new user and return tokens for immediate login.
     """
     db_user = crud.user_crud.get_user_by_email(db, email=user_in.email)
     if db_user:
@@ -59,8 +59,23 @@ async def register_new_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
-    created_user = crud.user_crud.create_user(db=db, user=user_in)
-    return created_user
+    
+    # Ensure role is set to PLAYER if not provided
+    if not user_in.role:
+        user_in.role = models.UserRole.PLAYER
+
+    new_user = crud.user_crud.create_user(db=db, user=user_in)
+
+    # Generate tokens
+    access_token = security.create_access_token(subject=new_user.email, role=new_user.role.value)
+    refresh_token = security.create_refresh_token(subject=new_user.email)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "role": new_user.role,
+    }
 
 @router.post("/login", response_model=token_schemas.Token)
 async def login_for_access_token(

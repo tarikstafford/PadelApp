@@ -105,25 +105,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAccessToken(token);
         setRefreshToken(refresh);
         fetchAndUpdateUser();
+        router.push('/profile'); // Redirect after login
     };
 
     const logout = () => {
         setUser(null);
         setAccessToken(null);
         setRefreshToken(null);
+        router.push('/auth/login'); // Redirect to login page after logout
     };
 
     const register = async (name: string, email: string, password: string) => {
-        const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ full_name: name, email, password }),
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Registration failed');
+        setIsLoading(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ full_name: name, email, password }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Registration failed');
+            }
+
+            const data = await response.json();
+            // After successful registration, log the user in with the returned tokens
+            if (data.access_token && data.refresh_token) {
+                login(data.access_token, data.refresh_token);
+                // The login function now handles redirection
+            } else {
+                // Fallback if tokens are not returned, though the backend should always return them now
+                router.push('/auth/login');
+            }
+        } finally {
+            setIsLoading(false);
         }
-        // Optionally log the user in directly after registration
     };
 
     const requestEloAdjustment = async (requestedRating: number, reason: string) => {
