@@ -25,7 +25,6 @@ class ClubBase(BaseModel):
     email: Optional[EmailStr] = None
     opening_time: Optional[time] = None
     closing_time: Optional[time] = None
-    opening_hours_display: Optional[str] = None
     amenities: Optional[str] = None
     image_url: Optional[str] = None # Allow string for now, HttpUrl is too strict for data entry
 

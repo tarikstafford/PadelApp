@@ -18,7 +18,8 @@ interface Club {
   phone?: string | null;
   email?: string | null;
   description?: string | null;
-  opening_hours?: string | null;
+  opening_time?: string | null;
+  closing_time?: string | null;
   amenities?: string | null;
   image_url?: string | null;
   // courts: any[]; // Not fetching courts list in this view for brevity, use ClubWithCourts for detail page

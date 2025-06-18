@@ -24,11 +24,11 @@ export type Club = {
   phone?: string;
   email?: string;
   description?: string;
-  opening_hours?: string;
+  opening_time: string | null;
+  closing_time: string | null;
   amenities?: string;
   image_url?: string;
   website?: string;
-  operationalHours?: any;
   owner_id: number;
 };
 
@@ -123,7 +123,6 @@ export type ClubData = {
   phone?: string;
   email?: string;
   description?: string;
-  opening_hours?: string;
   amenities?: string;
   image_url?: string;
 };

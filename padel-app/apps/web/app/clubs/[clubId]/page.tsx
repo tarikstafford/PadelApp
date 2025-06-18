@@ -10,6 +10,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { Loader2, AlertTriangle, ArrowLeft, Phone, Mail, Clock, Sun, Moon, List, LayoutGrid } from 'lucide-react';
 import { Separator } from '@workspace/ui/components/separator';
 import { ToggleGroup, ToggleGroupItem } from "@workspace/ui/components/toggle-group";
+import { formatOpeningHours } from '@workspace/utils';
 
 // Interfaces matching backend schemas (ensure these are consistent)
 interface Court {
@@ -30,7 +31,8 @@ interface ClubWithCourts {
   phone?: string | null;
   email?: string | null;
   description?: string | null;
-  opening_hours?: string | null;
+  opening_time?: string | null;
+  closing_time?: string | null;
   amenities?: string | null; // Will parse this if it's a comma-separated string
   image_url?: string | null;
   courts: Court[];
@@ -145,7 +147,7 @@ export default function ClubDetailPage() {
               <h3 className="text-xl font-semibold">Contact & Hours</h3>
               {club.phone && <p className="flex items-center text-sm"><Phone className="mr-2 h-4 w-4 text-muted-foreground" /> {club.phone}</p>}
               {club.email && <p className="flex items-center text-sm"><Mail className="mr-2 h-4 w-4 text-muted-foreground" /> {club.email}</p>}
-              {club.opening_hours && <p className="flex items-center text-sm"><Clock className="mr-2 h-4 w-4 text-muted-foreground" /> {club.opening_hours}</p>}
+              {(club.opening_time || club.closing_time) && <p className="flex items-center text-sm"><Clock className="mr-2 h-4 w-4 text-muted-foreground" /> {formatOpeningHours(club.opening_time, club.closing_time)}</p>}
             </div>
             
             {amenitiesList.length > 0 && (
@@ -255,4 +257,4 @@ export default function ClubDetailPage() {
       </Card>
     </div>
   );
-} 
+}
