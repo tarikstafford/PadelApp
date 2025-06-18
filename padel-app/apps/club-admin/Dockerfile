@@ -33,8 +33,5 @@ COPY --from=builder /app/apps/club-admin/.next/standalone ./
 # The server expects this at ./.next/static relative to itself
 COPY --from=builder /app/apps/club-admin/.next/static ./.next/static
 
-# Copy the public assets (e.g., images, fonts) which are also needed at runtime
-COPY --from=builder /app/apps/club-admin/public ./public
-
 # Run the Next.js server from the root of the WORKDIR
 CMD ["node", "server.js"] 
