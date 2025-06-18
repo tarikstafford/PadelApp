@@ -8,6 +8,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { Badge } from '@workspace/ui/components/badge';
 import { format } from 'date-fns';
+import { apiClient } from '@/lib/api';
 
 interface GamePlayer {
   user: {
@@ -34,8 +35,6 @@ interface Game {
   }
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
 export function AvailableGamesCarousel() {
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,12 +44,7 @@ export function AvailableGamesCarousel() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/games/public?limit=10`);
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: "Failed to fetch games" }));
-        throw new Error(errorData.detail || "Failed to fetch available games");
-      }
-      const data: Game[] = await response.json();
+      const data = await apiClient.get<Game[]>('/games/public?limit=10', undefined, null);
       setGames(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unexpected error occurred.";
