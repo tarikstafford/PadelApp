@@ -2,7 +2,7 @@
 
 import { createClub, updateClub } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { getCookie } from "cookies-next";
 import { useClubDetails } from "@/hooks/useClubDetails";
 import { ClubForm, ClubFormValues } from "@/components/forms/ClubForm";
@@ -19,6 +19,8 @@ export default function ClubEditPage() {
   const { data: club, isLoading, error } = useClubDetails(clubId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFormValid, setIsFormValid] = useState(false);
+
+  const defaultValues = useMemo(() => club || {}, [club]);
 
   const onSubmit = async (values: ClubFormValues) => {
     setIsSubmitting(true);
@@ -64,7 +66,7 @@ export default function ClubEditPage() {
       </h1>
       <ClubForm
         onSubmit={onSubmit}
-        defaultValues={club || {}}
+        defaultValues={defaultValues}
         isSubmitting={isSubmitting}
         onValidationChange={setIsFormValid}
       >
