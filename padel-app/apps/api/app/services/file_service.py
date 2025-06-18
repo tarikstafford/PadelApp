@@ -43,6 +43,31 @@ def validate_image_file(file: UploadFile):
     if file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="File type not allowed")
 
+async def upload_file(file: UploadFile, folder: str) -> str:
+    """
+    Generic file upload to Cloudinary.
+    """
+    logger.info(f"Attempting to upload file to folder: {folder}")
+    validate_image_file(file)
+    
+    try:
+        public_id = f"{folder}/{uuid.uuid4()}"
+        logger.info(f"Generated public_id: {public_id}")
+        
+        result = await run_in_threadpool(
+            cloudinary.uploader.upload,
+            file.file,
+            public_id=public_id,
+            overwrite=True,
+            resource_type="image"
+        )
+        
+        logger.info(f"Successfully uploaded image. Result: {result.get('secure_url')}")
+        return result['secure_url']
+    except Exception as e:
+        logger.error(f"Failed to upload file to folder {folder}. Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+
 async def save_profile_picture(file: UploadFile, user_id: int) -> str:
     """
     Upload a profile picture to Cloudinary and return the secure URL.
