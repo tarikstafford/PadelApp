@@ -8,6 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 export function formatOpeningHours(openingTime?: string | null, closingTime?: string | null): string {
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
+    if (hours === undefined || minutes === undefined) {
+      return "Invalid Time";
+    }
     const date = new Date();
     date.setHours(parseInt(hours, 10));
     date.setMinutes(parseInt(minutes, 10));
