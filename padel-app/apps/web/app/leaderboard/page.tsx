@@ -34,7 +34,7 @@ interface LeaderboardResponse {
   total: number;
   offset: number;
   limit: number;
-  users: LeaderboardUser[];
+  data: LeaderboardUser[];
 }
 
 const LeaderboardPage = () => {
@@ -86,7 +86,7 @@ const LeaderboardPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {leaderboard?.users.map((user, index) => {
+              {leaderboard?.data.map((user, index) => {
                 const rank = (page - 1) * limit + index + 1;
                 return (
                   <TableRow key={user.id}>
@@ -119,6 +119,7 @@ const LeaderboardPage = () => {
                       href="#"
                       onClick={() => handlePageChange(page - 1)}
                       className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                      size="icon"
                     />
                   </PaginationItem>
                   {[...Array(Math.ceil(leaderboard.total / limit))].map((_, i) => (
@@ -127,6 +128,7 @@ const LeaderboardPage = () => {
                         href="#"
                         onClick={() => handlePageChange(i + 1)}
                         isActive={page === i + 1}
+                        size="icon"
                       >
                         {i + 1}
                       </PaginationLink>
@@ -137,6 +139,7 @@ const LeaderboardPage = () => {
                       href="#"
                       onClick={() => handlePageChange(page + 1)}
                       className={page === Math.ceil(leaderboard.total / limit) ? "pointer-events-none opacity-50" : ""}
+                      size="icon"
                     />
                   </PaginationItem>
                 </PaginationContent>
