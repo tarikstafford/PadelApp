@@ -21,7 +21,7 @@ RUN pnpm install --frozen-lockfile
 RUN turbo run build --filter=club-admin
 
 # Stage 2: Production Image
-FROM node:18-alpine AS production-runner
+FROM node:18-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV production
 
@@ -29,8 +29,10 @@ ENV NODE_ENV production
 # This copies server.js, node_modules, etc. into /app
 COPY --from=builder /app/apps/club-admin/.next/standalone ./
 
-# Copy the static assets from the builder stage
-# The server expects this at ./.next/static relative to itself
+# Install ONLY production dependencies using the pruned package.json
+RUN pnpm install --prod
+
+# Copy static assets after the install
 COPY --from=builder /app/apps/club-admin/.next/static ./.next/static
 
 # Run the Next.js server from the root of the WORKDIR
