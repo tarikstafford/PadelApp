@@ -5,7 +5,7 @@
   "types": "./src/index.ts",
   "license": "MIT",
   "exports": {
-    ".": "./src/index.ts"
+    "./utils/*": "./src/utils/*.ts"
   },
   "scripts": {
     "lint": "eslint . --ext .ts,.tsx"
