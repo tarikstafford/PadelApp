@@ -20,9 +20,6 @@ class Club(Base):
     opening_time = Column(Time, default=time(9, 0)) # Default 9:00 AM
     closing_time = Column(Time, default=time(22, 0)) # Default 10:00 PM
 
-    # Descriptive text field (can be deprecated or used for display only)
-    opening_hours_display = Column('opening_hours', Text, nullable=True) # e.g., "Mon-Fri: 9am-10pm, Sat-Sun: 8am-11pm"
-
     amenities = Column(Text, nullable=True) # e.g., "parking,showers,pro-shop"
     image_url = Column(String, nullable=True)
 
