@@ -8,7 +8,7 @@ ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Install pnpm and turbo globally
-RUN npm install -g pnpm@10.4.1 turbo@2.4.2
+RUN npm install -g pnpm@8.15.5 turbo@1.13.3
 
 # Copy all source code from the build context
 # The .dockerignore file at the root will prevent copying node_modules, .turbo, .git, etc.
@@ -25,6 +25,15 @@ RUN turbo run build --filter=club-admin
 FROM node:18-alpine AS production-runner
 WORKDIR /app
 ENV NODE_ENV production
+
+# Install pnpm
+RUN npm install -g pnpm@8.15.5
+
+# Copy dependency definition files
+COPY ../.. .
+
+# Install production dependencies
+RUN pnpm install --prod
 
 # Copy the standalone Next.js server output from the builder stage
 COPY --from=builder /app/apps/club-admin/.next/standalone ./
