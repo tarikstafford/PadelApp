@@ -36,10 +36,10 @@ export default function NewCourtPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      surface_type: "Turf",
+      surface_type: "TURF",
       is_indoor: false,
       price_per_hour: 0,
-      default_availability_status: "Available",
+      default_availability_status: "AVAILABLE",
     },
   });
 
@@ -85,10 +85,10 @@ export default function NewCourtPage() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Turf">Turf</SelectItem>
-                    <SelectItem value="Clay">Clay</SelectItem>
-                    <SelectItem value="Hard Court">Hard Court</SelectItem>
-                    <SelectItem value="Sand">Sand</SelectItem>
+                    <SelectItem value="TURF">Turf</SelectItem>
+                    <SelectItem value="CLAY">Clay</SelectItem>
+                    <SelectItem value="HARD_COURT">Hard Court</SelectItem>
+                    <SelectItem value="SAND">Sand</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -140,9 +140,9 @@ export default function NewCourtPage() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Available">Available</SelectItem>
-                    <SelectItem value="Unavailable">Unavailable</SelectItem>
-                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                    <SelectItem value="AVAILABLE">Available</SelectItem>
+                    <SelectItem value="UNAVAILABLE">Unavailable</SelectItem>
+                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

@@ -94,10 +94,10 @@ export default function EditCourtPage() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Turf">Turf</SelectItem>
-                    <SelectItem value="Clay">Clay</SelectItem>
-                    <SelectItem value="Hard Court">Hard Court</SelectItem>
-                    <SelectItem value="Sand">Sand</SelectItem>
++                    <SelectItem value="TURF">Turf</SelectItem>
+                    <SelectItem value="CLAY">Clay</SelectItem>
+                    <SelectItem value="HARD_COURT">Hard Court</SelectItem>
+                    <SelectItem value="SAND">Sand</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -149,9 +149,9 @@ export default function EditCourtPage() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Available">Available</SelectItem>
-                    <SelectItem value="Unavailable">Unavailable</SelectItem>
-                    <SelectItem value="Maintenance">Maintenance</SelectItem>
+                    <SelectItem value="AVAILABLE">Available</SelectItem>
+                    <SelectItem value="UNAVAILABLE">Unavailable</SelectItem>
+                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
