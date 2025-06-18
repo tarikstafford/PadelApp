@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query, Request, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date, datetime
@@ -408,26 +408,51 @@ async def upload_club_profile_picture(
 
 @router.post("/my-club", response_model=club_schemas.Club, status_code=status.HTTP_201_CREATED)
 async def create_my_club(
-    club_in: club_schemas.ClubCreateForAdmin,
     db: Session = Depends(get_db),
     current_admin: User = Depends(get_current_active_user),
+    name: str = Form(...),
+    description: Optional[str] = Form(None),
+    address: Optional[str] = Form(None),
+    city: Optional[str] = Form(None),
+    postal_code: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
+    opening_time: Optional[str] = Form(None),
+    closing_time: Optional[str] = Form(None),
+    amenities: Optional[str] = Form(None),
+    image_file: Optional[UploadFile] = File(None)
 ):
     """
     Create a new club for the current admin user.
+    This endpoint handles multipart/form-data for club creation, including an optional image upload.
     """
     if current_admin.owned_club:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="This admin already owns a club.",
         )
+
+    image_url = None
+    if image_file:
+        # Assuming file_service.upload_file handles the async upload and returns a URL string
+        image_url = await file_service.upload_file(image_file, "club_images")
     
-    # Construct the ClubCreate object with the owner_id from the token
-    club_to_create = club_schemas.ClubCreate(
-        **club_in.model_dump(),
+    club_in = club_schemas.ClubCreate(
+        name=name,
+        description=description,
+        address=address,
+        city=city,
+        postal_code=postal_code,
+        phone=phone,
+        email=email,
+        opening_time=opening_time,
+        closing_time=closing_time,
+        amenities=amenities,
+        image_url=image_url,
         owner_id=current_admin.id
     )
 
-    new_club = crud.club_crud.create_club(db=db, club=club_to_create)
+    new_club = crud.club_crud.create_club(db=db, club=club_in)
     return new_club
 
 @router.get("/club/{club_id}/dashboard-summary", dependencies=[Depends(ClubAdminChecker())])
