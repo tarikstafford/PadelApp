@@ -10,15 +10,14 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 # Install pnpm
 RUN npm install -g pnpm@10.4.1 turbo@2.4.2
 
-# Copy all source code from the build context
+# The build context is the monorepo root. COPY . . copies everything.
 # The .dockerignore file at the root will prevent copying node_modules, .turbo, .git, etc.
 COPY . .
 
-# Install all monorepo dependencies
-RUN pnpm install --no-frozen-lockfile
+# Install all monorepo dependencies using the lockfile
+RUN pnpm install --frozen-lockfile
 
 # Build the specific 'club-admin' application
-# This command needs the full monorepo context to work correctly
 RUN turbo run build --filter=club-admin
 
 # Stage 2: Production Image
@@ -27,10 +26,15 @@ WORKDIR /app
 ENV NODE_ENV production
 
 # Copy the standalone Next.js server output from the builder stage
+# This copies server.js, node_modules, etc. into /app
 COPY --from=builder /app/apps/club-admin/.next/standalone ./
 
 # Copy the static assets from the builder stage
-COPY --from=builder /app/apps/club-admin/.next/static ./apps/club-admin/.next/static
+# The server expects this at ./.next/static relative to itself
+COPY --from=builder /app/apps/club-admin/.next/static ./.next/static
 
-# Run the Next.js server
-CMD ["node", "apps/club-admin/server.js"] 
+# Copy the public assets (e.g., images, fonts) which are also needed at runtime
+COPY --from=builder /app/apps/club-admin/public ./public
+
+# Run the Next.js server from the root of the WORKDIR
+CMD ["node", "server.js"] 
