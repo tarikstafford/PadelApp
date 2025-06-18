@@ -9,7 +9,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@workspace/ui/components/card";
-import { OperationalHoursSelector } from "@/components/shared/OperationalHoursSelector";
 import { ImageUploader } from "@/components/shared/ImageUploader";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
@@ -26,31 +25,15 @@ const clubFormSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email("Invalid email address").optional(),
   website: z.string().url("Invalid website URL").optional(),
+  opening_time: z.string().optional(),
+  closing_time: z.string().optional(),
 });
 
 type ClubFormValues = z.infer<typeof clubFormSchema>;
 
-interface DayHours {
-  open: string;
-  close: string;
-}
-
-interface OperationalHours {
-  monday: DayHours | null;
-  tuesday: DayHours | null;
-  wednesday: DayHours | null;
-  thursday: DayHours | null;
-  friday: DayHours | null;
-  saturday: DayHours | null;
-  sunday: DayHours | null;
-}
-
 export function CreateClubForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [operationalHours, setOperationalHours] = useState<OperationalHours>({
-    monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
-  });
   const router = useRouter();
   
   const form = useForm<ClubFormValues>({
@@ -64,6 +47,8 @@ export function CreateClubForm() {
       phone: "",
       email: "",
       website: "",
+      opening_time: "",
+      closing_time: "",
     },
   });
   
@@ -71,8 +56,7 @@ export function CreateClubForm() {
     setIsSubmitting(true);
     try {
       // Step 1: Create the club with text data
-      const newClubPayload = { ...values, operationalHours };
-      const newClub = await apiClient.post<Club>("/admin/my-club", newClubPayload);
+      const newClub = await apiClient.post<Club>("/admin/my-club", values);
       toast.success("Club details saved successfully!");
 
       // Step 2: If there's an image, upload it
@@ -232,10 +216,34 @@ export function CreateClubForm() {
               />
             </div>
             
-            <OperationalHoursSelector
-              value={operationalHours}
-              onChange={setOperationalHours}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="opening_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Opening Time</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="closing_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Closing Time</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
             <FormItem>
               <FormLabel>Club Image</FormLabel>

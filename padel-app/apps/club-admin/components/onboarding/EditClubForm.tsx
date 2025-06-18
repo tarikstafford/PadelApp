@@ -9,7 +9,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@workspace/ui/components/card";
-import { OperationalHoursSelector } from "@/components/shared/OperationalHoursSelector";
 import { ImageUploader } from "@/components/shared/ImageUploader";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
@@ -26,32 +25,14 @@ const clubFormSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email("Invalid email address").optional(),
   website: z.string().url("Invalid website URL").optional(),
+  opening_time: z.string().optional(),
+  closing_time: z.string().optional(),
 });
 
 type ClubFormValues = z.infer<typeof clubFormSchema>;
 
-interface DayHours {
-  open: string;
-  close: string;
-}
-
-interface OperationalHours {
-  monday: DayHours | null;
-  tuesday: DayHours | null;
-  wednesday: DayHours | null;
-  thursday: DayHours | null;
-  friday: DayHours | null;
-  saturday: DayHours | null;
-  sunday: DayHours | null;
-}
-
 export function EditClubForm({ club }: { club: Club }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [operationalHours, setOperationalHours] = useState<OperationalHours>(
-    club.operationalHours || {
-      monday: null, tuesday: null, wednesday: null, thursday: null, friday: null, saturday: null, sunday: null,
-    }
-  );
   const router = useRouter();
 
   const form = useForm<ClubFormValues>({
@@ -65,6 +46,8 @@ export function EditClubForm({ club }: { club: Club }) {
       phone: club.phone || "",
       email: club.email || "",
       website: club.website || "",
+      opening_time: club.opening_time || "",
+      closing_time: club.closing_time || "",
     },
   });
 
@@ -99,8 +82,7 @@ export function EditClubForm({ club }: { club: Club }) {
   const handleSubmit = async (values: ClubFormValues) => {
     setIsSubmitting(true);
     try {
-      const updatedClubData = { ...values, operationalHours };
-      await apiClient.put("/admin/my-club", updatedClubData);
+      await apiClient.put("/admin/my-club", values);
       toast.success("Club updated successfully!");
     } catch (error) {
       console.error("Error updating club:", error);
@@ -246,16 +228,39 @@ export function EditClubForm({ club }: { club: Club }) {
                 )}
               />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="opening_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Opening Time</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="closing_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Closing Time</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             
-            <OperationalHoursSelector 
-              value={operationalHours}
-              onChange={setOperationalHours} 
-            />
-
-            <CardFooter className="px-0 pt-4">
-              <Button type="submit" disabled={isSubmitting} className="ml-auto">
-                {isSubmitting ? "Saving..." : "Update Club"}
-              </Button>
+            <CardFooter className="flex justify-end p-0 pt-6">
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Changes"}
+                </Button>
             </CardFooter>
           </form>
         </Form>
