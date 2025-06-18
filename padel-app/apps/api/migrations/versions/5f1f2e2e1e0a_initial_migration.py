@@ -25,9 +25,9 @@ def upgrade() -> None:
     sa.Column('hashed_password', sa.String(), nullable=False),
     sa.Column('profile_picture_url', sa.String(), nullable=True),
     sa.Column('is_active', sa.Boolean(), server_default='true', nullable=False),
-    sa.Column('role', sa.Enum('PLAYER', 'ADMIN', 'CLUB_ADMIN', name='userrole'), server_default='PLAYER', nullable=False),
+    sa.Column('role', sa.Enum('PLAYER', 'ADMIN', 'SUPER_ADMIN', 'CLUB_ADMIN', name='userrole'), server_default='PLAYER', nullable=False),
     sa.Column('elo_rating', sa.Float(), server_default='1.0', nullable=False),
-    sa.Column('preferred_position', sa.Enum('BACKHAND', 'FOREHAND', name='preferredposition'), nullable=True),
+    sa.Column('preferred_position', sa.Enum('LEFT', 'RIGHT', name='preferredposition'), nullable=True),
     sa.Column('is_superuser', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -87,7 +87,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('club_id', sa.Integer(), nullable=False),
-    sa.Column('surface_type', sa.Enum('CLAY', 'HARD', 'GRASS', 'ARTIFICIAL_GRASS', name='surfacetype'), nullable=True),
+    sa.Column('surface_type', sa.Enum('TURF', 'CLAY', 'HARD_COURT', 'SAND', name='surfacetype'), nullable=True),
     sa.Column('is_indoor', sa.Boolean(), nullable=True),
     sa.Column('price_per_hour', sa.Numeric(precision=10, scale=2), nullable=True),
     sa.Column('default_availability_status', sa.Enum('AVAILABLE', 'UNAVAILABLE', 'MAINTENANCE', name='courtavailabilitystatus'), nullable=True),
@@ -108,7 +108,7 @@ def upgrade() -> None:
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('start_time', sa.DateTime(), nullable=False),
     sa.Column('end_time', sa.DateTime(), nullable=False),
-    sa.Column('status', sa.Enum('CONFIRMED', 'CANCELLED', 'PENDING', name='bookingstatus'), nullable=False),
+    sa.Column('status', sa.Enum('CONFIRMED', 'CANCELLED', 'PENDING', 'COMPLETED', name='bookingstatus'), nullable=False),
     sa.ForeignKeyConstraint(['court_id'], ['courts.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -120,7 +120,7 @@ def upgrade() -> None:
     sa.Column('booking_id', sa.Integer(), nullable=False),
     sa.Column('team1_id', sa.Integer(), nullable=True),
     sa.Column('team2_id', sa.Integer(), nullable=True),
-    sa.Column('game_type', sa.Enum('SINGLES', 'DOUBLES', name='gametype'), nullable=False),
+    sa.Column('game_type', sa.Enum('PUBLIC', 'PRIVATE', name='gametype'), nullable=False),
     sa.Column('skill_level', sa.String(), nullable=True),
     sa.Column('start_time', sa.DateTime(), nullable=False),
     sa.Column('end_time', sa.DateTime(), nullable=False),
@@ -138,7 +138,7 @@ def upgrade() -> None:
     op.create_table('game_players',
     sa.Column('game_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('status', sa.Enum('CONFIRMED', 'PENDING', 'DECLINED', name='gameplayerstatus'), nullable=False),
+    sa.Column('status', sa.Enum('INVITED', 'ACCEPTED', 'DECLINED', 'REQUESTED_TO_JOIN', name='gameplayerstatus'), nullable=False),
     sa.ForeignKeyConstraint(['game_id'], ['games.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('game_id', 'user_id')

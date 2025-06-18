@@ -6,10 +6,10 @@ from app.database import Base
 
 # Enum for GamePlayer status
 class GamePlayerStatus(str, enum.Enum):
-    INVITED = "invited"
-    ACCEPTED = "accepted"
-    DECLINED = "declined"
-    REQUESTED_TO_JOIN = "requested_to_join" # New status for join requests
+    INVITED = "INVITED"
+    ACCEPTED = "ACCEPTED"
+    DECLINED = "DECLINED"
+    REQUESTED_TO_JOIN = "REQUESTED_TO_JOIN" # New status for join requests
     # Add other statuses if needed, e.g., WAITING_LIST
 
 class GamePlayer(Base):

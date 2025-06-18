@@ -7,10 +7,10 @@ from app.database import Base
 
 # Enum for booking status
 class BookingStatus(str, enum.Enum):
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    CANCELLED = "cancelled"
-    COMPLETED = "completed"
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
 
 class Booking(Base):
     __tablename__ = "bookings"
