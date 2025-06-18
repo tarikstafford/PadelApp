@@ -16,8 +16,8 @@ import {
 import { format } from 'date-fns';
 
 const getApiUrl = () => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  return `${baseUrl}/api/v1`;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+  return baseUrl;
 };
 
 const getAuthHeaders = (): HeadersInit => {
