@@ -19,4 +19,5 @@ export * from "./alert";
 export * from "./alert-dialog";
 export * from "./dropdown-menu";
 export * from "./avatar";
-export * from "./pagination"; 
+export * from "./pagination";
+export * from "./skeleton"; 

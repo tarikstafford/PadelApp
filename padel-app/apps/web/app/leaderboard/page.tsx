@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api";
-import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@workspace/ui/components/table";
-import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -19,8 +19,8 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@workspace/ui/components/pagination";
-import { Skeleton } from "@workspace/ui/components/skeleton";
+  Skeleton
+} from "@workspace/ui/components";
 
 interface LeaderboardUser {
   id: number;
