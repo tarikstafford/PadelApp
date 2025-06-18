@@ -29,7 +29,7 @@
         "dockerfilePath": "apps/club-admin/Dockerfile"
       },
       "deploy": {
-        "startCommand": "node server.js"
+        "startCommand": "node apps/club-admin/server.js"
       }
     }
   }
