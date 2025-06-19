@@ -20,7 +20,7 @@ const getApiUrl = () => {
   return `${baseUrl}/api/v1`;
 };
 
-const getAuthHeaders = (token?: string | null, authenticated = true): HeadersInit => {
+const getAuthHeaders = (token?: string | null, authenticated = true): Headers => {
   const headers = new Headers();
   headers.append('Content-Type', 'application/json');
 
@@ -40,8 +40,10 @@ export const apiClient = {
       if (params) {
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
       }
+      const requestHeaders = getAuthHeaders(token, authenticated);
+      console.log(`[API CLIENT] GET ${url.toString()}`, { Authorization: requestHeaders.get('Authorization') });
       const response = await fetch(url.toString(), {
-        headers: getAuthHeaders(token, authenticated),
+        headers: requestHeaders,
       });
       if (!response.ok) {
         throw await response.json();
