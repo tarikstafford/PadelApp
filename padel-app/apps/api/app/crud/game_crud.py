@@ -99,8 +99,10 @@ def get_public_games(
         .offset(skip)
         .limit(limit)
         .options(
-            joinedload(GameModel.booking).joinedload(BookingModel.court).joinedload(CourtModel.club),
-            joinedload(GameModel.players).joinedload(GamePlayerModel.user)
+            joinedload(GameModel.booking)
+            .joinedload(BookingModel.court)
+            .joinedload(CourtModel.club),
+            joinedload(GameModel.players).joinedload(GamePlayerModel.user),
         )
         .all()
     )
