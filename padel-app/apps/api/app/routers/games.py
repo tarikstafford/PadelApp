@@ -187,21 +187,6 @@ async def respond_to_game_invitation(
 
     return updated_game_player_orm 
 
-@router.get("/public", response_model=List[schemas.Game])
-async def read_public_games(
-    db: Session = Depends(get_db),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=200),
-    target_date: Optional[date] = Query(None, description="Filter public games by a specific date (YYYY-MM-DD)")
-):
-    """
-    Retrieve a list of public games that have available slots.
-    """
-    public_games = crud.game_crud.get_public_games(
-        db=db, skip=skip, limit=limit, target_date=target_date
-    )
-    return public_games 
-
 @router.post("/{game_id}/join", response_model=schemas.GamePlayer, status_code=status.HTTP_201_CREATED)
 async def request_to_join_game(
     game_id: int,
