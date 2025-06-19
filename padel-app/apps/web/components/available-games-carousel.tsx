@@ -10,33 +10,34 @@ import { Badge } from '@workspace/ui/components/badge';
 import { format } from 'date-fns';
 import { apiClient } from '@/lib/api';
 
-interface GamePlayer {
-  user: {
+// Use the correct, nested interface for a public game
+interface UserForGamePlayer {
     id: number;
-    full_name: string;
-    elo_rating?: number | null;
-  };
-  status: string;
+    name?: string | null;
+    email: string;
 }
-
-interface Game {
-  id: number;
-  club_id: number;
-  booking_id: number;
-  game_type: string;
-  skill_level: string;
-  start_time: string;
-  end_time: string;
-  result_submitted: boolean;
-  players: GamePlayer[];
-  club: {
-    name: string;
-    city: string;
-  }
+interface GamePlayer {
+    user: UserForGamePlayer;
+    status: string;
+}
+interface BookingForGame {
+    id: number;
+    court_id: number;
+    user_id: number;
+    start_time: string;
+    end_time: string;
+    court?: { name?: string | null, club?: { name?: string | null, city?: string | null } };
+}
+interface PublicGame {
+    id: number;
+    booking: BookingForGame;
+    game_type: "PRIVATE" | "PUBLIC";
+    skill_level?: string | null;
+    players: GamePlayer[];
 }
 
 export function AvailableGamesCarousel() {
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<PublicGame[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +45,7 @@ export function AvailableGamesCarousel() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiClient.get<Game[]>('/public/games?limit=10', undefined, null, false);
+      const data = await apiClient.get<PublicGame[]>('/public/games?limit=10', undefined, null, false);
       setGames(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unexpected error occurred.";
@@ -88,7 +89,7 @@ export function AvailableGamesCarousel() {
     );
   }
 
-  const getPlayerCount = (game: Game) => {
+  const getPlayerCount = (game: PublicGame) => {
     return game.players.filter(p => p.status === 'ACCEPTED').length;
   }
 
@@ -110,21 +111,24 @@ export function AvailableGamesCarousel() {
                     <CardContent className="flex flex-col items-start gap-4 p-6 flex-grow">
                         <div className="w-full">
                             <div className="flex justify-between items-start">
-                                <span className="text-sm font-semibold text-primary">{game.club.name}</span>
+                                {/* Correctly access the nested club name */}
+                                <span className="text-sm font-semibold text-primary">{game.booking.court?.club?.name || 'Club not found'}</span>
                                 <Badge variant={game.game_type === 'PUBLIC' ? 'default' : 'secondary'}>{game.game_type}</Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground">{game.club.city}</p>
+                            {/* Correctly access the nested city */}
+                            <p className="text-xs text-muted-foreground">{game.booking.court?.club?.city || 'City not found'}</p>
                         </div>
                         
                         <div className="w-full">
-                            <p className="font-semibold">{format(new Date(game.start_time), 'EEE, MMM d')}</p>
+                             {/* Correctly access start_time from booking */}
+                            <p className="font-semibold">{format(new Date(game.booking.start_time), 'EEE, MMM d')}</p>
                             <p className="text-sm text-muted-foreground">
-                                {format(new Date(game.start_time), 'p')} - {format(new Date(game.end_time), 'p')}
+                                {format(new Date(game.booking.start_time), 'p')} - {format(new Date(game.booking.end_time), 'p')}
                             </p>
                         </div>
 
                         <div className="w-full space-y-2">
-                           <p className="text-sm">Skill Level: <span className="font-medium">{game.skill_level}</span></p>
+                           <p className="text-sm">Skill Level: <span className="font-medium">{game.skill_level || 'Any'}</span></p>
                            <p className="text-sm">Players Joined: <span className="font-medium">{getPlayerCount(game)}/4</span></p>
                         </div>
 
