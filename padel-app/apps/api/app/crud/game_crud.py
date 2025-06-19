@@ -70,7 +70,7 @@ def get_public_games(
     subquery = (
         db.query(
             GamePlayerModel.game_id,
-            func.count(GamePlayerModel.id).label("accepted_player_count")
+            func.count(GamePlayerModel.user_id).label("accepted_player_count")
         )
         .filter(GamePlayerModel.status == GamePlayerStatus.ACCEPTED)
         .group_by(GamePlayerModel.game_id)
