@@ -48,6 +48,7 @@ class BookingInDB(Booking):
 
 class BookingWithCourt(BookingBase):
     id: int
+    end_time: datetime
     court: CourtWithClub
     model_config = {"from_attributes": True}
 
