@@ -68,4 +68,9 @@ class AvailabilityResponse(BaseModel):
 
 class CourtWithBookings(Court):
     # Add any additional properties specific to CourtWithBookings
-    pass 
+    pass
+
+class CourtWithClub(CourtBase):
+    id: int
+    club: ClubBase
+    model_config = {"from_attributes": True} 

@@ -7,6 +7,7 @@ from .game_player_schemas import GamePlayer
 from .team_schemas import Team
 from .user_schemas import User as UserSchema
 from app.models.game_player import GamePlayerStatus
+from .booking_schemas import BookingWithCourt
 
 # --- Team Schemas (for game context) ---
 class TeamWithPlayers(Team):
@@ -32,6 +33,7 @@ class Game(GameBase):
     end_time: datetime
     booking_id: int
     players: List[GamePlayer] = []
+    booking: BookingWithCourt
 
     model_config = {"from_attributes": True}
 

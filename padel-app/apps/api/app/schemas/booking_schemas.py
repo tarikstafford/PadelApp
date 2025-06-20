@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from .game_schemas import Game as GameSchema
 
 from .user_schemas import User
-from .court_schemas import Court
+from .court_schemas import Court, CourtWithClub
 
 # Import BookingStatus enum from the ORM model
 # This assumes no circular dependency issues. If there are, 
@@ -45,6 +45,11 @@ class Booking(BookingBase):
 # For more detailed DB representation if needed (can often be same as Booking)
 class BookingInDB(Booking):
     pass 
+
+class BookingWithCourt(BookingBase):
+    id: int
+    court: CourtWithClub
+    model_config = {"from_attributes": True}
 
 # --- Fix for Pydantic forward reference ---
 from .game_schemas import Game as GameSchema
