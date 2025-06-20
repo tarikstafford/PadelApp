@@ -86,7 +86,7 @@ const LeaderboardPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {leaderboard?.data.map((user, index) => {
+              {leaderboard?.data && leaderboard.data.map((user, index) => {
                 const rank = (page - 1) * limit + index + 1;
                 return (
                   <TableRow key={user.id}>
