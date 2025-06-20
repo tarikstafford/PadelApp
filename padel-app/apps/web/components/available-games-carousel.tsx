@@ -112,19 +112,25 @@ export function AvailableGamesCarousel() {
                         <div className="w-full">
                             <div className="flex justify-between items-start">
                                 {/* Correctly access the nested club name */}
-                                <span className="text-sm font-semibold text-primary">{game.booking.court?.club?.name || 'Club not found'}</span>
+                                <span className="text-sm font-semibold text-primary">{game.booking?.court?.club?.name || 'Club not found'}</span>
                                 <Badge variant={game.game_type === 'PUBLIC' ? 'default' : 'secondary'}>{game.game_type}</Badge>
                             </div>
                             {/* Correctly access the nested city */}
-                            <p className="text-xs text-muted-foreground">{game.booking.court?.club?.city || 'City not found'}</p>
+                            <p className="text-xs text-muted-foreground">{game.booking?.court?.club?.city || 'City not found'}</p>
                         </div>
                         
                         <div className="w-full">
                              {/* Correctly access start_time from booking */}
-                            <p className="font-semibold">{format(new Date(game.booking.start_time), 'EEE, MMM d')}</p>
-                            <p className="text-sm text-muted-foreground">
-                                {format(new Date(game.booking.start_time), 'p')} - {format(new Date(game.booking.end_time), 'p')}
-                            </p>
+                            {game.booking ? (
+                                <>
+                                    <p className="font-semibold">{format(new Date(game.booking.start_time), 'EEE, MMM d')}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {format(new Date(game.booking.start_time), 'p')} - {format(new Date(game.booking.end_time), 'p')}
+                                    </p>
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">Date & Time not available</p>
+                            )}
                         </div>
 
                         <div className="w-full space-y-2">
