@@ -16,11 +16,16 @@ branch_labels = None
 depends_on = None
 
 def upgrade() -> None:
-    # Create enum types
-    op.execute("CREATE TYPE tournamentstatus AS ENUM ('DRAFT', 'REGISTRATION_OPEN', 'REGISTRATION_CLOSED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')")
-    op.execute("CREATE TYPE tournamenttype AS ENUM ('SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'AMERICANO', 'FIXED_AMERICANO')")
-    op.execute("CREATE TYPE tournamentcategory AS ENUM ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM')")
-    op.execute("CREATE TYPE matchstatus AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'WALKOVER')")
+    # Create enum types using SQLAlchemy's ENUM type which handles creation automatically
+    tournament_status_enum = postgresql.ENUM('DRAFT', 'REGISTRATION_OPEN', 'REGISTRATION_CLOSED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', name='tournamentstatus')
+    tournament_type_enum = postgresql.ENUM('SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'AMERICANO', 'FIXED_AMERICANO', name='tournamenttype')
+    tournament_category_enum = postgresql.ENUM('BRONZE', 'SILVER', 'GOLD', 'PLATINUM', name='tournamentcategory')
+    match_status_enum = postgresql.ENUM('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'WALKOVER', name='matchstatus')
+    
+    tournament_status_enum.create(op.get_bind())
+    tournament_type_enum.create(op.get_bind())
+    tournament_category_enum.create(op.get_bind())
+    match_status_enum.create(op.get_bind())
 
     # Create tournaments table
     op.create_table('tournaments',
@@ -149,8 +154,13 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_tournaments_club_id'), table_name='tournaments')
     op.drop_table('tournaments')
     
-    # Drop enum types
-    op.execute("DROP TYPE matchstatus")
-    op.execute("DROP TYPE tournamentcategory")
-    op.execute("DROP TYPE tournamenttype")
-    op.execute("DROP TYPE tournamentstatus")
+    # Drop enum types using SQLAlchemy
+    match_status_enum = postgresql.ENUM(name='matchstatus')
+    tournament_category_enum = postgresql.ENUM(name='tournamentcategory')
+    tournament_type_enum = postgresql.ENUM(name='tournamenttype')
+    tournament_status_enum = postgresql.ENUM(name='tournamentstatus')
+    
+    match_status_enum.drop(op.get_bind())
+    tournament_category_enum.drop(op.get_bind())
+    tournament_type_enum.drop(op.get_bind())
+    tournament_status_enum.drop(op.get_bind())

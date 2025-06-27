@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.core.dependencies import get_db, get_current_user
+from app.database import get_db
+from app.core.security import get_current_active_user
 from app.models.user import User
 from app.models.club_admin import ClubAdmin
 from app.models.tournament import TournamentStatus, TournamentCategory
@@ -17,7 +18,7 @@ from app.schemas.tournament_schemas import (
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
-def get_club_admin_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_club_admin_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     """Ensure current user is a club admin"""
     club_admin = db.query(ClubAdmin).filter(ClubAdmin.user_id == current_user.id).first()
     if not club_admin:
@@ -101,7 +102,7 @@ async def get_club_tournaments(
 async def get_tournament(
     tournament_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get tournament details"""
     tournament = tournament_crud.get_tournament(db=db, tournament_id=tournament_id)
@@ -208,7 +209,7 @@ async def register_team(
     tournament_id: int,
     team_data: TournamentTeamCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Register team for tournament"""
     tournament_team = tournament_crud.register_team(
@@ -240,7 +241,7 @@ async def unregister_team(
     tournament_id: int,
     team_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Unregister team from tournament"""
     success = tournament_crud.unregister_team(
@@ -262,7 +263,7 @@ async def get_tournament_teams(
     tournament_id: int,
     category: Optional[TournamentCategory] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get registered teams for tournament"""
     teams = tournament_crud.get_tournament_teams(
@@ -325,7 +326,7 @@ async def get_tournament_bracket(
     tournament_id: int,
     category_config_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get tournament bracket"""
     bracket = tournament_service.get_tournament_bracket(
@@ -347,7 +348,7 @@ async def get_tournament_matches(
     tournament_id: int,
     category: Optional[TournamentCategory] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get tournament matches"""
     matches = tournament_crud.get_tournament_matches(
@@ -453,7 +454,7 @@ async def check_team_eligibility(
     tournament_id: int,
     team_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Check team eligibility for tournament"""
     eligibility = tournament_crud.check_team_eligibility(
@@ -468,7 +469,7 @@ async def check_team_eligibility(
 async def get_tournament_stats(
     tournament_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get tournament statistics"""
     stats = tournament_crud.get_tournament_stats(db=db, tournament_id=tournament_id)
