@@ -6,6 +6,7 @@ from app import crud, models, schemas
 from app.database import get_db
 from app.core import security
 from app.services import file_service
+from app.crud.tournament_crud import tournament_crud
 
 router = APIRouter()
 
@@ -99,4 +100,39 @@ def request_elo_adjustment(
         user_id=user_id,
         current_elo=current_elo
     )
-    return {"message": "ELO adjustment request submitted successfully."} 
+    return {"message": "ELO adjustment request submitted successfully."}
+
+@router.get("/{user_id}/trophies", response_model=List[schemas.TournamentTrophyResponse])
+async def get_user_trophies(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Get tournament trophies for a user.
+    """
+    # Allow users to see their own trophies, or make this public if desired
+    if current_user.id != user_id:
+        # For now, only allow users to see their own trophies
+        # In the future, this could be made public or restricted to friends/teammates
+        raise HTTPException(
+            status_code=403,
+            detail="You can only view your own trophies."
+        )
+    
+    trophies = tournament_crud.get_user_trophies(db=db, user_id=user_id)
+    
+    return [
+        schemas.TournamentTrophyResponse(
+            id=trophy.id,
+            tournament_id=trophy.tournament_id,
+            tournament_name=trophy.tournament.name,
+            category=trophy.category_config.category,
+            user_id=trophy.user_id,
+            team_id=trophy.team_id,
+            position=trophy.position,
+            trophy_type=trophy.trophy_type,
+            awarded_at=trophy.awarded_at
+        )
+        for trophy in trophies
+    ] 

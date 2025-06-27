@@ -1,11 +1,13 @@
-from typing import List
+from typing import List, Optional
 from app.models.user import User
+from app.models.tournament import TournamentMatch
 
 class EloRatingService:
     """
     A service for calculating ELO rating changes after games.
     """
     K_FACTOR = 32
+    TOURNAMENT_K_FACTOR = 40  # Higher K-factor for tournament matches
 
     @staticmethod
     def calculate_expected_score(team_rating: float, opponent_rating: float) -> float:
@@ -31,9 +33,16 @@ class EloRatingService:
         return sum(player.elo_rating for player in team) / len(team)
 
     @classmethod
-    def update_ratings(cls, team_a: List[User], team_b: List[User], score_a: float, score_b: float):
+    def update_ratings(cls, team_a: List[User], team_b: List[User], score_a: float, score_b: float, is_tournament: bool = False):
         """
         Updates the ELO ratings for all players based on the game outcome.
+        
+        Args:
+            team_a: List of players in team A
+            team_b: List of players in team B
+            score_a: Score of team A
+            score_b: Score of team B
+            is_tournament: Whether this is a tournament match (affects K-factor)
         """
         team_a_rating = cls._calculate_team_rating(team_a)
         team_b_rating = cls._calculate_team_rating(team_b)
@@ -49,8 +58,9 @@ class EloRatingService:
         else:
             actual_a, actual_b = 0.5, 0.5
 
-        rating_change_a = cls.calculate_rating_change(expected_a, actual_a)
-        rating_change_b = cls.calculate_rating_change(expected_b, actual_b)
+        k_factor = cls.TOURNAMENT_K_FACTOR if is_tournament else cls.K_FACTOR
+        rating_change_a = cls.calculate_rating_change(expected_a, actual_a, k_factor)
+        rating_change_b = cls.calculate_rating_change(expected_b, actual_b, k_factor)
 
         for player in team_a:
             player.elo_rating += rating_change_a
@@ -60,18 +70,55 @@ class EloRatingService:
             player.elo_rating = max(1.0, min(player.elo_rating, 7.0))
 
     @classmethod
-    def calculate_rating_change(cls, expected_score: float, actual_score: float) -> float:
+    def calculate_rating_change(cls, expected_score: float, actual_score: float, k_factor: Optional[float] = None) -> float:
         """
         Calculates the change in a player's ELO rating.
         
         Args:
             expected_score: The expected score from calculate_expected_score.
             actual_score: The actual outcome of the game (1 for a win, 0.5 for a draw, 0 for a loss).
+            k_factor: The K-factor to use (defaults to K_FACTOR if not provided).
             
         Returns:
             The amount the player's ELO rating should change.
         """
-        return cls.K_FACTOR * (actual_score - expected_score)
+        if k_factor is None:
+            k_factor = cls.K_FACTOR
+        return k_factor * (actual_score - expected_score)
+
+    @classmethod
+    def update_tournament_match_ratings(cls, tournament_match: TournamentMatch, db):
+        """
+        Updates ELO ratings for players after a tournament match is completed.
+        
+        Args:
+            tournament_match: The completed tournament match
+            db: Database session
+        """
+        if tournament_match.status != "COMPLETED" or not tournament_match.winning_team_id:
+            return
+
+        # Get the teams and their players
+        team1 = tournament_match.team1
+        team2 = tournament_match.team2
+        
+        if not team1 or not team2:
+            return
+
+        team1_players = team1.team.players
+        team2_players = team2.team.players
+
+        # Update ratings with tournament K-factor
+        cls.update_ratings(
+            team_a=team1_players,
+            team_b=team2_players,
+            score_a=tournament_match.team1_score or 0,
+            score_b=tournament_match.team2_score or 0,
+            is_tournament=True
+        )
+        
+        # Commit the changes to the database
+        db.commit()
 
 # This is a placeholder for the full implementation that will be built up
 # through the subtasks.

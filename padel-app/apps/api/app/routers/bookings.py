@@ -1,12 +1,13 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from datetime import date # For deriving date from datetime
+from datetime import date, timedelta # For deriving date from datetime and calculating end times
 
 from app import crud, models, schemas # For models.User, schemas.Booking, schemas.BookingCreate
 from app.database import get_db
 from app.core import security # For get_current_active_user
 from app.services import availability_service # For checking slot availability
+from app.services.court_booking_service import court_booking_service # For tournament conflict checking
 # from app.services.availability_service import SLOT_INTERVAL_MINUTES # For end_time calculation if not done in CRUD
 
 router = APIRouter()
@@ -55,6 +56,14 @@ async def create_new_booking(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The requested time slot is not available or is invalid."
+        )
+
+    # 2.5. Additional check for tournament conflicts
+    end_time = booking_in.start_time + timedelta(minutes=booking_in.duration)
+    if not court_booking_service.is_court_available(db, booking_in.court_id, booking_in.start_time, end_time):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The court is reserved for a tournament during this time."
         )
 
     # 3. If slot is available, create the booking

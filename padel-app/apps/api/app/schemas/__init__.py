@@ -15,6 +15,17 @@ from .game_player_schemas import GamePlayer, GamePlayerCreate, GamePlayerUpdate,
 from .team_schemas import Team, TeamCreate, TeamUpdate
 from .leaderboard_schemas import LeaderboardResponse, LeaderboardUserResponse
 from .elo_adjustment_request_schemas import EloAdjustmentRequest, EloAdjustmentRequestCreate
+from .tournament_schemas import (
+    TournamentCreate, TournamentUpdate, TournamentResponse, TournamentListResponse,
+    TournamentCategoryCreate, TournamentCategoryResponse,
+    TournamentTeamCreate, TournamentTeamResponse,
+    TournamentMatchCreate, TournamentMatchUpdate, TournamentMatchResponse,
+    TournamentBracket, BracketNode,
+    TournamentCourtBookingCreate, TournamentCourtBookingResponse,
+    TournamentTrophyResponse,
+    TeamEligibilityCheck, TournamentEligibilityResponse,
+    TournamentStats, TournamentDashboard
+)
 from app.models.game import GameType
 
 
@@ -81,6 +92,27 @@ __all__ = [
     # ELO
     "EloAdjustmentRequest",
     "EloAdjustmentRequestCreate",
+    # Tournament
+    "TournamentCreate",
+    "TournamentUpdate", 
+    "TournamentResponse",
+    "TournamentListResponse",
+    "TournamentCategoryCreate",
+    "TournamentCategoryResponse",
+    "TournamentTeamCreate",
+    "TournamentTeamResponse",
+    "TournamentMatchCreate",
+    "TournamentMatchUpdate",
+    "TournamentMatchResponse",
+    "TournamentBracket",
+    "BracketNode",
+    "TournamentCourtBookingCreate",
+    "TournamentCourtBookingResponse",
+    "TournamentTrophyResponse",
+    "TeamEligibilityCheck",
+    "TournamentEligibilityResponse",
+    "TournamentStats",
+    "TournamentDashboard",
 ]
 
 # --- Rebuild models to resolve Pydantic forward references ---

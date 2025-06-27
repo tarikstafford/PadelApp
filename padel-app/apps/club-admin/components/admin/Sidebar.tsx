@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, Users, Settings } from "lucide-react";
+import { Home, Calendar, Users, Settings, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: Home },
   { name: "Bookings", href: "/admin/bookings", icon: Calendar },
   { name: "Schedule", href: "/admin/schedule", icon: Calendar },
+  { name: "Tournaments", href: "/tournaments", icon: Trophy },
   { name: "Club Profile", href: "/admin/club", icon: Settings },
 ];
 

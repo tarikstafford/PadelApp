@@ -18,6 +18,7 @@ from app.routers import (
     leaderboard_router,
     public_router,
 )
+from app.routers.tournaments import router as tournaments_router
 from app.middleware.auth import AuthenticationMiddleware
 
 app = FastAPI(
@@ -66,6 +67,7 @@ app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["U
 app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
 app.include_router(leaderboard_router, prefix=f"{settings.API_V1_STR}/leaderboard", tags=["Leaderboard"])
 app.include_router(public_router, prefix=f"{settings.API_V1_STR}/public", tags=["Public"])
+app.include_router(tournaments_router, prefix=f"{settings.API_V1_STR}")
 
 @app.on_event("startup")
 async def startup_event():
