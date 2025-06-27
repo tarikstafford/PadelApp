@@ -1,8 +1,8 @@
 """Add tournament system tables
 
-Revision ID: 001_add_tournament_system
+Revision ID: 20250627_111615_add_tournament_system
 Revises: 5f1f2e2e1e0a
-Create Date: 2024-01-01 00:00:00.000000
+Create Date: 2025-06-27 11:16:15.000000
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '001_add_tournament_system'
+revision = '20250627_111615_add_tournament_system'
 down_revision = '5f1f2e2e1e0a'  # The initial migration
 branch_labels = None
 depends_on = None

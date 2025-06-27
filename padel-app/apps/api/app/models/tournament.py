@@ -40,7 +40,7 @@ class Tournament(Base):
     club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False, index=True)
     name = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=True)
-    tournament_type = Column(SAEnum(TournamentType), nullable=False)
+    tournament_type = Column(SAEnum(TournamentType, name="tournamenttype", create_enum=False), nullable=False)
     
     # Tournament dates
     start_date = Column(DateTime, nullable=False)
@@ -48,7 +48,7 @@ class Tournament(Base):
     registration_deadline = Column(DateTime, nullable=False)
     
     # Tournament status
-    status = Column(SAEnum(TournamentStatus), default=TournamentStatus.DRAFT, nullable=False)
+    status = Column(SAEnum(TournamentStatus, name="tournamentstatus", create_enum=False), default=TournamentStatus.DRAFT, nullable=False)
     
     # Tournament settings
     max_participants = Column(Integer, nullable=False)
