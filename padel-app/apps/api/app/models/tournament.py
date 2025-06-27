@@ -73,7 +73,7 @@ class TournamentCategoryConfig(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tournament_id = Column(Integer, ForeignKey("tournaments.id"), nullable=False)
-    category = Column(SAEnum(TournamentCategory), nullable=False)
+    category = Column(SAEnum(TournamentCategory, name="tournamentcategory", create_enum=False), nullable=False)
     max_participants = Column(Integer, nullable=False)
     min_elo = Column(Float, nullable=False)
     max_elo = Column(Float, nullable=False)
@@ -138,7 +138,7 @@ class TournamentMatch(Base):
     court_id = Column(Integer, ForeignKey("courts.id"), nullable=True)
     
     # Results
-    status = Column(SAEnum(MatchStatus), default=MatchStatus.SCHEDULED, nullable=False)
+    status = Column(SAEnum(MatchStatus, name="matchstatus", create_enum=False), default=MatchStatus.SCHEDULED, nullable=False)
     winning_team_id = Column(Integer, ForeignKey("tournament_teams.id"), nullable=True)
     team1_score = Column(Integer, nullable=True)
     team2_score = Column(Integer, nullable=True)
