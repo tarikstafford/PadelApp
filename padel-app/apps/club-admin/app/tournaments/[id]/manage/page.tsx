@@ -266,15 +266,6 @@ export default function TournamentManagePage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const groupMatchesByRound = (matches: Match[]) => {
     return matches.reduce((acc, match) => {
       const key = `Round ${match.round_number}`;
