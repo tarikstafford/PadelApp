@@ -164,7 +164,7 @@ export default function TournamentDetailsPage() {
       if (!acc[team.category]) {
         acc[team.category] = [];
       }
-      acc[team.category].push(team);
+      acc[team.category]!.push(team);
       return acc;
     }, {} as Record<string, Team[]>);
   };
@@ -174,7 +174,7 @@ export default function TournamentDetailsPage() {
       if (!acc[match.category]) {
         acc[match.category] = [];
       }
-      acc[match.category].push(match);
+      acc[match.category]!.push(match);
       return acc;
     }, {} as Record<string, Match[]>);
   };
