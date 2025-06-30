@@ -4,7 +4,7 @@ import { showErrorToast } from './notifications';
 import {
   DashboardSummary,
   Booking,
-  BookingDetails,
+  // BookingDetails,
   Game,
   Court,
   Club,

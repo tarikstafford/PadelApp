@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Medal, Award, Crown } from 'lucide-react';
@@ -43,9 +43,9 @@ export default function TrophyDisplay({ userId }: { userId: number }) {
 
   useEffect(() => {
     fetchTrophies();
-  }, [userId]);
+  }, [userId, fetchTrophies]);
 
-  const fetchTrophies = async () => {
+  const fetchTrophies = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/v1/users/${userId}/trophies`, {
@@ -66,7 +66,7 @@ export default function TrophyDisplay({ userId }: { userId: number }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -94,7 +94,7 @@ export default function TrophyDisplay({ userId }: { userId: number }) {
       if (!acc[trophy.trophy_type]) {
         acc[trophy.trophy_type] = [];
       }
-      acc[trophy.trophy_type].push(trophy);
+      acc[trophy.trophy_type]!.push(trophy);
       return acc;
     }, {} as Record<string, TournamentTrophy[]>);
   };
