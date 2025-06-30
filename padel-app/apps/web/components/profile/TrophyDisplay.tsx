@@ -41,10 +41,6 @@ export default function TrophyDisplay({ userId }: { userId: number }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchTrophies();
-  }, [userId, fetchTrophies]);
-
   const fetchTrophies = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -67,6 +63,10 @@ export default function TrophyDisplay({ userId }: { userId: number }) {
       setLoading(false);
     }
   }, [userId]);
+
+  useEffect(() => {
+    fetchTrophies();
+  }, [fetchTrophies]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
