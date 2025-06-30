@@ -1,6 +1,6 @@
 """Tournament system - safe migration with existence checks
 
-Revision ID: 20250627_120000_tournament_system_safe
+Revision ID: 627120000tsafe
 Revises: 5f1f2e2e1e0a
 Create Date: 2025-06-27 12:00:00.000000
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '20250627_120000_tournament_system_safe'
+revision = '627120000tsafe'
 down_revision = '5f1f2e2e1e0a'
 branch_labels = None
 depends_on = None
