@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Trophy, Calendar, Users, DollarSign, MapPin, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api';
 
 interface Tournament {
   id: number;
@@ -98,29 +99,17 @@ export default function TournamentDetailsPage() {
 
   const fetchTournamentData = async () => {
     try {
-      const response = await fetch(`/api/v1/tournaments/${tournamentId}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch tournament details');
-      }
-
-      const data = await response.json();
+      // Fetch tournament details (public endpoint, no auth required)
+      const data = await apiClient.get<Tournament>(`/tournaments/${tournamentId}`, {}, null, false);
       setTournament(data);
 
-      // Fetch matches
-      const matchesResponse = await fetch(`/api/v1/tournaments/${tournamentId}/matches`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (matchesResponse.ok) {
-        const matchesData = await matchesResponse.json();
+      // Fetch matches (public endpoint, no auth required)
+      try {
+        const matchesData = await apiClient.get<Match[]>(`/tournaments/${tournamentId}/matches`, {}, null, false);
         setMatches(matchesData);
+      } catch (error) {
+        console.log('Matches endpoint not available:', error);
+        setMatches([]);
       }
 
     } catch (err) {
@@ -132,20 +121,8 @@ export default function TournamentDetailsPage() {
 
   const fetchUserTeams = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const response = await fetch('/api/v1/users/me/teams', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUserTeams(data);
-      }
+      const data = await apiClient.get<Team[]>('/users/me/teams');
+      setUserTeams(data);
     } catch (error) {
       console.error('Failed to fetch user teams:', error);
     }
@@ -153,16 +130,8 @@ export default function TournamentDetailsPage() {
 
   const checkEligibility = async (teamId: string) => {
     try {
-      const response = await fetch(`/api/v1/tournaments/${tournamentId}/eligibility/${teamId}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setEligibility(data);
-      }
+      const data = await apiClient.get(`/tournaments/${tournamentId}/eligibility/${teamId}`, {}, null, false);
+      setEligibility(data);
     } catch (error) {
       console.error('Failed to check eligibility:', error);
     }
@@ -182,26 +151,13 @@ export default function TournamentDetailsPage() {
 
     setRegistering(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/v1/tournaments/${tournamentId}/register`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          team_id: parseInt(selectedTeam),
-          category: selectedCategory,
-        }),
+      await apiClient.post(`/tournaments/${tournamentId}/register`, {
+        team_id: parseInt(selectedTeam),
+        category: selectedCategory,
       });
-
-      if (response.ok) {
-        alert('Successfully registered for tournament!');
-        fetchTournamentData(); // Refresh data
-      } else {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to register for tournament');
-      }
+      
+      alert('Successfully registered for tournament!');
+      fetchTournamentData(); // Refresh data
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to register');
     } finally {
@@ -232,11 +188,11 @@ export default function TournamentDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
           </div>
         </div>
       </div>
@@ -245,7 +201,7 @@ export default function TournamentDetailsPage() {
 
   if (error || !tournament) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link href="/tournaments">
             <Button variant="ghost" size="sm" className="mb-4">
@@ -256,7 +212,7 @@ export default function TournamentDetailsPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-red-600 mb-4">{error || 'Tournament not found'}</p>
+                <p className="text-red-600 dark:text-red-400 mb-4">{error || 'Tournament not found'}</p>
                 <Button onClick={fetchTournamentData}>Retry</Button>
               </div>
             </CardContent>
@@ -267,7 +223,7 @@ export default function TournamentDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <Link href="/tournaments">
@@ -279,8 +235,8 @@ export default function TournamentDetailsPage() {
           
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{tournament.name}</h1>
-              <p className="text-gray-600 text-lg">{formatTournamentType(tournament.tournament_type)}</p>
+              <h1 className="text-3xl font-bold text-foreground">{tournament.name}</h1>
+              <p className="text-muted-foreground text-lg">{formatTournamentType(tournament.tournament_type)}</p>
             </div>
             <Badge className={`${statusColors[tournament.status as keyof typeof statusColors]} text-white`}>
               {getStatusLabel(tournament.status)}
@@ -297,7 +253,7 @@ export default function TournamentDetailsPage() {
                   <CardTitle>Description</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-700">{tournament.description}</p>
+                  <p className="text-foreground">{tournament.description}</p>
                 </CardContent>
               </Card>
             )}
@@ -317,42 +273,42 @@ export default function TournamentDetailsPage() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center">
-                        <Calendar className="h-5 w-5 text-gray-400 mr-3" />
+                        <Calendar className="h-5 w-5 text-muted-foreground mr-3" />
                         <div>
                           <p className="font-medium">Start Date</p>
-                          <p className="text-gray-600">{formatDate(tournament.start_date)}</p>
+                          <p className="text-muted-foreground">{formatDate(tournament.start_date)}</p>
                         </div>
                       </div>
                       <div className="flex items-center">
-                        <Calendar className="h-5 w-5 text-gray-400 mr-3" />
+                        <Calendar className="h-5 w-5 text-muted-foreground mr-3" />
                         <div>
                           <p className="font-medium">End Date</p>
-                          <p className="text-gray-600">{formatDate(tournament.end_date)}</p>
+                          <p className="text-muted-foreground">{formatDate(tournament.end_date)}</p>
                         </div>
                       </div>
                       <div className="flex items-center">
-                        <Users className="h-5 w-5 text-gray-400 mr-3" />
+                        <Users className="h-5 w-5 text-muted-foreground mr-3" />
                         <div>
                           <p className="font-medium">Teams</p>
-                          <p className="text-gray-600">
+                          <p className="text-muted-foreground">
                             {tournament.total_registered_teams} / {tournament.max_participants}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center">
-                        <DollarSign className="h-5 w-5 text-gray-400 mr-3" />
+                        <DollarSign className="h-5 w-5 text-muted-foreground mr-3" />
                         <div>
                           <p className="font-medium">Entry Fee</p>
-                          <p className="text-gray-600">${tournament.entry_fee}</p>
+                          <p className="text-muted-foreground">${tournament.entry_fee}</p>
                         </div>
                       </div>
                     </div>
                     
                     <div className="pt-4 border-t">
                       <p className="font-medium mb-1">Registration Deadline</p>
-                      <p className="text-gray-600">{formatDate(tournament.registration_deadline)}</p>
+                      <p className="text-muted-foreground">{formatDate(tournament.registration_deadline)}</p>
                       {isRegistrationDeadlinePassed && (
-                        <p className="text-red-600 text-sm mt-1">Registration deadline has passed</p>
+                        <p className="text-red-600 dark:text-red-400 text-sm mt-1">Registration deadline has passed</p>
                       )}
                     </div>
                   </CardContent>
@@ -374,7 +330,7 @@ export default function TournamentDetailsPage() {
                               <h4 className="font-medium text-lg">
                                 {CATEGORY_LABELS[category.category as keyof typeof CATEGORY_LABELS]} Category
                               </h4>
-                              <p className="text-gray-600">
+                              <p className="text-muted-foreground">
                                 ELO Range: {category.min_elo} - {category.max_elo === Infinity ? '∞' : category.max_elo}
                               </p>
                             </div>
@@ -396,7 +352,7 @@ export default function TournamentDetailsPage() {
                   </CardHeader>
                   <CardContent>
                     {matches.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
+                      <div className="text-center py-8 text-muted-foreground">
                         <Trophy className="mx-auto h-12 w-12 mb-4" />
                         <p>Matches will appear here once the tournament begins</p>
                       </div>
@@ -409,11 +365,11 @@ export default function TournamentDetailsPage() {
                                 <h4 className="font-medium">
                                   Round {match.round_number}, Match {match.match_number}
                                 </h4>
-                                <p className="text-gray-600">
+                                <p className="text-muted-foreground">
                                   {match.team1_name} vs {match.team2_name}
                                 </p>
                                 {match.scheduled_time && (
-                                  <p className="text-sm text-gray-500">
+                                  <p className="text-sm text-muted-foreground">
                                     {formatDate(match.scheduled_time)} | {match.court_name}
                                   </p>
                                 )}
@@ -450,8 +406,8 @@ export default function TournamentDetailsPage() {
                 <CardContent className="space-y-4">
                   {userTeams.length === 0 ? (
                     <div className="text-center py-4">
-                      <AlertCircle className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600">
+                      <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
                         You need to create a team first to register for tournaments.
                       </p>
                       <Link href="/teams/create" className="mt-2 inline-block">
@@ -536,19 +492,19 @@ export default function TournamentDetailsPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Registered Teams</span>
+                  <span className="text-muted-foreground">Registered Teams</span>
                   <span className="font-medium">{tournament.total_registered_teams}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Available Spots</span>
+                  <span className="text-muted-foreground">Available Spots</span>
                   <span className="font-medium">{tournament.max_participants - tournament.total_registered_teams}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Entry Fee</span>
+                  <span className="text-muted-foreground">Entry Fee</span>
                   <span className="font-medium">${tournament.entry_fee}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Categories</span>
+                  <span className="text-muted-foreground">Categories</span>
                   <span className="font-medium">{tournament.categories.length}</span>
                 </div>
               </CardContent>

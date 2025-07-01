@@ -173,10 +173,9 @@ async def get_public_tournaments(
 @router.get("/{tournament_id}", response_model=TournamentResponse)
 async def get_tournament(
     tournament_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
-    """Get tournament details"""
+    """Get tournament details (public endpoint)"""
     tournament = tournament_crud.get_tournament(db=db, tournament_id=tournament_id)
     if not tournament:
         raise HTTPException(
@@ -447,10 +446,9 @@ async def get_tournament_bracket(
 async def get_tournament_matches(
     tournament_id: int,
     category: Optional[TournamentCategory] = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    db: Session = Depends(get_db)
 ):
-    """Get tournament matches"""
+    """Get tournament matches (public endpoint)"""
     matches = tournament_crud.get_tournament_matches(
         db=db, 
         tournament_id=tournament_id, 
