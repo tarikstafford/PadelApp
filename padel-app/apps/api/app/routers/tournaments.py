@@ -139,12 +139,15 @@ async def get_tournament(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get tournament details"""
+    print(f"DEBUG: Fetching tournament with ID: {tournament_id}")
     tournament = tournament_crud.get_tournament(db=db, tournament_id=tournament_id)
     if not tournament:
+        print(f"DEBUG: Tournament {tournament_id} not found in database")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tournament not found"
         )
+    print(f"DEBUG: Found tournament: {tournament.name} (ID: {tournament.id})")
     
     return TournamentResponse(
         id=tournament.id,
