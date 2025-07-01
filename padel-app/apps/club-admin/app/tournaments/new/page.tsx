@@ -70,6 +70,11 @@ export default function NewTournamentPage() {
       if (response.ok) {
         const data = await response.json();
         setCourts(data);
+      } else {
+        console.error('Failed to fetch courts. Status:', response.status);
+        if (response.status === 404) {
+          console.log('No courts endpoint found - courts will not be available for selection');
+        }
       }
     } catch (error) {
       console.error('Failed to fetch courts:', error);

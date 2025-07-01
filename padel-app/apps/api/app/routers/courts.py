@@ -34,6 +34,34 @@ def create_court_for_club(
     )
     return new_court
 
+@router.get("", response_model=List[schemas.Court])
+def get_courts_for_club(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user),
+):
+    """
+    Get all courts for the authenticated user's club.
+    The user must be a club admin.
+    """
+    # Check if user has a club (either owned or admin of)
+    club_id = None
+    if current_user.owned_club:
+        club_id = current_user.owned_club.id
+    else:
+        # Check if user is a club admin
+        club_admin = db.query(models.ClubAdmin).filter(models.ClubAdmin.user_id == current_user.id).first()
+        if club_admin:
+            club_id = club_admin.club_id
+    
+    if not club_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be associated with a club to view courts.",
+        )
+    
+    courts = crud.court_crud.get_courts_by_club(db=db, club_id=club_id)
+    return courts
+
 @router.get(
     "/{court_id}/availability",
     response_model=List[schemas.BookingTimeSlot],
