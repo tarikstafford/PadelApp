@@ -525,10 +525,9 @@ async def get_public_tournaments(
             limit=limit
         )
     else:
-        # Get all tournaments with registration open
-        tournaments = tournament_crud.get_tournaments_by_status(
+        # Get all tournaments
+        tournaments = tournament_crud.get_tournaments(
             db=db, 
-            status=TournamentStatus.REGISTRATION_OPEN, 
             skip=skip, 
             limit=limit
         )

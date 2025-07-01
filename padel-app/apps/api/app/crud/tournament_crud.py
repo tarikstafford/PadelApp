@@ -74,6 +74,9 @@ class TournamentCRUD:
     def get_tournaments_by_status(self, db: Session, status: TournamentStatus, skip: int = 0, limit: int = 100) -> List[Tournament]:
         return db.query(Tournament).filter(Tournament.status == status).offset(skip).limit(limit).all()
 
+    def get_tournaments(self, db: Session, skip: int = 0, limit: int = 100) -> List[Tournament]:
+        return db.query(Tournament).offset(skip).limit(limit).all()
+
     def update_tournament(self, db: Session, tournament_id: int, tournament_data: TournamentUpdate) -> Optional[Tournament]:
         tournament = db.query(Tournament).filter(Tournament.id == tournament_id).first()
         if not tournament:
