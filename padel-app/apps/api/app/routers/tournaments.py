@@ -28,7 +28,7 @@ def get_club_admin_user(db: Session = Depends(get_db), current_user: User = Depe
         )
     return current_user, club_admin
 
-@router.post("/", response_model=TournamentResponse)
+@router.post("", response_model=TournamentResponse)
 async def create_tournament(
     tournament_data: TournamentCreate,
     db: Session = Depends(get_db),
