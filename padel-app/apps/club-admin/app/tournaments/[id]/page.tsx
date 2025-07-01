@@ -93,12 +93,12 @@ export default function TournamentDetailsPage() {
   const fetchTournamentData = async () => {
     try {
       // Fetch tournament details
-      const tournamentData = await apiClient.get(`/tournaments/${tournamentId}`);
+      const tournamentData = await apiClient.get<Tournament>(`/tournaments/${tournamentId}`);
       setTournament(tournamentData);
 
       // Fetch teams (optional, don't fail if it doesn't exist)
       try {
-        const teamsData = await apiClient.get(`/tournaments/${tournamentId}/teams`);
+        const teamsData = await apiClient.get<Team[]>(`/tournaments/${tournamentId}/teams`);
         setTeams(teamsData);
       } catch (error) {
         console.log('Teams endpoint not available:', error);
@@ -107,7 +107,7 @@ export default function TournamentDetailsPage() {
 
       // Fetch matches (optional, don't fail if it doesn't exist)
       try {
-        const matchesData = await apiClient.get(`/tournaments/${tournamentId}/matches`);
+        const matchesData = await apiClient.get<Match[]>(`/tournaments/${tournamentId}/matches`);
         setMatches(matchesData);
       } catch (error) {
         console.log('Matches endpoint not available:', error);

@@ -92,12 +92,12 @@ export default function TournamentManagePage() {
   const fetchData = async () => {
     try {
       // Fetch tournament data
-      const tournamentData = await apiClient.get(`/tournaments/${tournamentId}`);
+      const tournamentData = await apiClient.get<Tournament>(`/tournaments/${tournamentId}`);
       setTournament(tournamentData);
 
       // Fetch matches (optional)
       try {
-        const matchesData = await apiClient.get(`/tournaments/${tournamentId}/matches`);
+        const matchesData = await apiClient.get<Match[]>(`/tournaments/${tournamentId}/matches`);
         setMatches(matchesData);
       } catch (error) {
         console.log('Matches endpoint not available:', error);
@@ -106,7 +106,7 @@ export default function TournamentManagePage() {
 
       // Fetch courts (use correct admin endpoint)
       try {
-        const courtsData = await apiClient.get('/admin/my-club/courts');
+        const courtsData = await apiClient.get<Court[]>('/admin/my-club/courts');
         setCourts(courtsData);
       } catch (error) {
         console.log('Courts endpoint not available:', error);
@@ -124,7 +124,7 @@ export default function TournamentManagePage() {
     try {
       setUpdating(true);
       
-      const updatedTournament = await apiClient.put(`/tournaments/${tournamentId}`, { status: newStatus });
+      const updatedTournament = await apiClient.put<Tournament>(`/tournaments/${tournamentId}`, { status: newStatus });
       setTournament(updatedTournament);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to update tournament');
