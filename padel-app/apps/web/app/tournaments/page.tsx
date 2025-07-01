@@ -51,7 +51,7 @@ export default function TournamentsPage() {
   const fetchTournaments = async () => {
     try {
       // Use public tournaments endpoint (no authentication required)
-      const data = await apiClient.get<Tournament[]>('/tournaments', {}, null, false);
+      const data = await apiClient.get<Tournament[]>('/tournaments/', {}, null, false);
       setTournaments(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
