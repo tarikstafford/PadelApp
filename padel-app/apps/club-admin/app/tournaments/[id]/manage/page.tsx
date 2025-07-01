@@ -136,7 +136,7 @@ export default function TournamentManagePage() {
   const generateBracket = async () => {
     try {
       setUpdating(true);
-      await apiClient.post(`/tournaments/${tournamentId}/generate-bracket?category_config_id=1`);
+      await apiClient.post(`/tournaments/${tournamentId}/generate-bracket?category_config_id=1`, {});
       await fetchData(); // Refresh data
       alert('Bracket generated successfully!');
     } catch (err) {
@@ -181,7 +181,7 @@ export default function TournamentManagePage() {
 
     try {
       setUpdating(true);
-      await apiClient.post(`/tournaments/${tournamentId}/finalize`);
+      await apiClient.post(`/tournaments/${tournamentId}/finalize`, {});
       await fetchData(); // Refresh data
       alert('Tournament finalized successfully! Trophies have been awarded.');
     } catch (err) {
