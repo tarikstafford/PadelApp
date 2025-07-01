@@ -10,6 +10,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/courts", label: "Courts" },
   { href: "/bookings", label: "Bookings" },
+  { href: "/tournaments", label: "Tournaments" },
 ];
 
 export function DashboardPage({ children }: { children: React.ReactNode }) {
