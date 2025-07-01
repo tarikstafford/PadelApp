@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api';
 
 interface Court {
   id: number;
@@ -59,23 +60,8 @@ export default function NewTournamentPage() {
 
   const fetchCourts = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/courts', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCourts(data);
-      } else {
-        console.error('Failed to fetch courts. Status:', response.status);
-        if (response.status === 404) {
-          console.log('No courts endpoint found - courts will not be available for selection');
-        }
-      }
+      const data = await apiClient.get<Court[]>('/admin/my-club/courts');
+      setCourts(data);
     } catch (error) {
       console.error('Failed to fetch courts:', error);
     }
@@ -125,22 +111,8 @@ export default function NewTournamentPage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/tournaments', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        router.push('/tournaments');
-      } else {
-        const error = await response.json();
-        throw new Error(error.detail || 'Failed to create tournament');
-      }
+      await apiClient.post('/tournaments', formData);
+      router.push('/tournaments');
     } catch (error) {
       console.error('Error creating tournament:', error);
       alert(error instanceof Error ? error.message : 'Failed to create tournament');

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Calendar, Users, Trophy, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api';
 
 interface Tournament {
   id: number;
@@ -49,32 +50,15 @@ export default function TournamentsPage() {
 
   const fetchTournaments = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/tournaments/club', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          // 404 means no tournaments found - show empty state
-          setTournaments([]);
-          return;
-        } else if (response.status === 403) {
-          throw new Error('You need to be a club administrator to view tournaments');
-        } else if (response.status === 401) {
-          throw new Error('Please log in to view tournaments');
-        } else {
-          throw new Error('Failed to fetch tournaments');
-        }
-      }
-
-      const data = await response.json();
+      const data = await apiClient.get<Tournament[]>('/tournaments/club');
       setTournaments(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        // 404 means no tournaments found - show empty state
+        setTournaments([]);
+      } else {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      }
     } finally {
       setLoading(false);
     }
