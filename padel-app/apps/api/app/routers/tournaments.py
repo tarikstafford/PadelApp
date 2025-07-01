@@ -32,16 +32,30 @@ def get_club_admin_user(db: Session = Depends(get_db), current_user: User = Depe
 async def create_tournament(
     tournament_data: TournamentCreate,
     db: Session = Depends(get_db),
-    user_and_admin: tuple = Depends(get_club_admin_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Create a new tournament (Admin only)"""
-    current_user, club_admin = user_and_admin
+    # Check if user owns a club or is a club admin
+    club_id = None
+    if current_user.owned_club:
+        club_id = current_user.owned_club.id
+    else:
+        # Check if user is a club admin
+        club_admin = db.query(ClubAdmin).filter(ClubAdmin.user_id == current_user.id).first()
+        if club_admin:
+            club_id = club_admin.club_id
+    
+    if not club_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only club administrators can perform this action"
+        )
     
     try:
         tournament = tournament_crud.create_tournament(
             db=db, 
             tournament_data=tournament_data, 
-            club_id=club_admin.club_id
+            club_id=club_id
         )
         
         # Convert to response format
@@ -73,14 +87,28 @@ async def get_club_tournaments(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db),
-    user_and_admin: tuple = Depends(get_club_admin_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get tournaments for the admin's club"""
-    current_user, club_admin = user_and_admin
+    # Check if user owns a club or is a club admin
+    club_id = None
+    if current_user.owned_club:
+        club_id = current_user.owned_club.id
+    else:
+        # Check if user is a club admin
+        club_admin = db.query(ClubAdmin).filter(ClubAdmin.user_id == current_user.id).first()
+        if club_admin:
+            club_id = club_admin.club_id
+    
+    if not club_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only club administrators can perform this action"
+        )
     
     tournaments = tournament_crud.get_tournaments_by_club(
         db=db, 
-        club_id=club_admin.club_id, 
+        club_id=club_id, 
         skip=skip, 
         limit=limit
     )
