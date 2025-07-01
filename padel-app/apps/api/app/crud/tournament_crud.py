@@ -69,13 +69,13 @@ class TournamentCRUD:
         ).filter(Tournament.id == tournament_id).first()
 
     def get_tournaments_by_club(self, db: Session, club_id: int, skip: int = 0, limit: int = 100) -> List[Tournament]:
-        return db.query(Tournament).filter(Tournament.club_id == club_id).offset(skip).limit(limit).all()
+        return db.query(Tournament).options(joinedload(Tournament.club)).filter(Tournament.club_id == club_id).offset(skip).limit(limit).all()
 
     def get_tournaments_by_status(self, db: Session, status: TournamentStatus, skip: int = 0, limit: int = 100) -> List[Tournament]:
         return db.query(Tournament).filter(Tournament.status == status).offset(skip).limit(limit).all()
 
     def get_tournaments(self, db: Session, skip: int = 0, limit: int = 100) -> List[Tournament]:
-        return db.query(Tournament).offset(skip).limit(limit).all()
+        return db.query(Tournament).options(joinedload(Tournament.club)).offset(skip).limit(limit).all()
 
     def update_tournament(self, db: Session, tournament_id: int, tournament_data: TournamentUpdate) -> Optional[Tournament]:
         tournament = db.query(Tournament).filter(Tournament.id == tournament_id).first()

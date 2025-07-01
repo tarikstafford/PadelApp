@@ -85,6 +85,8 @@ class TournamentListResponse(BaseModel):
     status: TournamentStatus
     total_registered_teams: int
     max_participants: int
+    entry_fee: Optional[float] = None
+    club_name: Optional[str] = None
 
     class Config:
         from_attributes = True

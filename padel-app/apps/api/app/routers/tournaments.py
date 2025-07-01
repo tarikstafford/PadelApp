@@ -94,7 +94,9 @@ async def get_club_tournaments(
             end_date=t.end_date,
             status=t.status,
             total_registered_teams=len(t.teams),
-            max_participants=t.max_participants
+            max_participants=t.max_participants,
+            entry_fee=t.entry_fee,
+            club_name=t.club.name if t.club else None
         ) for t in tournaments
     ]
 
@@ -541,6 +543,8 @@ async def get_public_tournaments(
             end_date=t.end_date,
             status=t.status,
             total_registered_teams=len(t.teams),
-            max_participants=t.max_participants
+            max_participants=t.max_participants,
+            entry_fee=t.entry_fee,
+            club_name=t.club.name if t.club else None
         ) for t in tournaments
     ]
