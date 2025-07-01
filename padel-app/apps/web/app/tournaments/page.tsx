@@ -78,24 +78,24 @@ export default function TournamentsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Tournaments</h1>
-            <p className="text-gray-600">Discover and join upcoming padel tournaments</p>
+            <h1 className="text-3xl font-bold text-foreground">Tournaments</h1>
+            <p className="text-muted-foreground">Discover and join upcoming padel tournaments</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="animate-pulse">
                 <CardHeader>
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-3 bg-muted rounded w-1/2"></div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="h-3 bg-gray-200 rounded"></div>
-                    <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                    <div className="h-3 bg-muted rounded"></div>
+                    <div className="h-3 bg-muted rounded w-5/6"></div>
                   </div>
                 </CardContent>
               </Card>
@@ -108,16 +108,16 @@ export default function TournamentsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Tournaments</h1>
+            <h1 className="text-3xl font-bold text-foreground">Tournaments</h1>
           </div>
           
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-red-600 mb-4">{error}</p>
+                <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
                 <Button onClick={fetchTournaments}>Retry</Button>
               </div>
             </CardContent>
@@ -128,20 +128,20 @@ export default function TournamentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Tournaments</h1>
-          <p className="text-gray-600">Discover and join upcoming padel tournaments</p>
+          <h1 className="text-3xl font-bold text-foreground">Tournaments</h1>
+          <p className="text-muted-foreground">Discover and join upcoming padel tournaments</p>
         </div>
 
         {tournaments.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-12">
-                <Trophy className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No tournaments found</h3>
-                <p className="text-gray-600">
+                <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">No tournaments found</h3>
+                <p className="text-muted-foreground">
                   There are currently no tournaments available. Check back later for upcoming tournaments or contact your local clubs to organize new events.
                 </p>
               </div>
@@ -151,7 +151,7 @@ export default function TournamentsPage() {
           <>
             {/* Featured/Open tournaments */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Open for Registration</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-4">Open for Registration</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tournaments
                   .filter(t => t.status === 'REGISTRATION_OPEN')
@@ -170,7 +170,7 @@ export default function TournamentsPage() {
 
             {/* All tournaments */}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">All Tournaments</h2>
+              <h2 className="text-2xl font-bold text-foreground mb-4">All Tournaments</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tournaments.map((tournament) => (
                   <TournamentCard 
@@ -228,30 +228,30 @@ function TournamentCard({
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="mr-2 h-4 w-4" />
             {formatDate(tournament.start_date)} - {formatDate(tournament.end_date)}
           </div>
           
-          <div className="flex items-center text-sm text-gray-600">
+          <div className="flex items-center text-sm text-muted-foreground">
             <Users className="mr-2 h-4 w-4" />
             {tournament.total_registered_teams} / {tournament.max_participants} teams
             {availableSpots > 0 && isRegistrationOpen && (
-              <span className="ml-2 text-green-600 font-medium">
+              <span className="ml-2 text-green-600 dark:text-green-400 font-medium">
                 ({availableSpots} spots left)
               </span>
             )}
           </div>
 
           {tournament.entry_fee !== undefined && tournament.entry_fee > 0 && (
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-muted-foreground">
               <DollarSign className="mr-2 h-4 w-4" />
               ${tournament.entry_fee} entry fee
             </div>
           )}
 
           {tournament.club_name && (
-            <div className="flex items-center text-sm text-gray-600">
+            <div className="flex items-center text-sm text-muted-foreground">
               <MapPin className="mr-2 h-4 w-4" />
               {tournament.club_name}
             </div>
