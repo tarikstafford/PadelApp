@@ -58,7 +58,17 @@ export default function TournamentsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch tournaments');
+        if (response.status === 404) {
+          // 404 means no tournaments found - show empty state
+          setTournaments([]);
+          return;
+        } else if (response.status === 403) {
+          throw new Error('You need to be a club administrator to view tournaments');
+        } else if (response.status === 401) {
+          throw new Error('Please log in to view tournaments');
+        } else {
+          throw new Error('Failed to fetch tournaments');
+        }
       }
 
       const data = await response.json();

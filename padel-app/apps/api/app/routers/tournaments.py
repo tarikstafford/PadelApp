@@ -85,6 +85,10 @@ async def get_club_tournaments(
         limit=limit
     )
     
+    # Ensure we always return an empty list if no tournaments found
+    if not tournaments:
+        return []
+    
     return [
         TournamentListResponse(
             id=t.id,
