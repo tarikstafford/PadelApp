@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Settings, Play, Trophy, Calendar, Users, DollarSign } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api';
 
 interface Tournament {
   id: number;
@@ -91,47 +92,26 @@ export default function TournamentDetailsPage() {
 
   const fetchTournamentData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
       // Fetch tournament details
-      const tournamentResponse = await fetch(`/api/v1/tournaments/${tournamentId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!tournamentResponse.ok) {
-        throw new Error('Failed to fetch tournament details');
-      }
-
-      const tournamentData = await tournamentResponse.json();
+      const tournamentData = await apiClient.get(`/tournaments/${tournamentId}`);
       setTournament(tournamentData);
 
-      // Fetch teams
-      const teamsResponse = await fetch(`/api/v1/tournaments/${tournamentId}/teams`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (teamsResponse.ok) {
-        const teamsData = await teamsResponse.json();
+      // Fetch teams (optional, don't fail if it doesn't exist)
+      try {
+        const teamsData = await apiClient.get(`/tournaments/${tournamentId}/teams`);
         setTeams(teamsData);
+      } catch (error) {
+        console.log('Teams endpoint not available:', error);
+        setTeams([]);
       }
 
-      // Fetch matches
-      const matchesResponse = await fetch(`/api/v1/tournaments/${tournamentId}/matches`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (matchesResponse.ok) {
-        const matchesData = await matchesResponse.json();
+      // Fetch matches (optional, don't fail if it doesn't exist)
+      try {
+        const matchesData = await apiClient.get(`/tournaments/${tournamentId}/matches`);
         setMatches(matchesData);
+      } catch (error) {
+        console.log('Matches endpoint not available:', error);
+        setMatches([]);
       }
 
     } catch (err) {

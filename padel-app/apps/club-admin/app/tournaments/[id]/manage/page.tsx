@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Play, Square, Trophy, Calendar, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api';
 
 interface Tournament {
   id: number;
@@ -90,36 +91,26 @@ export default function TournamentManagePage() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      // Fetch tournament, matches, and courts in parallel
-      const [tournamentRes, matchesRes, courtsRes] = await Promise.all([
-        fetch(`/api/v1/tournaments/${tournamentId}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }),
-        fetch(`/api/v1/tournaments/${tournamentId}/matches`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }),
-        fetch('/api/v1/courts', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }),
-      ]);
-
-      if (!tournamentRes.ok) {
-        throw new Error('Failed to fetch tournament');
-      }
-
-      const tournamentData = await tournamentRes.json();
+      // Fetch tournament data
+      const tournamentData = await apiClient.get(`/tournaments/${tournamentId}`);
       setTournament(tournamentData);
 
-      if (matchesRes.ok) {
-        const matchesData = await matchesRes.json();
+      // Fetch matches (optional)
+      try {
+        const matchesData = await apiClient.get(`/tournaments/${tournamentId}/matches`);
         setMatches(matchesData);
+      } catch (error) {
+        console.log('Matches endpoint not available:', error);
+        setMatches([]);
       }
 
-      if (courtsRes.ok) {
-        const courtsData = await courtsRes.json();
+      // Fetch courts (use correct admin endpoint)
+      try {
+        const courtsData = await apiClient.get('/admin/my-club/courts');
         setCourts(courtsData);
+      } catch (error) {
+        console.log('Courts endpoint not available:', error);
+        setCourts([]);
       }
 
     } catch (err) {
@@ -132,22 +123,8 @@ export default function TournamentManagePage() {
   const updateTournamentStatus = async (newStatus: string) => {
     try {
       setUpdating(true);
-      const token = localStorage.getItem('token');
       
-      const response = await fetch(`/api/v1/tournaments/${tournamentId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update tournament status');
-      }
-
-      const updatedTournament = await response.json();
+      const updatedTournament = await apiClient.put(`/tournaments/${tournamentId}`, { status: newStatus });
       setTournament(updatedTournament);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to update tournament');
@@ -159,20 +136,7 @@ export default function TournamentManagePage() {
   const generateBracket = async () => {
     try {
       setUpdating(true);
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`/api/v1/tournaments/${tournamentId}/generate-bracket?category_config_id=1`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate bracket');
-      }
-
+      await apiClient.post(`/tournaments/${tournamentId}/generate-bracket?category_config_id=1`);
       await fetchData(); // Refresh data
       alert('Bracket generated successfully!');
     } catch (err) {
@@ -184,25 +148,12 @@ export default function TournamentManagePage() {
 
   const updateMatchResult = async (matchId: number, team1Score: number, team2Score: number, winningTeamId: number) => {
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`/api/v1/tournaments/matches/${matchId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          team1_score: team1Score,
-          team2_score: team2Score,
-          winning_team_id: winningTeamId,
-          status: 'COMPLETED',
-        }),
+      await apiClient.put(`/tournaments/matches/${matchId}`, {
+        team1_score: team1Score,
+        team2_score: team2Score,
+        winning_team_id: winningTeamId,
+        status: 'COMPLETED',
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update match result');
-      }
 
       await fetchData(); // Refresh data
     } catch (err) {
@@ -212,23 +163,10 @@ export default function TournamentManagePage() {
 
   const scheduleMatch = async (matchId: number, courtId: number, scheduledTime: string) => {
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`/api/v1/tournaments/matches/${matchId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          court_id: courtId,
-          scheduled_time: scheduledTime,
-        }),
+      await apiClient.put(`/tournaments/matches/${matchId}`, {
+        court_id: courtId,
+        scheduled_time: scheduledTime,
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to schedule match');
-      }
 
       await fetchData(); // Refresh data
     } catch (err) {
@@ -243,20 +181,7 @@ export default function TournamentManagePage() {
 
     try {
       setUpdating(true);
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(`/api/v1/tournaments/${tournamentId}/finalize`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to finalize tournament');
-      }
-
+      await apiClient.post(`/tournaments/${tournamentId}/finalize`);
       await fetchData(); // Refresh data
       alert('Tournament finalized successfully! Trophies have been awarded.');
     } catch (err) {
