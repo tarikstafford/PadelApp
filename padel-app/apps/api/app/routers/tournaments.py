@@ -132,6 +132,44 @@ async def get_club_tournaments(
         ) for t in tournaments
     ]
 
+@router.get("/", response_model=List[TournamentListResponse])
+async def get_public_tournaments(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    status: Optional[TournamentStatus] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get public tournaments (no auth required)"""
+    if status:
+        tournaments = tournament_crud.get_tournaments_by_status(
+            db=db, 
+            status=status, 
+            skip=skip, 
+            limit=limit
+        )
+    else:
+        # Get all tournaments
+        tournaments = tournament_crud.get_tournaments(
+            db=db, 
+            skip=skip, 
+            limit=limit
+        )
+    
+    return [
+        TournamentListResponse(
+            id=t.id,
+            name=t.name,
+            tournament_type=t.tournament_type,
+            start_date=t.start_date,
+            end_date=t.end_date,
+            status=t.status,
+            total_registered_teams=len(t.teams),
+            max_participants=t.max_participants,
+            entry_fee=t.entry_fee,
+            club_name=t.club.name if t.club else None
+        ) for t in tournaments
+    ]
+
 @router.get("/{tournament_id}", response_model=TournamentResponse)
 async def get_tournament(
     tournament_id: int,
@@ -599,40 +637,3 @@ async def finalize_tournament(
     
     return {"message": "Tournament finalized successfully"}
 
-@router.get("/", response_model=List[TournamentListResponse])
-async def get_public_tournaments(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
-    status: Optional[TournamentStatus] = Query(None),
-    db: Session = Depends(get_db)
-):
-    """Get public tournaments (no auth required)"""
-    if status:
-        tournaments = tournament_crud.get_tournaments_by_status(
-            db=db, 
-            status=status, 
-            skip=skip, 
-            limit=limit
-        )
-    else:
-        # Get all tournaments
-        tournaments = tournament_crud.get_tournaments(
-            db=db, 
-            skip=skip, 
-            limit=limit
-        )
-    
-    return [
-        TournamentListResponse(
-            id=t.id,
-            name=t.name,
-            tournament_type=t.tournament_type,
-            start_date=t.start_date,
-            end_date=t.end_date,
-            status=t.status,
-            total_registered_teams=len(t.teams),
-            max_participants=t.max_participants,
-            entry_fee=t.entry_fee,
-            club_name=t.club.name if t.club else None
-        ) for t in tournaments
-    ]
