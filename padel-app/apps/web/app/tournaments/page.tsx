@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Calendar, Users, DollarSign, MapPin } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api';
 
 interface Tournament {
   id: number;
@@ -49,17 +50,8 @@ export default function TournamentsPage() {
 
   const fetchTournaments = async () => {
     try {
-      const response = await fetch('/api/v1/tournaments', {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch tournaments');
-      }
-
-      const data = await response.json();
+      // Use public tournaments endpoint (no authentication required)
+      const data = await apiClient.get<Tournament[]>('/tournaments', {}, null, false);
       setTournaments(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

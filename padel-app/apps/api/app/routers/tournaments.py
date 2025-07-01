@@ -169,14 +169,28 @@ async def update_tournament(
     tournament_id: int,
     tournament_data: TournamentUpdate,
     db: Session = Depends(get_db),
-    user_and_admin: tuple = Depends(get_club_admin_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Update tournament (Admin only)"""
-    current_user, club_admin = user_and_admin
+    # Check if user owns a club or is a club admin
+    club_id = None
+    if current_user.owned_club:
+        club_id = current_user.owned_club.id
+    else:
+        # Check if user is a club admin
+        club_admin = db.query(ClubAdmin).filter(ClubAdmin.user_id == current_user.id).first()
+        if club_admin:
+            club_id = club_admin.club_id
+    
+    if not club_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only club administrators can perform this action"
+        )
     
     # Verify tournament belongs to admin's club
     tournament = tournament_crud.get_tournament(db=db, tournament_id=tournament_id)
-    if not tournament or tournament.club_id != club_admin.club_id:
+    if not tournament or tournament.club_id != club_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tournament not found"
@@ -328,14 +342,28 @@ async def generate_tournament_bracket(
     tournament_id: int,
     category_config_id: int,
     db: Session = Depends(get_db),
-    user_and_admin: tuple = Depends(get_club_admin_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Generate tournament bracket (Admin only)"""
-    current_user, club_admin = user_and_admin
+    # Check if user owns a club or is a club admin
+    club_id = None
+    if current_user.owned_club:
+        club_id = current_user.owned_club.id
+    else:
+        # Check if user is a club admin
+        club_admin = db.query(ClubAdmin).filter(ClubAdmin.user_id == current_user.id).first()
+        if club_admin:
+            club_id = club_admin.club_id
+    
+    if not club_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only club administrators can perform this action"
+        )
     
     # Verify tournament belongs to admin's club
     tournament = tournament_crud.get_tournament(db=db, tournament_id=tournament_id)
-    if not tournament or tournament.club_id != club_admin.club_id:
+    if not tournament or tournament.club_id != club_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tournament not found"
@@ -419,10 +447,24 @@ async def update_match_result(
     match_id: int,
     match_data: TournamentMatchUpdate,
     db: Session = Depends(get_db),
-    user_and_admin: tuple = Depends(get_club_admin_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Update match result (Admin only)"""
-    current_user, club_admin = user_and_admin
+    # Check if user owns a club or is a club admin
+    club_id = None
+    if current_user.owned_club:
+        club_id = current_user.owned_club.id
+    else:
+        # Check if user is a club admin
+        club_admin = db.query(ClubAdmin).filter(ClubAdmin.user_id == current_user.id).first()
+        if club_admin:
+            club_id = club_admin.club_id
+    
+    if not club_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only club administrators can perform this action"
+        )
     
     # Verify match belongs to admin's club tournament
     match = tournament_crud.get_match(db=db, match_id=match_id)
@@ -433,7 +475,7 @@ async def update_match_result(
         )
     
     tournament = tournament_crud.get_tournament(db=db, tournament_id=match.tournament_id)
-    if not tournament or tournament.club_id != club_admin.club_id:
+    if not tournament or tournament.club_id != club_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied"
@@ -520,14 +562,28 @@ async def get_tournament_stats(
 async def finalize_tournament(
     tournament_id: int,
     db: Session = Depends(get_db),
-    user_and_admin: tuple = Depends(get_club_admin_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     """Finalize tournament and award trophies (Admin only)"""
-    current_user, club_admin = user_and_admin
+    # Check if user owns a club or is a club admin
+    club_id = None
+    if current_user.owned_club:
+        club_id = current_user.owned_club.id
+    else:
+        # Check if user is a club admin
+        club_admin = db.query(ClubAdmin).filter(ClubAdmin.user_id == current_user.id).first()
+        if club_admin:
+            club_id = club_admin.club_id
+    
+    if not club_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only club administrators can perform this action"
+        )
     
     # Verify tournament belongs to admin's club
     tournament = tournament_crud.get_tournament(db=db, tournament_id=tournament_id)
-    if not tournament or tournament.club_id != club_admin.club_id:
+    if not tournament or tournament.club_id != club_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tournament not found"
