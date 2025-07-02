@@ -13,7 +13,8 @@ from app.services.elo_rating_service import elo_rating_service
 from app.schemas.tournament_schemas import (
     TournamentCreate, TournamentUpdate, TournamentResponse, TournamentListResponse,
     TournamentTeamCreate, TournamentTeamResponse, TournamentMatchUpdate, TournamentMatchResponse,
-    TournamentBracket, TeamEligibilityCheck, TournamentStats, TournamentDashboard
+    TournamentBracket, TeamEligibilityCheck, TournamentStats, TournamentDashboard,
+    TournamentCategoryResponse
 )
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
@@ -203,7 +204,16 @@ async def get_tournament(
         entry_fee=tournament.entry_fee,
         created_at=tournament.created_at,
         updated_at=tournament.updated_at,
-        categories=[],
+        categories=[
+            TournamentCategoryResponse(
+                id=cat.id,
+                category=cat.category,
+                max_participants=cat.max_participants,
+                min_elo=cat.min_elo,
+                max_elo=cat.max_elo,
+                current_participants=len([team for team in tournament.teams if hasattr(team, 'category_config_id') and team.category_config_id == cat.id]) if tournament.teams else 0
+            ) for cat in (tournament.categories or [])
+        ],
         total_registered_teams=total_teams
     )
 
