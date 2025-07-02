@@ -65,11 +65,11 @@ def create_tournament_with_categories(admin_token):
         "entry_fee": 0.0,
         "categories": [
             {
-                "category": "BEGINNER",
+                "category": "BRONZE",
                 "max_participants": 16
             },
             {
-                "category": "INTERMEDIATE", 
+                "category": "SILVER", 
                 "max_participants": 16
             }
         ],
