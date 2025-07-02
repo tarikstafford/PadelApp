@@ -13,7 +13,8 @@ from app.services.elo_rating_service import elo_rating_service
 from app.schemas.tournament_schemas import (
     TournamentCreate, TournamentUpdate, TournamentResponse, TournamentListResponse,
     TournamentTeamCreate, TournamentTeamResponse, TournamentMatchUpdate, TournamentMatchResponse,
-    TournamentBracket, TeamEligibilityCheck, TournamentStats, TournamentDashboard
+    TournamentBracket, TeamEligibilityCheck, TournamentStats, TournamentDashboard,
+    TournamentCategoryResponse
 )
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
@@ -73,7 +74,16 @@ async def create_tournament(
             entry_fee=tournament.entry_fee,
             created_at=tournament.created_at,
             updated_at=tournament.updated_at,
-            categories=[],
+            categories=[
+                TournamentCategoryResponse(
+                    id=cat.id,
+                    category=cat.category,
+                    max_participants=cat.max_participants,
+                    min_elo=cat.min_elo,
+                    max_elo=cat.max_elo,
+                    current_participants=len([team for team in tournament.teams if team.category_config_id == cat.id])
+                ) for cat in tournament.categories
+            ],
             total_registered_teams=0
         )
     except Exception as e:
@@ -197,7 +207,16 @@ async def get_tournament(
         entry_fee=tournament.entry_fee,
         created_at=tournament.created_at,
         updated_at=tournament.updated_at,
-        categories=[],
+        categories=[
+            TournamentCategoryResponse(
+                id=cat.id,
+                category=cat.category,
+                max_participants=cat.max_participants,
+                min_elo=cat.min_elo,
+                max_elo=cat.max_elo,
+                current_participants=len([team for team in tournament.teams if team.category_config_id == cat.id])
+            ) for cat in tournament.categories
+        ],
         total_registered_teams=len(tournament.teams)
     )
 
@@ -259,7 +278,16 @@ async def update_tournament(
         entry_fee=updated_tournament.entry_fee,
         created_at=updated_tournament.created_at,
         updated_at=updated_tournament.updated_at,
-        categories=[],
+        categories=[
+            TournamentCategoryResponse(
+                id=cat.id,
+                category=cat.category,
+                max_participants=cat.max_participants,
+                min_elo=cat.min_elo,
+                max_elo=cat.max_elo,
+                current_participants=len([team for team in updated_tournament.teams if team.category_config_id == cat.id])
+            ) for cat in updated_tournament.categories
+        ],
         total_registered_teams=len(updated_tournament.teams)
     )
 
