@@ -25,14 +25,26 @@ def test_two_player_team():
         response = requests.post(f"{API_BASE_URL}/auth/register", json=user_data)
         if response.status_code == 201:
             auth_data = response.json()
-            user_info = {
-                "id": auth_data.get("user", {}).get("id"),
-                "token": auth_data.get("access_token"),
-                "email": user_data["email"],
-                "name": user_data["full_name"]
-            }
-            users.append(user_info)
-            print(f"✓ User {i} created with ID: {user_info['id']}")
+            access_token = auth_data.get("access_token")
+            
+            # Get user details from /users/me endpoint
+            me_response = requests.get(f"{API_BASE_URL}/users/me", headers={
+                "Authorization": f"Bearer {access_token}"
+            })
+            
+            if me_response.status_code == 200:
+                user_data_response = me_response.json()
+                user_info = {
+                    "id": user_data_response.get("id"),
+                    "token": access_token,
+                    "email": user_data["email"],
+                    "name": user_data["full_name"]
+                }
+                users.append(user_info)
+                print(f"✓ User {i} created with ID: {user_info['id']}")
+            else:
+                print(f"✗ Failed to get user details for user {i}")
+                return
         elif response.status_code == 400 and "already registered" in response.text:
             # User exists, login
             login_response = requests.post(f"{API_BASE_URL}/auth/login", json={
@@ -41,14 +53,26 @@ def test_two_player_team():
             })
             if login_response.status_code == 200:
                 auth_data = login_response.json()
-                user_info = {
-                    "id": auth_data.get("user", {}).get("id"),
-                    "token": auth_data.get("access_token"),
-                    "email": user_data["email"],
-                    "name": user_data["full_name"]
-                }
-                users.append(user_info)
-                print(f"✓ User {i} logged in with ID: {user_info['id']}")
+                access_token = auth_data.get("access_token")
+                
+                # Get user details from /users/me endpoint
+                me_response = requests.get(f"{API_BASE_URL}/users/me", headers={
+                    "Authorization": f"Bearer {access_token}"
+                })
+                
+                if me_response.status_code == 200:
+                    user_data_response = me_response.json()
+                    user_info = {
+                        "id": user_data_response.get("id"),
+                        "token": access_token,
+                        "email": user_data["email"],
+                        "name": user_data["full_name"]
+                    }
+                    users.append(user_info)
+                    print(f"✓ User {i} logged in with ID: {user_info['id']}")
+                else:
+                    print(f"✗ Failed to get user details for user {i}")
+                    return
             else:
                 print(f"✗ Failed to login user {i}")
                 return

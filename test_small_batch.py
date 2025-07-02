@@ -21,7 +21,7 @@ def create_small_batch():
         
         user_data = {
             "full_name": f"Batch Player {i}",
-            "email": f"batchplayer{i}@test.com", 
+            "email": f"batchplayer{i}@test.example", 
             "password": "test123"
         }
         
@@ -29,15 +29,26 @@ def create_small_batch():
             response = requests.post(f"{API_BASE_URL}/auth/register", json=user_data)
             if response.status_code == 201:
                 auth_data = response.json()
-                player_info = {
-                    "id": auth_data.get("user", {}).get("id"),
-                    "token": auth_data.get("access_token"),
-                    "email": user_data["email"],
-                    "name": user_data["full_name"],
-                    "player_num": i
-                }
-                players.append(player_info)
-                print(f"✓ Player {i} created")
+                access_token = auth_data.get("access_token")
+                
+                # Get user details from /users/me endpoint
+                me_response = requests.get(f"{API_BASE_URL}/users/me", headers={
+                    "Authorization": f"Bearer {access_token}"
+                })
+                
+                if me_response.status_code == 200:
+                    user_data_response = me_response.json()
+                    player_info = {
+                        "id": user_data_response.get("id"),
+                        "token": access_token,
+                        "email": user_data["email"],
+                        "name": user_data["full_name"],
+                        "player_num": i
+                    }
+                    players.append(player_info)
+                    print(f"✓ Player {i} created")
+                else:
+                    print(f"✗ Failed to get user details for player {i}")
             elif response.status_code == 400 and "already registered" in response.text:
                 # Login existing user
                 login_response = requests.post(f"{API_BASE_URL}/auth/login", json={
@@ -46,15 +57,26 @@ def create_small_batch():
                 })
                 if login_response.status_code == 200:
                     auth_data = login_response.json()
-                    player_info = {
-                        "id": auth_data.get("user", {}).get("id"),
-                        "token": auth_data.get("access_token"),
-                        "email": user_data["email"],
-                        "name": user_data["full_name"],
-                        "player_num": i
-                    }
-                    players.append(player_info)
-                    print(f"✓ Player {i} logged in")
+                    access_token = auth_data.get("access_token")
+                    
+                    # Get user details from /users/me endpoint
+                    me_response = requests.get(f"{API_BASE_URL}/users/me", headers={
+                        "Authorization": f"Bearer {access_token}"
+                    })
+                    
+                    if me_response.status_code == 200:
+                        user_data_response = me_response.json()
+                        player_info = {
+                            "id": user_data_response.get("id"),
+                            "token": access_token,
+                            "email": user_data["email"],
+                            "name": user_data["full_name"],
+                            "player_num": i
+                        }
+                        players.append(player_info)
+                        print(f"✓ Player {i} logged in")
+                    else:
+                        print(f"✗ Failed to get user details for player {i}")
                 else:
                     print(f"✗ Failed to login player {i}")
             else:
