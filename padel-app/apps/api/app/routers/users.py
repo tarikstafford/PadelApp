@@ -157,4 +157,40 @@ async def create_team(
     """
     Create a new team for the current user.
     """
-    return team_crud.create_team(db=db, team_data=team_in, creator_id=current_user.id) 
+    return team_crud.create_team(db=db, team_data=team_in, creator_id=current_user.id)
+
+@router.post("/me/teams/{team_id}/players", response_model=schemas.Team)
+async def add_player_to_team(
+    team_id: int,
+    player_data: dict,  # Expecting {"user_id": int}
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Add a player to the current user's team.
+    """
+    # Get the team
+    team = team_crud.get_team(db=db, team_id=team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Check if current user is in the team (has permission to add players)
+    if current_user not in team.players:
+        raise HTTPException(status_code=403, detail="You can only add players to teams you're a member of")
+    
+    # Get the user to add
+    user_id = player_data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    
+    user_to_add = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user_to_add:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if user is already in the team
+    if user_to_add in team.players:
+        raise HTTPException(status_code=400, detail="User is already in the team")
+    
+    # Add the user to the team
+    updated_team = team_crud.add_player_to_team(db=db, team=team, user=user_to_add)
+    return updated_team 
