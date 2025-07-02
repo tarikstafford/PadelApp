@@ -18,6 +18,10 @@ from app.schemas.tournament_schemas import (
 
 class TournamentCRUD:
     def create_tournament(self, db: Session, tournament_data: TournamentCreate, club_id: int) -> Tournament:
+        # Validate that at least one category is provided
+        if not tournament_data.categories:
+            raise ValueError("Tournament must have at least one category")
+        
         # Create tournament
         tournament = Tournament(
             club_id=club_id,

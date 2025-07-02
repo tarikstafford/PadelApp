@@ -31,7 +31,7 @@ class TournamentCreate(BaseModel):
     registration_deadline: datetime
     max_participants: int = Field(gt=0)
     entry_fee: Optional[float] = Field(ge=0, default=0.0)
-    categories: List[TournamentCategoryCreate]
+    categories: List[TournamentCategoryCreate] = Field(min_items=1, description="At least one category is required")
     court_ids: List[int] = Field(description="List of court IDs to be used for the tournament")
 
     @validator('end_date')

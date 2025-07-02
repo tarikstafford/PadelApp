@@ -73,7 +73,16 @@ async def create_tournament(
             entry_fee=tournament.entry_fee,
             created_at=tournament.created_at,
             updated_at=tournament.updated_at,
-            categories=[],
+            categories=[
+                {
+                    "id": cat.id,
+                    "category": cat.category,
+                    "max_participants": cat.max_participants,
+                    "min_elo": cat.min_elo,
+                    "max_elo": cat.max_elo,
+                    "current_participants": 0  # Safe default
+                } for cat in (tournament.categories or [])
+            ],
             total_registered_teams=0
         )
     except Exception as e:
@@ -203,7 +212,16 @@ async def get_tournament(
         entry_fee=tournament.entry_fee,
         created_at=tournament.created_at,
         updated_at=tournament.updated_at,
-        categories=[],
+        categories=[
+            {
+                "id": cat.id,
+                "category": cat.category,
+                "max_participants": cat.max_participants,
+                "min_elo": cat.min_elo,
+                "max_elo": cat.max_elo,
+                "current_participants": 0  # Safe default
+            } for cat in (tournament.categories or [])
+        ],
         total_registered_teams=total_teams
     )
 
@@ -271,7 +289,16 @@ async def update_tournament(
         entry_fee=updated_tournament.entry_fee,
         created_at=updated_tournament.created_at,
         updated_at=updated_tournament.updated_at,
-        categories=[],
+        categories=[
+            {
+                "id": cat.id,
+                "category": cat.category,
+                "max_participants": cat.max_participants,
+                "min_elo": cat.min_elo,
+                "max_elo": cat.max_elo,
+                "current_participants": 0  # Safe default
+            } for cat in (updated_tournament.categories or [])
+        ],
         total_registered_teams=total_teams
     )
 

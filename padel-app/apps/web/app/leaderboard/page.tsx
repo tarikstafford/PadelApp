@@ -25,7 +25,7 @@ import {
 interface LeaderboardUser {
   id: number;
   full_name: string;
-  profile_picture_url: string | null;
+  avatar_url: string | null;
   club_name: string | null;
   elo_rating: number;
 }
@@ -34,7 +34,7 @@ interface LeaderboardResponse {
   total: number;
   offset: number;
   limit: number;
-  data: LeaderboardUser[];
+  users: LeaderboardUser[];
 }
 
 const LeaderboardPage = () => {
@@ -86,7 +86,7 @@ const LeaderboardPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {leaderboard?.data && leaderboard.data.map((user, index) => {
+              {leaderboard?.users && leaderboard.users.map((user, index) => {
                 const rank = (page - 1) * limit + index + 1;
                 return (
                   <TableRow key={user.id}>
@@ -94,7 +94,7 @@ const LeaderboardPage = () => {
                     <TableCell>
                       <div className="flex items-center space-x-3">
                         <Avatar>
-                          <AvatarImage src={user.profile_picture_url || undefined} />
+                          <AvatarImage src={user.avatar_url || undefined} />
                           <AvatarFallback>{user.full_name.substring(0, 2)}</AvatarFallback>
                         </Avatar>
                         <span>{user.full_name}</span>
