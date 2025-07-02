@@ -1,4 +1,3 @@
-import { getCookie } from 'cookies-next';
 import { formatErrorMessage } from './errorHandler';
 import { showErrorToast } from './notifications';
 import {
@@ -25,7 +24,7 @@ const getAuthHeaders = (token?: string | null, authenticated = true): Headers =>
   headers.append('Content-Type', 'application/json');
 
   if (authenticated) {
-    const authToken = token || getCookie('token');
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null);
     if (authToken) {
       headers.append('Authorization', `Bearer ${authToken}`);
     }

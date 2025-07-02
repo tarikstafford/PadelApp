@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
@@ -19,13 +21,19 @@ interface Team {
 }
 
 export default function TeamsPage() {
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTeams();
-  }, []);
+    if (!authLoading && !user) {
+      router.push('/auth/login');
+    } else if (user) {
+      fetchTeams();
+    }
+  }, [user, authLoading, router]);
 
   const fetchTeams = async () => {
     try {
@@ -43,6 +51,19 @@ export default function TeamsPage() {
     const totalElo = team.players.reduce((sum, player) => sum + player.elo_rating, 0);
     return Math.round(totalElo / team.players.length);
   };
+
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
