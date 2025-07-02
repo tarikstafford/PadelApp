@@ -7,6 +7,7 @@ from app.database import get_db
 from app.core import security
 from app.services import file_service
 from app.crud.tournament_crud import tournament_crud
+from app.crud.team_crud import team_crud
 
 router = APIRouter()
 
@@ -135,4 +136,25 @@ async def get_user_trophies(
             awarded_at=trophy.awarded_at
         )
         for trophy in trophies
-    ] 
+    ]
+
+@router.get("/me/teams", response_model=List[schemas.Team])
+async def get_user_teams(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Get teams for the current user.
+    """
+    return team_crud.get_user_teams(db=db, user_id=current_user.id)
+
+@router.post("/me/teams", response_model=schemas.Team)
+async def create_team(
+    team_in: schemas.TeamCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Create a new team for the current user.
+    """
+    return team_crud.create_team(db=db, team_data=team_in, creator_id=current_user.id) 

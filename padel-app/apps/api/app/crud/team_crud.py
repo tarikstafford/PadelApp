@@ -8,8 +8,14 @@ def get_team(db: Session, team_id: int) -> Optional[models.Team]:
 def get_teams_by_name(db: Session, name: str) -> List[models.Team]:
     return db.query(models.Team).filter(models.Team.name == name).all()
 
-def create_team(db: Session, team: schemas.TeamCreate) -> models.Team:
-    db_team = models.Team(name=team.name)
+def create_team(db: Session, team_data: schemas.TeamCreate, creator_id: int) -> models.Team:
+    # Get the creator user
+    creator = db.query(models.User).filter(models.User.id == creator_id).first()
+    if not creator:
+        raise ValueError("Creator user not found")
+    
+    # Create team with creator as first player
+    db_team = models.Team(name=team_data.name, players=[creator])
     db.add(db_team)
     db.commit()
     db.refresh(db_team)
@@ -27,4 +33,11 @@ def add_player_to_team(db: Session, team: models.Team, user: models.User) -> mod
     db.add(team)
     db.commit()
     db.refresh(team)
-    return team 
+    return team
+
+def get_user_teams(db: Session, user_id: int) -> List[models.Team]:
+    """Get all teams that a user is a member of"""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        return []
+    return user.teams 
