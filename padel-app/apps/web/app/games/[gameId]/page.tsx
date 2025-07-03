@@ -351,9 +351,20 @@ function GameDetailPageInternal() {
           <div className="flex justify-between items-start">
             <div>
                 <CardTitle className="text-2xl md:text-3xl font-bold">Game Details (ID: {game.id})</CardTitle>
-                <CardDescription>
+                <CardDescription className="flex items-center gap-2">
                     {game.game_type === 'PUBLIC' ? <Users className="inline mr-1 h-4 w-4 text-muted-foreground"/> : <ShieldCheck className="inline mr-1 h-4 w-4 text-muted-foreground"/>} 
                     {game.game_type.charAt(0) + game.game_type.slice(1).toLowerCase()} Game
+                    {game.game_status && (
+                        <Badge variant={
+                            game.game_status === 'SCHEDULED' ? 'default' :
+                            game.game_status === 'IN_PROGRESS' ? 'secondary' :
+                            game.game_status === 'COMPLETED' ? 'secondary' :
+                            game.game_status === 'EXPIRED' ? 'destructive' :
+                            'outline'
+                        }>
+                            {game.game_status.replace('_', ' ')}
+                        </Badge>
+                    )}
                 </CardDescription>
             </div>
             {/* TODO: Add an Edit Game button for game creator */}
@@ -477,6 +488,48 @@ function GameDetailPageInternal() {
                             {isRespondingToInvite ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserX className="mr-2 h-4 w-4" />} Decline
                         </Button>
                     </div>
+                </div>
+            )}
+
+            {canLeaveGame && (
+                <div className="mt-6 pt-4 border-t">
+                    <h3 className="text-lg font-semibold mb-3">Leave Game</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                        You can leave this game if it's more than 24 hours before the start time.
+                    </p>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button 
+                                variant="destructive" 
+                                disabled={isLeavingGame}
+                                size="sm"
+                            >
+                                {isLeavingGame ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Leaving...
+                                    </>
+                                ) : (
+                                    'Leave Game'
+                                )}
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure you want to leave?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. You will be removed from this game permanently.
+                                    {isCurrentUserGameCreator && " As the game creator, leaving may affect other players."}
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleLeaveGame} className="bg-destructive hover:bg-destructive/90">
+                                    Leave Game
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             )}
         </CardContent>
