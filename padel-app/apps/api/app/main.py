@@ -28,7 +28,16 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json" # Standard practice to version OpenAPI spec
 )
 
-# Add Authentication Middleware
+# Set all CORS enabled origins - MUST be added first
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for now to fix immediate CORS issue
+    allow_credentials=False,  # Must be False when using allow_origins=["*"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+# Add Authentication Middleware after CORS
 app.add_middleware(AuthenticationMiddleware)
 
 # Custom exception handler for Pydantic validation errors
@@ -43,21 +52,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content={"detail": exc.errors(), "body": body_str},
     )
-
-# Set all CORS enabled origins
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001", 
-        "https://padelgo-frontend-production.up.railway.app",
-        "https://padelgo-club-admin-production.up.railway.app",
-        "*"  # Keep wildcard as fallback
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["*"],
-)
 
 # Mount static files directory
 static_files_path = Path(__file__).parent / "static"
