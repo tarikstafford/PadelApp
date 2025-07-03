@@ -47,9 +47,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # Set all CORS enabled origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001", 
+        "https://padelgo-frontend-production.up.railway.app",
+        "https://padelgo-club-admin-production.up.railway.app",
+        "*"  # Keep wildcard as fallback
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 

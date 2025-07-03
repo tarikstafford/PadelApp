@@ -19,6 +19,12 @@ from app.schemas.tournament_schemas import (
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
+# Add CORS preflight handler
+@router.options("/{path:path}")
+async def options_handler():
+    """Handle CORS preflight requests"""
+    return {"message": "OK"}
+
 def get_club_admin_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     """Ensure current user is a club admin"""
     club_admin = db.query(ClubAdmin).filter(ClubAdmin.user_id == current_user.id).first()
@@ -184,11 +190,37 @@ async def get_tournament(
             detail="Tournament not found"
         )
     
-    # Safe calculation of registered teams
+    # Safe calculation of registered teams and categories
     try:
-        total_teams = len(tournament.teams) if tournament.teams else 0
+        total_teams = len(tournament.teams) if hasattr(tournament, 'teams') and tournament.teams else 0
     except (AttributeError, TypeError):
         total_teams = 0
+    
+    try:
+        categories = []
+        if hasattr(tournament, 'categories') and tournament.categories:
+            for cat in tournament.categories:
+                try:
+                    current_participants = 0
+                    if hasattr(tournament, 'teams') and tournament.teams:
+                        current_participants = len([
+                            team for team in tournament.teams 
+                            if hasattr(team, 'category_config_id') and team.category_config_id == cat.id
+                        ])
+                    
+                    categories.append(TournamentCategoryResponse(
+                        id=cat.id,
+                        category=cat.category,
+                        max_participants=cat.max_participants,
+                        min_elo=cat.min_elo,
+                        max_elo=cat.max_elo,
+                        current_participants=current_participants
+                    ))
+                except Exception as e:
+                    # Skip problematic categories but continue
+                    continue
+    except Exception:
+        categories = []
     
     return TournamentResponse(
         id=tournament.id,
@@ -204,16 +236,7 @@ async def get_tournament(
         entry_fee=tournament.entry_fee,
         created_at=tournament.created_at,
         updated_at=tournament.updated_at,
-        categories=[
-            TournamentCategoryResponse(
-                id=cat.id,
-                category=cat.category,
-                max_participants=cat.max_participants,
-                min_elo=cat.min_elo,
-                max_elo=cat.max_elo,
-                current_participants=len([team for team in tournament.teams if hasattr(team, 'category_config_id') and team.category_config_id == cat.id]) if tournament.teams else 0
-            ) for cat in (tournament.categories or [])
-        ],
+        categories=categories,
         total_registered_teams=total_teams
     )
 
