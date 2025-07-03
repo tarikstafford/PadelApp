@@ -26,7 +26,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from app.database import Base
 from app.models import ( # noqa
-    user, booking, club, court, game, game_player, team, elo_adjustment_request
+    user, booking, club, court, game, game_player, game_invitation, team, elo_adjustment_request
 )
 target_metadata = Base.metadata
 
