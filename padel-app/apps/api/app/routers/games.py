@@ -10,6 +10,8 @@ from app.models.game_player import GamePlayerStatus
 from app.models.game import GameType
 from app.services.elo_rating_service import elo_rating_service
 from app.models.team import Team
+from app.crud.game_invitation_crud import game_invitation_crud
+from app.schemas.game_invitation_schemas import GameInvitationResponse, GameInvitationInfo
 
 router = APIRouter()
 
@@ -321,3 +323,101 @@ async def submit_game_result(
     db.refresh(game)
 
     return game
+
+# Game Invitation Endpoints
+
+@router.post("/{game_id}/invitations", response_model=GameInvitationResponse)
+async def create_game_invitation(
+    game_id: int,
+    expires_in_hours: int = 24,
+    max_uses: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Create a shareable invitation link for a game.
+    Only the game creator or participants can create invitations.
+    """
+    # Check if game exists
+    game = crud.game_crud.get_game(db, game_id=game_id)
+    if not game:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Game not found"
+        )
+    
+    # Check if user is authorized (game creator or participant)
+    user_in_game = any(player.user_id == current_user.id for player in game.players)
+    if not user_in_game:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only game participants can create invitation links"
+        )
+    
+    # Create invitation
+    invitation = game_invitation_crud.create_invitation(
+        db=db,
+        game_id=game_id,
+        created_by=current_user.id,
+        expires_in_hours=expires_in_hours,
+        max_uses=max_uses
+    )
+    
+    # Build the invitation URL
+    base_url = "https://padelgo-frontend-production.up.railway.app"  # TODO: Make this configurable
+    invite_url = f"{base_url}/games/invite/{invitation.token}"
+    
+    return GameInvitationResponse(
+        id=invitation.id,
+        game_id=invitation.game_id,
+        token=invitation.token,
+        created_at=invitation.created_at,
+        expires_at=invitation.expires_at,
+        is_active=invitation.is_active,
+        max_uses=invitation.max_uses,
+        current_uses=invitation.current_uses,
+        invite_url=invite_url
+    )
+
+@router.get("/invitations/{token}/info", response_model=GameInvitationInfo)
+async def get_invitation_info(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get public information about a game invitation.
+    This endpoint doesn't require authentication and is used for preview.
+    """
+    invitation_info = game_invitation_crud.get_invitation_info(db, token)
+    
+    if not invitation_info:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invitation not found or expired"
+        )
+    
+    return GameInvitationInfo(**invitation_info)
+
+@router.post("/invitations/{token}/accept")
+async def accept_game_invitation(
+    token: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Accept a game invitation and join the game.
+    User must be authenticated.
+    """
+    result = game_invitation_crud.accept_invitation(db, token, current_user.id)
+    
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result["message"]
+        )
+    
+    return {
+        "message": result["message"],
+        "game_id": result["game_id"],
+        "redirect_url": f"/games/{result['game_id']}"
+    }

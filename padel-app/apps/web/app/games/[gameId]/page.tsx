@@ -77,11 +77,44 @@ function GameDetailPageInternal() {
   const [inviteLink, setInviteLink] = useState('');
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
 
-  const generateInviteLink = () => {
-    const link = `${window.location.origin}/games/${gameId}`;
-    setInviteLink(link);
-    setIsInviteDialogOpen(true);
+  const generateInviteLink = async () => {
+    if (!gameId || !accessToken) {
+      toast.error('Cannot generate invite link');
+      return;
+    }
+    
+    setIsGeneratingInvite(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/games/${gameId}/invitations`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          expires_in_hours: 24,
+          max_uses: null
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to generate invitation link');
+      }
+      
+      const invitationData = await response.json();
+      setInviteLink(invitationData.invite_url);
+      setIsInviteDialogOpen(true);
+      toast.success('Invitation link generated successfully!');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to generate invitation link';
+      console.error('Error generating invitation link:', error);
+      toast.error(message);
+    } finally {
+      setIsGeneratingInvite(false);
+    }
   };
 
   const copyToClipboard = () => {
@@ -312,25 +345,43 @@ function GameDetailPageInternal() {
                 <div className="flex items-center justify-around p-4 rounded-lg bg-muted/30">
                     {/* Team A */}
                     <div className="flex flex-col items-center space-y-4">
-                        <PlayerSlot player={teamA[0]} onInvite={generateInviteLink} />
-                        <PlayerSlot player={teamA[1]} onInvite={generateInviteLink} />
+                        <PlayerSlot player={teamA[0]} onInvite={() => !isGeneratingInvite && generateInviteLink()} />
+                        <PlayerSlot player={teamA[1]} onInvite={() => !isGeneratingInvite && generateInviteLink()} />
                     </div>
 
                     <div className="text-2xl font-bold text-muted-foreground">VS</div>
 
                     {/* Team B */}
                     <div className="flex flex-col items-center space-y-4">
-                        <PlayerSlot player={teamB[0]} onInvite={generateInviteLink} />
-                        <PlayerSlot player={teamB[1]} onInvite={generateInviteLink} />
+                        <PlayerSlot player={teamB[0]} onInvite={() => !isGeneratingInvite && generateInviteLink()} />
+                        <PlayerSlot player={teamB[1]} onInvite={() => !isGeneratingInvite && generateInviteLink()} />
                     </div>
                 </div>
 
                 {/* Player Management List (for invites, requests, etc.) */}
-                {game.players.length > 0 && (
+                {(game.players.length > 0 || isCurrentUserGameCreator) && (
                     <div className="mt-6">
-                        <h4 className="text-md font-semibold mb-2">Player Management</h4>
-                        <ul className="space-y-2">
-                            {game.players.map((playerEntry: GamePlayer) => (
+                        <div className="flex justify-between items-center mb-4">
+                            <h4 className="text-md font-semibold">Player Management</h4>
+                            {isCurrentUserGameCreator && acceptedPlayers.length < MAX_PLAYERS_PER_GAME && (
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => !isGeneratingInvite && generateInviteLink()}
+                                    disabled={isGeneratingInvite}
+                                >
+                                    {isGeneratingInvite ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <UserPlus className="mr-2 h-4 w-4" />
+                                    )}
+                                    Generate Invite Link
+                                </Button>
+                            )}
+                        </div>
+                        {game.players.length > 0 ? (
+                            <ul className="space-y-2">
+                                {game.players.map((playerEntry: GamePlayer) => (
                                 <li key={playerEntry.user.id} className="flex flex-col sm:flex-row justify-between sm:items-center p-3 border rounded-md bg-card hover:bg-muted/50 transition-colors">
                                     <div className="flex items-center space-x-3 mb-2 sm:mb-0">
                                         <div className="relative h-10 w-10">
@@ -355,8 +406,15 @@ function GameDetailPageInternal() {
                                         )}
                                     </div>
                                 </li>
-                            ))}
-                        </ul>
+                                ))}
+                            </ul>
+                        ) : isCurrentUserGameCreator ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                <UserPlus className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                                <p className="mb-4">No players have joined yet</p>
+                                <p className="text-sm">Generate an invitation link to share with friends!</p>
+                            </div>
+                        ) : null}
                     </div>
                 )}
             </div>
@@ -389,22 +447,29 @@ function GameDetailPageInternal() {
       <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Invite a Player</DialogTitle>
+                <DialogTitle>Game Invitation Link</DialogTitle>
                 <DialogDescription>
-                    Share this link with someone to invite them to join your game.
+                    Share this secure link with someone to invite them to join your game. The link expires in 24 hours.
                 </DialogDescription>
             </DialogHeader>
-            <div className="flex items-center space-x-2 mt-4">
-                <div className="grid flex-1 gap-2">
-                    <Label htmlFor="link" className="sr-only">
-                        Link
-                    </Label>
-                    <Input id="link" value={inviteLink} readOnly />
+            <div className="space-y-4 mt-4">
+                <div className="flex items-center space-x-2">
+                    <div className="grid flex-1 gap-2">
+                        <Label htmlFor="link" className="sr-only">
+                            Invitation Link
+                        </Label>
+                        <Input id="link" value={inviteLink} readOnly className="font-mono text-sm" />
+                    </div>
+                    <Button type="submit" size="sm" className="px-3" onClick={copyToClipboard}>
+                        <span className="sr-only">Copy</span>
+                        <Copy className="h-4 w-4" />
+                    </Button>
                 </div>
-                <Button type="submit" size="sm" className="px-3" onClick={copyToClipboard}>
-                    <span className="sr-only">Copy</span>
-                    <Copy className="h-4 w-4" />
-                </Button>
+                <div className="text-sm text-muted-foreground space-y-1">
+                    <p>• Link expires in 24 hours</p>
+                    <p>• Can be used multiple times until game is full</p>
+                    <p>• Recipients will need to sign in or create an account</p>
+                </div>
             </div>
         </DialogContent>
       </Dialog>
