@@ -13,10 +13,9 @@ import withAuth from '@/components/auth/withAuth';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Separator } from '@workspace/ui/components/separator';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@workspace/ui/components/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@workspace/ui/components/dialog';
 import { Input } from '@workspace/ui/components/input';
 import { Label } from '@workspace/ui/components/label';
-import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
 import { apiClient } from "@/lib/api";
-import { Game, GamePlayer, Booking } from "@/lib/types";
+import { Game, GamePlayer } from "@/lib/types";
 
 const MAX_PLAYERS_PER_GAME = 4; // Define the constant here
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -495,7 +494,7 @@ function GameDetailPageInternal() {
                 <div className="mt-6 pt-4 border-t">
                     <h3 className="text-lg font-semibold mb-3">Leave Game</h3>
                     <p className="text-sm text-muted-foreground mb-3">
-                        You can leave this game if it's more than 24 hours before the start time.
+                        You can leave this game if it&apos;s more than 24 hours before the start time.
                     </p>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>

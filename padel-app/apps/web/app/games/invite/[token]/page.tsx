@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,8 @@ interface GameInvitationInfo {
 export default function GameInvitePage() {
   const params = useParams();
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
   const [invitationInfo, setInvitationInfo] = useState<GameInvitationInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -37,13 +38,7 @@ export default function GameInvitePage() {
 
   const token = params.token as string;
 
-  useEffect(() => {
-    if (token) {
-      fetchInvitationInfo();
-    }
-  }, [token]);
-
-  const fetchInvitationInfo = async () => {
+  const fetchInvitationInfo = useCallback(async () => {
     try {
       setLoading(true);
       const response = await apiClient.get<GameInvitationInfo>(
@@ -59,7 +54,13 @@ export default function GameInvitePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      fetchInvitationInfo();
+    }
+  }, [token, fetchInvitationInfo]);
 
   const handleJoinGame = async () => {
     if (!isAuthenticated) {
@@ -74,7 +75,7 @@ export default function GameInvitePage() {
       const response = await apiClient.post(
         `/games/invitations/${token}/accept`,
         {}
-      );
+      ) as { message?: string; game_id?: number };
       
       toast.success(response.message || 'Successfully joined the game!');
       router.push(`/games/${invitationInfo?.game_id}`);

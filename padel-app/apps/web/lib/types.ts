@@ -93,6 +93,7 @@ export type Game = {
   winning_team_id?: number;
   result_submitted?: boolean;
   game_type: "PRIVATE" | "PUBLIC" | "FRIENDLY" | "COMPETITIVE";
+  game_status?: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" | "EXPIRED";
   booking: Booking;
   skill_level?: string;
 };
