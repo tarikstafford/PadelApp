@@ -2,7 +2,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime
 
-from app.models.game import GameType
+from app.models.game import GameType, GameStatus
 from .game_player_schemas import GamePlayer
 from .team_schemas import Team
 from .user_schemas import User as UserSchema
@@ -32,6 +32,7 @@ class Game(GameBase):
     start_time: datetime
     end_time: datetime
     booking_id: int
+    game_status: Optional[GameStatus] = GameStatus.SCHEDULED
     players: List[GamePlayer] = []
     booking: BookingWithCourt
 
