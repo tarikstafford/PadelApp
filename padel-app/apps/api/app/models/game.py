@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SAEnum, DateTime, Boolean
 from sqlalchemy.orm import relationship
 import enum
+from datetime import datetime, timedelta
 
 from app.database import Base
 
@@ -9,6 +10,14 @@ class GameType(str, enum.Enum):
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"
     # Add other types if needed, e.g., TOURNAMENT, LEAGUE
+
+# Enum for game status
+class GameStatus(str, enum.Enum):
+    SCHEDULED = "SCHEDULED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    EXPIRED = "EXPIRED"
 
 class Game(Base):
     __tablename__ = "games"
@@ -21,6 +30,7 @@ class Game(Base):
     
     # Game details
     game_type = Column(SAEnum(GameType, name="gametype", create_enum=False), default=GameType.PRIVATE, nullable=False)
+    game_status = Column(SAEnum(GameStatus, name="gamestatus", create_enum=False), default=GameStatus.SCHEDULED, nullable=False)
     skill_level = Column(String, nullable=True) # e.g., "Beginner", "Intermediate", "Advanced"
     
     # Timestamps inherited from booking for querying convenience
@@ -47,5 +57,17 @@ class Game(Base):
     # Relationship to GamePlayer model (players participating in the game)
     players = relationship("GamePlayer", back_populates="game", cascade="all, delete-orphan")
 
+    def is_expired(self) -> bool:
+        """Check if the game is expired (past end time)"""
+        return datetime.utcnow() > self.end_time
+    
+    def can_leave_game(self) -> bool:
+        """Check if players can still leave the game (more than 24 hours before start)"""
+        return datetime.utcnow() < (self.start_time - timedelta(hours=24))
+    
+    def should_auto_expire(self) -> bool:
+        """Check if game should be automatically expired"""
+        return self.is_expired() and self.game_status == GameStatus.SCHEDULED
+
     def __repr__(self):
-        return f"<Game(id={self.id}, booking_id={self.booking_id}, type='{self.game_type}')>" 
+        return f"<Game(id={self.id}, booking_id={self.booking_id}, type='{self.game_type}', status='{self.game_status}')>" 

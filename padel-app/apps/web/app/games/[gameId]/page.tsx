@@ -78,6 +78,7 @@ function GameDetailPageInternal() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
+  const [isLeavingGame, setIsLeavingGame] = useState(false);
 
   const generateInviteLink = async () => {
     if (!gameId || !accessToken) {
@@ -268,6 +269,39 @@ function GameDetailPageInternal() {
     }
   };
 
+  const handleLeaveGame = async () => {
+    if (!gameId || !accessToken) {
+      toast.error('Cannot leave game');
+      return;
+    }
+    
+    setIsLeavingGame(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/games/${gameId}/leave`, {
+        method: 'DELETE',
+        headers: { 
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to leave game');
+      }
+      
+      const data = await response.json();
+      toast.success(data.message || 'Successfully left the game');
+      router.push('/games'); // Redirect to games list
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to leave game';
+      console.error('Error leaving game:', error);
+      toast.error(message);
+    } finally {
+      setIsLeavingGame(false);
+    }
+  };
+
   const handleSubmitResult = async (winningTeamId: number) => {
     setSubmitting(true);
     try {
@@ -290,6 +324,10 @@ function GameDetailPageInternal() {
   const currentUserGamePlayerInfo = (game.players ?? []).find((p: GamePlayer) => p.user.id === currentUser?.id);
   const courtName = game.booking?.court?.name || (game.booking?.court?.id ? `Court ID: ${game.booking.court.id}` : (game.booking ? `Court ID: ${game.booking.court_id}` : 'Court unavailable'));
   const clubName = game.booking?.court?.club?.name || (game.booking?.court?.club?.id ? `Club ID: ${game.booking.court.club.id}` : 'Club details unavailable');
+  
+  // Check if current user can leave the game
+  const canLeaveGame = currentUserGamePlayerInfo && currentUserGamePlayerInfo.status === "ACCEPTED" && 
+                      !['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(game.game_status || 'SCHEDULED');
 
   // Always show 4 slots: fill with accepted players, then null for invite
   const acceptedPlayers = (game.players ?? []).filter(p => p.status === "ACCEPTED");

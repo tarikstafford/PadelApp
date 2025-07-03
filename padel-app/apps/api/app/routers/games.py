@@ -12,6 +12,7 @@ from app.services.elo_rating_service import elo_rating_service
 from app.models.team import Team
 from app.crud.game_invitation_crud import game_invitation_crud
 from app.schemas.game_invitation_schemas import GameInvitationResponse, GameInvitationInfo
+from app.services.game_expiration_service import game_expiration_service
 
 router = APIRouter()
 
@@ -81,7 +82,11 @@ async def read_game_details(
     """
     Retrieve details for a specific game, including its players and their statuses.
     Ensures the current user is a participant of the game.
+    Auto-expires the game if it's past the end time.
     """
+    # Check and auto-expire game if needed
+    game_expiration_service.check_single_game_expiration(db, game_id)
+    
     game = crud.game_crud.get_game(db, game_id=game_id)
     if not game:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
@@ -420,4 +425,57 @@ async def accept_game_invitation(
         "message": result["message"],
         "game_id": result["game_id"],
         "redirect_url": f"/games/{result['game_id']}"
+    }
+
+@router.delete("/{game_id}/leave")
+async def leave_game(
+    game_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Leave a game. Players can only leave if it's more than 24 hours before the start time.
+    Game creators cannot leave if they are the only player.
+    """
+    # Check if game exists and auto-expire if needed
+    game_expiration_service.check_single_game_expiration(db, game_id)
+    
+    # Check if user can leave the game
+    leave_check = crud.game_player_crud.can_leave_game(db, game_id, current_user.id)
+    
+    if not leave_check["can_leave"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=leave_check["reason"]
+        )
+    
+    # Remove player from game
+    success = crud.game_player_crud.remove_player_from_game(db, game_id, current_user.id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to leave game"
+        )
+    
+    return {"message": "Successfully left the game"}
+
+@router.post("/expire-past-games")
+async def expire_past_games(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user)
+):
+    """
+    Expire all games that are past their end time.
+    This endpoint can be called manually or by a scheduled job.
+    """
+    # TODO: Add admin role check here if needed
+    # if not current_user.is_admin:
+    #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    
+    expired_game_ids = game_expiration_service.expire_past_games(db)
+    
+    return {
+        "message": f"Expired {len(expired_game_ids)} games",
+        "expired_game_ids": expired_game_ids
     }
