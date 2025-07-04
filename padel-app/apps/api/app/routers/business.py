@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_db
 from app.core.security import get_current_active_user
 from app.crud.business_crud import BusinessCRUD
-from app.middleware.auth import role_checker
+from app.core.dependencies import role_checker
 from app.models import User, UserRole
 from app.schemas.business_schemas import (
     BusinessMetrics,
