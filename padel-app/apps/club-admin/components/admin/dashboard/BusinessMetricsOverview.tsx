@@ -52,10 +52,8 @@ export function BusinessMetricsOverview() {
       const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
       const response = await apiClient.get<BusinessMetrics>(`/business/club/${selectedClub.id}/metrics`, {
-        params: {
-          start_date: firstDayOfMonth.toISOString().split('T')[0],
-          end_date: lastDayOfMonth.toISOString().split('T')[0],
-        },
+        start_date: firstDayOfMonth.toISOString().split('T')[0],
+        end_date: lastDayOfMonth.toISOString().split('T')[0],
       });
 
       setMetrics(response);
