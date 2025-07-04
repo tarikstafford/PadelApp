@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { hasCompletedOnboarding } from '@/components/user-onboarding/utils/onboardingStorage';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ''; // Get base URL from env
 
@@ -105,7 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAccessToken(token);
         setRefreshToken(refresh);
         fetchAndUpdateUser();
-        router.push('/profile'); // Redirect after login
+        // Note: Onboarding check will be handled by the component level protection
+        router.push('/profile');
     };
 
     const logout = () => {
@@ -132,8 +134,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const data = await response.json();
             // After successful registration, log the user in with the returned tokens
             if (data.access_token && data.refresh_token) {
-                login(data.access_token, data.refresh_token);
-                // The login function now handles redirection
+                setAccessToken(data.access_token);
+                setRefreshToken(data.refresh_token);
+                await fetchAndUpdateUser();
+                // New users should go through onboarding
+                router.push('/onboarding');
             } else {
                 // Fallback if tokens are not returned, though the backend should always return them now
                 router.push('/auth/login');

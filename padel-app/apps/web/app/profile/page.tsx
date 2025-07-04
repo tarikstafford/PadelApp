@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import withAuth from "@/components/auth/withAuth";
 import { useAuth } from "@/contexts/AuthContext";
+import { OnboardingGuard } from "@/components/auth/OnboardingGuard";
 import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload';
 import { toast } from "sonner";
 import { Loader2 } from 'lucide-react';
@@ -64,30 +65,32 @@ function UserProfilePage() {
     }
 
     return (
-        <div className="container mx-auto p-4">
-            <div className="flex items-center space-x-4 mb-8">
-                <ProfilePictureUpload onUploadSuccess={handleUploadSuccess} />
-                <div>
-                    <h1 className="text-3xl font-bold">{user.full_name}</h1>
-                    <p className="text-gray-500">{user.email}</p>
-                </div>
-            </div>
-
-            <div className="space-y-8">
-                <div>
-                    <h2 className="text-xl font-bold mb-4">Padel Details</h2>
-                    <div className="space-y-4">
-                        <EloRatingDisplay eloRating={user.elo_rating} />
-                        <div>
-                            <h3 className="text-lg font-bold">Preferred Position</h3>
-                            <PreferredPositionSelection />
-                        </div>
-                        <EloAdjustmentRequestModal canMakeRequest={canMakeRequest()} />
+        <OnboardingGuard requireCompleted={true}>
+            <div className="container mx-auto p-4">
+                <div className="flex items-center space-x-4 mb-8">
+                    <ProfilePictureUpload onUploadSuccess={handleUploadSuccess} />
+                    <div>
+                        <h1 className="text-3xl font-bold">{user.full_name}</h1>
+                        <p className="text-gray-500">{user.email}</p>
                     </div>
                 </div>
-                <EloAdjustmentRequestHistory requests={requests} loading={loading} />
+
+                <div className="space-y-8">
+                    <div>
+                        <h2 className="text-xl font-bold mb-4">Padel Details</h2>
+                        <div className="space-y-4">
+                            <EloRatingDisplay eloRating={user.elo_rating} />
+                            <div>
+                                <h3 className="text-lg font-bold">Preferred Position</h3>
+                                <PreferredPositionSelection />
+                            </div>
+                            <EloAdjustmentRequestModal canMakeRequest={canMakeRequest()} />
+                        </div>
+                    </div>
+                    <EloAdjustmentRequestHistory requests={requests} loading={loading} />
+                </div>
             </div>
-        </div>
+        </OnboardingGuard>
     );
 }
 
