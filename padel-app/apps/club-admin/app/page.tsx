@@ -1,30 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { Button } from "@workspace/ui/components/button";
-import Link from "next/link";
-import { Badge } from "@workspace/ui/components/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import HeroSection from "@/components/landing/HeroSection";
 import FeaturesSection from "@/components/landing/FeaturesSection";
+import BusinessBenefitsSection from "@/components/landing/BusinessBenefitsSection";
+import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
-
-const features = [
-  {
-    title: "Effortless Booking Management",
-    description: "View your entire court schedule at a glance. Our intuitive interface makes managing and tracking bookings simple and efficient.",
-  },
-  {
-    title: "Unified Player Directory",
-    description: "Keep all your member information organized in one place. Easily view player details and manage your community.",
-  },
-  {
-    title: "Streamlined Payments",
-    description: "Soon, you'll be able to accept online payments for bookings and memberships directly through the portal. Less hassle, more play.",
-    comingSoon: true,
-  },
-];
 
 export default function LandingPage() {
   return (
@@ -32,6 +12,8 @@ export default function LandingPage() {
       <main className="flex-1">
         <HeroSection />
         <FeaturesSection />
+        <BusinessBenefitsSection />
+        <CTASection />
       </main>
       <Footer />
     </div>
