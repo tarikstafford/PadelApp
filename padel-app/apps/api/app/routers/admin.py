@@ -70,6 +70,30 @@ async def read_owned_club(current_admin: User = Depends(get_current_active_user)
     return current_admin.owned_club
 
 
+@router.get("/my-clubs", response_model=list[club_schemas.Club])
+async def read_administered_clubs(
+    current_admin: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve all clubs that the current admin user administers.
+    
+    This includes owned clubs and clubs where the user is assigned as an admin.
+    For now, returns only the owned club as multi-club admin support needs to be implemented.
+    """
+    clubs = []
+    
+    # Add owned club if exists
+    if current_admin.owned_club:
+        clubs.append(current_admin.owned_club)
+    
+    # TODO: Add clubs where user is assigned as admin via ClubAdmin table
+    # club_admin_entries = crud.club_admin_crud.get_clubs_by_admin(db=db, admin_id=current_admin.id)
+    # clubs.extend(club_admin_entries)
+    
+    return clubs
+
+
 @router.put(
     "/club/{club_id}",
     response_model=club_schemas.Club,

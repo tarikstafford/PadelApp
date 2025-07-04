@@ -31,6 +31,12 @@ from app.models.tournament import (
 from app.models.user import PreferredPosition, User
 from app.models.user_role import UserRole
 
+# Import new financial and analytics models
+from app.models.payment_transaction import PaymentTransaction
+from app.models.revenue_record import RevenueRecord
+from app.models.club_daily_analytics import ClubDailyAnalytics
+from app.models.club_membership import ClubMembership
+
 # Optional: Define __all__ to control `from app.models import *` behavior
 __all__ = [
     "CATEGORY_ELO_RANGES",
@@ -39,6 +45,8 @@ __all__ = [
     "BookingStatus",
     "Club",
     "ClubAdmin",
+    "ClubDailyAnalytics",
+    "ClubMembership",
     "Court",
     "EloAdjustmentRequest",
     "EloAdjustmentRequestStatus",
@@ -47,7 +55,9 @@ __all__ = [
     "GamePlayerStatus",
     "GameType",
     "MatchStatus",
+    "PaymentTransaction",
     "PreferredPosition",
+    "RevenueRecord",
     "Team",
     "Tournament",
     "TournamentCategory",

@@ -1,122 +1,108 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
-import { Skeleton } from "@workspace/ui/components/skeleton";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import { BarChart, Calendar, Users, RefreshCw } from "lucide-react";
-import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { ClubProfileWidget } from "@/components/admin/club/club-profile-widget";
+import { useState } from "react";
+import { useClub } from "@/contexts/ClubContext";
+import { ClubSwitcher } from "@/components/admin/ClubSwitcher";
+import { BusinessMetricsOverview } from "@/components/admin/dashboard/BusinessMetricsOverview";
+import { UpcomingBookingsWidget } from "@/components/admin/dashboard/UpcomingBookingsWidget";
+import { TournamentStatusWidget } from "@/components/admin/dashboard/TournamentStatusWidget";
 
 export default function AdminDashboardPage() {
-  const clubId = 1;
-  const { data, isLoading, error, isFetching, refetch } = useDashboardData(clubId);
+  const { selectedClub, isMultiClubMode } = useClub();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    // Add a small delay to show the refresh animation
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  };
+
+  if (!selectedClub) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <ClubSwitcher />
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">No Club Selected</h2>
+            <p className="text-gray-500">Please select a club to view the dashboard</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header with Club Switcher */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Button onClick={() => refetch()} disabled={isFetching}>
+        <div className="flex items-center space-x-4">
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          {isMultiClubMode && <ClubSwitcher />}
+        </div>
+        <Button onClick={handleRefresh} disabled={isRefreshing}>
           <RefreshCw
-            className={cn("mr-2 h-4 w-4", isFetching && "animate-spin")}
+            className={cn("mr-2 h-4 w-4", isRefreshing && "animate-spin")}
           />
           Refresh
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Today's Bookings</CardTitle>
-              <CardDescription>Total bookings for today</CardDescription>
-            </div>
-            <Calendar className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-12 w-24" />
-            ) : error ? (
-              <p className="text-destructive">Failed to load data</p>
-            ) : (
-              <div className="text-3xl font-bold">{data?.total_bookings_today || 0}</div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Club Name Display for Single Club Mode */}
+      {!isMultiClubMode && (
+        <div className="flex items-center space-x-2">
+          <ClubSwitcher />
+        </div>
+      )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>Court Occupancy</CardTitle>
-              <CardDescription>Percentage of courts booked</CardDescription>
-            </div>
-            <BarChart className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-12 w-24" />
-            ) : error ? (
-              <p className="text-destructive">Failed to load data</p>
-            ) : (
-              <div className="text-3xl font-bold">
-                {Math.round(data?.occupancy_rate_percent || 0)}%
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Business Metrics Overview */}
+      <BusinessMetricsOverview key={`metrics-${selectedClub.id}`} />
 
-        {/* Club Profile Widget */}
-        <ClubProfileWidget />
+      {/* Widgets Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <UpcomingBookingsWidget key={`bookings-${selectedClub.id}`} />
+        <TournamentStatusWidget key={`tournaments-${selectedClub.id}`} />
       </div>
 
-      {/* Recent Activity Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Latest games and bookings</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-2">
-              {Array(3)
-                .fill(0)
-                .map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-            </div>
-          ) : error ? (
-            <p className="text-destructive">Failed to load data</p>
-          ) : data?.recent_activity?.length ? (
-            <ul className="space-y-2">
-              {data.recent_activity.map((activity) => (
-                <li
-                  key={activity.game_id}
-                  className="flex items-center justify-between border-b pb-2"
-                >
-                  <div>
-                    <p className="font-medium">Game #{activity.game_id}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {activity.player_count} players
-                    </p>
-                  </div>
-                  <time className="text-sm text-muted-foreground">
-                    {new Date(activity.created_at).toLocaleString()}
-                  </time>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground">No recent activity</p>
-          )}
-        </CardContent>
-      </Card>
+      {/* Additional Information */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-blue-900 mb-2">📊 Analytics</h3>
+          <p className="text-sm text-blue-700">
+            View detailed analytics and reporting for better business insights
+          </p>
+          <Button variant="outline" size="sm" className="mt-2">
+            View Analytics
+          </Button>
+        </div>
+
+        <div className="bg-green-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-green-900 mb-2">💰 Revenue</h3>
+          <p className="text-sm text-green-700">
+            Track revenue streams and financial performance across all services
+          </p>
+          <Button variant="outline" size="sm" className="mt-2">
+            View Reports
+          </Button>
+        </div>
+
+        <div className="bg-purple-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-purple-900 mb-2">👥 Players</h3>
+          <p className="text-sm text-purple-700">
+            Manage player relationships and engagement analytics
+          </p>
+          <Button variant="outline" size="sm" className="mt-2">
+            View Players
+          </Button>
+        </div>
+      </div>
     </div>
   );
-} 
+}

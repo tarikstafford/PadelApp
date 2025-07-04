@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes"
 import "@workspace/ui/globals.css"
 import { Providers } from "@/components/providers"
 import { AuthProvider } from "@/contexts/AuthContext"
+import { ClubProvider } from "@/contexts/ClubContext"
 import { Toaster } from "@workspace/ui/components/sonner"
 import ErrorBoundary from "@/components/ErrorBoundary"
 import { v4 as uuidv4 } from 'uuid'
@@ -38,8 +39,10 @@ export default function RootLayout({
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
           <Providers>
             <AuthProvider>
-              {children}
-              <Toaster richColors position="top-right" />
+              <ClubProvider>
+                {children}
+                <Toaster richColors position="top-right" />
+              </ClubProvider>
             </AuthProvider>
           </Providers>
         </ErrorBoundary>

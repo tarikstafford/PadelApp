@@ -40,6 +40,20 @@ class Club(Base):
     admins = relationship(
         "ClubAdmin", back_populates="club", cascade="all, delete-orphan"
     )
+    
+    # Financial and analytics relationships
+    payment_transactions = relationship(
+        "PaymentTransaction", back_populates="club", cascade="all, delete-orphan"
+    )
+    revenue_records = relationship(
+        "RevenueRecord", back_populates="club", cascade="all, delete-orphan"
+    )
+    daily_analytics = relationship(
+        "ClubDailyAnalytics", back_populates="club", cascade="all, delete-orphan"
+    )
+    memberships = relationship(
+        "ClubMembership", back_populates="club", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<Club(id={self.id}, name='{self.name}')>"

@@ -46,6 +46,11 @@ class Booking(Base):
         back_populates="booking",
         cascade="all, delete-orphan"
     )
+    
+    # Financial relationships
+    payment_transactions = relationship(
+        "PaymentTransaction", back_populates="booking", cascade="all, delete-orphan"
+    )
 
     @property
     def game_id(self) -> Optional[int]:

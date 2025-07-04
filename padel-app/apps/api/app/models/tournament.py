@@ -102,6 +102,9 @@ class Tournament(Base):
         back_populates="tournament",
         cascade="all, delete-orphan",
     )
+    payment_transactions = relationship(
+        "PaymentTransaction", back_populates="tournament", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<Tournament(id={self.id}, name='{self.name}', type='{self.tournament_type}')>"

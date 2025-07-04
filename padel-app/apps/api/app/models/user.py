@@ -60,6 +60,14 @@ class User(Base):
     elo_adjustment_requests = relationship(
         "EloAdjustmentRequest", back_populates="user"
     )
+    
+    # Financial relationships
+    payment_transactions = relationship(
+        "PaymentTransaction", back_populates="user", cascade="all, delete-orphan"
+    )
+    club_memberships = relationship(
+        "ClubMembership", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', name='{self.full_name}')>"

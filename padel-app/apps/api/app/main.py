@@ -21,6 +21,7 @@ from app.routers import (
     users_router,
 )
 from app.routers.tournaments import router as tournaments_router
+from app.routers.business import router as business_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -87,6 +88,7 @@ app.include_router(
     public_router, prefix=f"{settings.API_V1_STR}/public", tags=["Public"]
 )
 app.include_router(tournaments_router, prefix=f"{settings.API_V1_STR}")
+app.include_router(business_router, prefix=f"{settings.API_V1_STR}")
 
 
 @app.on_event("startup")
