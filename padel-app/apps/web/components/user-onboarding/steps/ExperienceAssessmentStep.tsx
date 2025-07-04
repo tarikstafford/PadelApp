@@ -47,8 +47,7 @@ export function ExperienceAssessmentStep() {
     const isValid = 
       localData.yearsPlaying !== undefined &&
       localData.selfAssessedSkill !== undefined &&
-      localData.playingFrequency !== undefined &&
-      localData.competitiveExperience !== undefined;
+      localData.playingFrequency !== undefined;
     
     setCanProceed(isValid);
   }, [localData]);
@@ -242,7 +241,7 @@ export function ExperienceAssessmentStep() {
             />
             <div className="flex-1">
               <Label htmlFor="competitive" className="font-medium">
-                I have competitive playing experience *
+                I have competitive playing experience
               </Label>
               <p className="text-sm text-muted-foreground">
                 Played in leagues, clubs, or regular competitive matches
@@ -307,7 +306,7 @@ export function ExperienceAssessmentStep() {
       {/* Navigation */}
       <div className="flex justify-between items-center pt-6">
         <p className="text-sm text-muted-foreground">
-          * Required fields
+          * Required for rating calculation
         </p>
         <Button 
           onClick={handleNext}
