@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-// import Link from 'next/link'; // Unused
-import { useRouter } from 'next/navigation';
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@workspace/ui/components/card";
 import { Calendar } from "@workspace/ui/components/calendar";
@@ -14,7 +12,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import withAuth from '@/components/auth/withAuth';
 import { format, parseISO } from 'date-fns';
-import type { DateRange } from "react-day-picker"; // Kept as it is used for state typing
 
 // Interfaces matching backend GameResponse structure
 interface UserForGamePlayer {
@@ -48,7 +45,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 function PublicGamesPageInternal() {
   const { user: currentUser, accessToken } = useAuth();
-  // const router = useRouter(); // Unused
 
   const [publicGames, setPublicGames] = useState<PublicGame[]>([]);
   const [isLoading, setIsLoading] = useState(true);

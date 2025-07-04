@@ -6,7 +6,14 @@
   "scripts": {
     "dev": "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app",
     "build": "echo 'No build step required for FastAPI backend in this setup' && exit 0",
-    "lint": "echo 'Lint script for API to be configured'"
+    "lint": "python3 -m ruff check . && python3 -m black --check .",
+    "lint:fix": "python3 -m ruff check . --fix && python3 -m black .",
+    "lint:ruff": "python3 -m ruff check .",
+    "lint:ruff:fix": "python3 -m ruff check . --fix",
+    "lint:black": "python3 -m black --check .",
+    "lint:black:fix": "python3 -m black .",
+    "lint:mypy": "python3 -m mypy app",
+    "format": "python3 -m black . && python3 -m ruff check . --fix"
   },
   "author": "",
   "license": "ISC",

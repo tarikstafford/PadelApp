@@ -2,14 +2,12 @@ import os
 import sys
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -25,9 +23,18 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.database import Base
-from app.models import ( # noqa
-    user, booking, club, court, game, game_player, game_invitation, team, elo_adjustment_request
+from app.models import (  # noqa
+    booking,
+    club,
+    court,
+    elo_adjustment_request,
+    game,
+    game_invitation,
+    game_player,
+    team,
+    user,
 )
+
 target_metadata = Base.metadata
 
 # Set the database URL from environment variable or use a default for local generation

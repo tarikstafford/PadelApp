@@ -1,11 +1,14 @@
-from typing import List, Optional
-from app.models.user import User
+from typing import Optional
+
 from app.models.tournament import TournamentMatch
+from app.models.user import User
+
 
 class EloRatingService:
     """
     A service for calculating ELO rating changes after games.
     """
+
     K_FACTOR = 32
     TOURNAMENT_K_FACTOR = 40  # Higher K-factor for tournament matches
 
@@ -13,18 +16,18 @@ class EloRatingService:
     def calculate_expected_score(team_rating: float, opponent_rating: float) -> float:
         """
         Calculates the expected score (probability of winning) for a team.
-        
+
         Args:
             team_rating: The average ELO rating of the team.
             opponent_rating: The average ELO rating of the opponent team.
-            
+
         Returns:
             The expected score, a value between 0 and 1.
         """
         return 1 / (1 + 10 ** ((opponent_rating - team_rating) / 400))
 
     @staticmethod
-    def _calculate_team_rating(team: List[User]) -> float:
+    def _calculate_team_rating(team: list[User]) -> float:
         """
         Calculates the average ELO rating for a team.
         """
@@ -33,10 +36,17 @@ class EloRatingService:
         return sum(player.elo_rating for player in team) / len(team)
 
     @classmethod
-    def update_ratings(cls, team_a: List[User], team_b: List[User], score_a: float, score_b: float, is_tournament: bool = False):
+    def update_ratings(
+        cls,
+        team_a: list[User],
+        team_b: list[User],
+        score_a: float,
+        score_b: float,
+        is_tournament: bool = False,
+    ):
         """
         Updates the ELO ratings for all players based on the game outcome.
-        
+
         Args:
             team_a: List of players in team A
             team_b: List of players in team B
@@ -70,15 +80,20 @@ class EloRatingService:
             player.elo_rating = max(1.0, min(player.elo_rating, 7.0))
 
     @classmethod
-    def calculate_rating_change(cls, expected_score: float, actual_score: float, k_factor: Optional[float] = None) -> float:
+    def calculate_rating_change(
+        cls,
+        expected_score: float,
+        actual_score: float,
+        k_factor: Optional[float] = None,
+    ) -> float:
         """
         Calculates the change in a player's ELO rating.
-        
+
         Args:
             expected_score: The expected score from calculate_expected_score.
             actual_score: The actual outcome of the game (1 for a win, 0.5 for a draw, 0 for a loss).
             k_factor: The K-factor to use (defaults to K_FACTOR if not provided).
-            
+
         Returns:
             The amount the player's ELO rating should change.
         """
@@ -90,18 +105,21 @@ class EloRatingService:
     def update_tournament_match_ratings(cls, tournament_match: TournamentMatch, db):
         """
         Updates ELO ratings for players after a tournament match is completed.
-        
+
         Args:
             tournament_match: The completed tournament match
             db: Database session
         """
-        if tournament_match.status != "COMPLETED" or not tournament_match.winning_team_id:
+        if (
+            tournament_match.status != "COMPLETED"
+            or not tournament_match.winning_team_id
+        ):
             return
 
         # Get the teams and their players
         team1 = tournament_match.team1
         team2 = tournament_match.team2
-        
+
         if not team1 or not team2:
             return
 
@@ -114,12 +132,13 @@ class EloRatingService:
             team_b=team2_players,
             score_a=tournament_match.team1_score or 0,
             score_b=tournament_match.team2_score or 0,
-            is_tournament=True
+            is_tournament=True,
         )
-        
+
         # Commit the changes to the database
         db.commit()
 
+
 # This is a placeholder for the full implementation that will be built up
 # through the subtasks.
-elo_rating_service = EloRatingService() 
+elo_rating_service = EloRatingService()

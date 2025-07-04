@@ -39,9 +39,9 @@ export default function LoginPage() {
       
       login(data.access_token, data.refresh_token);
       router.push('/profile');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login page error:", err);
-      setError(err.message || "An unexpected error occurred.");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
         setIsLoading(false);
     }

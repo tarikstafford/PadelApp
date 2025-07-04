@@ -1,29 +1,33 @@
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import date
 
 from app import crud, models, schemas
-from app.database import get_db
 from app.core import security
-from app.models.game_player import GamePlayerStatus
-from app.models.game import GameType
-from app.services.elo_rating_service import elo_rating_service
-from app.models.team import Team
 from app.crud.game_invitation_crud import game_invitation_crud
-from app.schemas.game_invitation_schemas import GameInvitationResponse, GameInvitationInfo
+from app.database import get_db
+from app.models.game import GameType
+from app.models.game_player import GamePlayerStatus
+from app.models.team import Team
+from app.schemas.game_invitation_schemas import (
+    GameInvitationInfo,
+    GameInvitationResponse,
+)
+from app.services.elo_rating_service import elo_rating_service
 from app.services.game_expiration_service import game_expiration_service
 
 router = APIRouter()
+
 
 @router.post("", response_model=schemas.Game, status_code=status.HTTP_201_CREATED)
 async def create_new_game(
     game_in: schemas.GameCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
-    Create a new game session for a booking. 
+    Create a new game session for a booking.
     The creator is automatically added as the first accepted player.
     """
     # 1. Validate the booking
@@ -31,21 +35,25 @@ async def create_new_game(
     if not booking:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Booking with id {game_in.booking_id} not found."
+            detail=f"Booking with id {game_in.booking_id} not found.",
         )
     # 2. Authorization: Only booking owner can create a game for it
     if booking.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to create a game for this booking."
+            detail="Not authorized to create a game for this booking.",
         )
-    
+
     # 3. Check if a game already exists for this booking
-    existing_game = db.query(models.Game).filter(models.Game.booking_id == game_in.booking_id).first()
+    existing_game = (
+        db.query(models.Game)
+        .filter(models.Game.booking_id == game_in.booking_id)
+        .first()
+    )
     if existing_game:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"A game already exists for booking id {game_in.booking_id}."
+            detail=f"A game already exists for booking id {game_in.booking_id}.",
         )
 
     # 4. Create the game
@@ -59,17 +67,20 @@ async def create_new_game(
 
     # 5. Add the creator as the first player with status ACCEPTED
     crud.game_player_crud.add_player_to_game(
-        db=db, 
-        game_id=created_game_orm.id, 
-        user_id=current_user.id, 
-        status=GamePlayerStatus.ACCEPTED
+        db=db,
+        game_id=created_game_orm.id,
+        user_id=current_user.id,
+        status=GamePlayerStatus.ACCEPTED,
     )
 
     # 6. Fetch the game again with players for the response model
     game_with_players = crud.game_crud.get_game(db, game_id=created_game_orm.id)
     if not game_with_players:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve created game details.")
-        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve created game details.",
+        )
+
     return game_with_players
 
 
@@ -77,7 +88,7 @@ async def create_new_game(
 async def read_game_details(
     game_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Retrieve details for a specific game, including its players and their statuses.
@@ -86,104 +97,154 @@ async def read_game_details(
     """
     # Check and auto-expire game if needed
     game_expiration_service.check_single_game_expiration(db, game_id)
-    
+
     game = crud.game_crud.get_game(db, game_id=game_id)
     if not game:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Game not found"
+        )
 
     is_participant = any(gp.user_id == current_user.id for gp in game.players)
     is_creator = game.booking and game.booking.user_id == current_user.id
-    
+
     if not is_participant and not is_creator:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Not authorized to access this game's details."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this game's details.",
         )
-        
-    return game 
+
+    return game
+
 
 MAX_PLAYERS_PER_GAME = 4
 
-@router.post("/{game_id}/invitations", response_model=schemas.GamePlayer, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{game_id}/invitations",
+    response_model=schemas.GamePlayer,
+    status_code=status.HTTP_201_CREATED,
+)
 async def invite_player_to_game(
     game_id: int,
     invite_request: schemas.UserInviteRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Invite a player to a specific game.
     """
     game = crud.game_crud.get_game(db, game_id=game_id)
     if not game:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Game not found"
+        )
 
     if not game.booking or game.booking.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the game creator can invite players.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the game creator can invite players.",
+        )
 
-    user_to_invite = crud.user_crud.get_user(db, user_id=invite_request.user_id_to_invite)
+    user_to_invite = crud.user_crud.get_user(
+        db, user_id=invite_request.user_id_to_invite
+    )
     if not user_to_invite:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User to invite not found.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User to invite not found."
+        )
 
     if user_to_invite.id == current_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot invite yourself to the game.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot invite yourself to the game.",
+        )
 
-    existing_game_player = crud.game_player_crud.get_game_player(db, game_id=game_id, user_id=user_to_invite.id)
+    existing_game_player = crud.game_player_crud.get_game_player(
+        db, game_id=game_id, user_id=user_to_invite.id
+    )
     if existing_game_player:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail=f"User {user_to_invite.email} is already part of this game with status: {existing_game_player.status.value}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"User {user_to_invite.email} is already part of this game with status: {existing_game_player.status.value}",
         )
-    
-    accepted_players_count = sum(1 for p in game.players if p.status == GamePlayerStatus.ACCEPTED)
+
+    accepted_players_count = sum(
+        1 for p in game.players if p.status == GamePlayerStatus.ACCEPTED
+    )
     if accepted_players_count >= MAX_PLAYERS_PER_GAME:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Game is already full.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Game is already full."
+        )
 
     new_game_player_orm = crud.game_player_crud.add_player_to_game(
-        db=db, game_id=game_id, user_id=user_to_invite.id, status=GamePlayerStatus.INVITED
+        db=db,
+        game_id=game_id,
+        user_id=user_to_invite.id,
+        status=GamePlayerStatus.INVITED,
     )
-    
+
     # Manually attach the loaded user to the relationship for the response
     new_game_player_orm.user = user_to_invite
 
-    return new_game_player_orm 
+    return new_game_player_orm
 
-@router.put("/{game_id}/invitations/{invited_user_id}", response_model=schemas.GamePlayer)
+
+@router.put(
+    "/{game_id}/invitations/{invited_user_id}", response_model=schemas.GamePlayer
+)
 async def respond_to_game_invitation(
     game_id: int,
     invited_user_id: int,
     response_in: schemas.InvitationResponseRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Allows an invited user to respond (accept/decline) to a game invitation.
     """
     if current_user.id != invited_user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot respond to an invitation for another user.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot respond to an invitation for another user.",
+        )
 
-    game_player_record = crud.game_player_crud.get_game_player(db, game_id=game_id, user_id=current_user.id)
+    game_player_record = crud.game_player_crud.get_game_player(
+        db, game_id=game_id, user_id=current_user.id
+    )
 
     if not game_player_record:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not found for this user and game.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invitation not found for this user and game.",
+        )
 
     if game_player_record.status != GamePlayerStatus.INVITED:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail=f"Invitation cannot be responded to. Current status: {game_player_record.status.value}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invitation cannot be responded to. Current status: {game_player_record.status.value}",
         )
-    
+
     if response_in.status not in [GamePlayerStatus.ACCEPTED, GamePlayerStatus.DECLINED]:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid response status. Must be 'accepted' or 'declined'.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid response status. Must be 'accepted' or 'declined'.",
+        )
 
     if response_in.status == GamePlayerStatus.ACCEPTED:
         game = crud.game_crud.get_game(db, game_id=game_id)
         if not game:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found.")
-        
-        accepted_players_count = sum(1 for p in game.players if p.status == GamePlayerStatus.ACCEPTED)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Game not found."
+            )
+
+        accepted_players_count = sum(
+            1 for p in game.players if p.status == GamePlayerStatus.ACCEPTED
+        )
         if accepted_players_count >= MAX_PLAYERS_PER_GAME:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot accept invitation, game is already full.")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot accept invitation, game is already full.",
+            )
 
     updated_game_player_orm = crud.game_player_crud.update_game_player_status(
         db=db, game_player=game_player_record, status=response_in.status
@@ -192,85 +253,131 @@ async def respond_to_game_invitation(
     # Manually attach the loaded user to the relationship for the response
     updated_game_player_orm.user = current_user
 
-    return updated_game_player_orm 
+    return updated_game_player_orm
 
-@router.post("/{game_id}/join", response_model=schemas.GamePlayer, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{game_id}/join",
+    response_model=schemas.GamePlayer,
+    status_code=status.HTTP_201_CREATED,
+)
 async def request_to_join_game(
     game_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Allows an authenticated user to request to join a public game.
     """
     game = crud.game_crud.get_game(db, game_id=game_id)
     if not game:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Game not found"
+        )
 
     if game.game_type != GameType.PUBLIC:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This game is not public.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="This game is not public."
+        )
 
-    accepted_players_count = sum(1 for p in game.players if p.status == GamePlayerStatus.ACCEPTED)
+    accepted_players_count = sum(
+        1 for p in game.players if p.status == GamePlayerStatus.ACCEPTED
+    )
     if accepted_players_count >= MAX_PLAYERS_PER_GAME:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Game is already full.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Game is already full."
+        )
 
-    existing_game_player = crud.game_player_crud.get_game_player(db, game_id=game_id, user_id=current_user.id)
+    existing_game_player = crud.game_player_crud.get_game_player(
+        db, game_id=game_id, user_id=current_user.id
+    )
     if existing_game_player:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"You are already part of this game with status: {existing_game_player.status.value}"
+            detail=f"You are already part of this game with status: {existing_game_player.status.value}",
         )
 
     new_game_player = crud.game_player_crud.add_player_to_game(
-        db=db, game_id=game_id, user_id=current_user.id, status=GamePlayerStatus.ACCEPTED
+        db=db,
+        game_id=game_id,
+        user_id=current_user.id,
+        status=GamePlayerStatus.ACCEPTED,
     )
-    
+
     # Manually attach the loaded user to the relationship for the response
     new_game_player.user = current_user
 
     return new_game_player
 
-@router.put("/{game_id}/players/{player_user_id}/status", response_model=schemas.GamePlayer)
+
+@router.put(
+    "/{game_id}/players/{player_user_id}/status", response_model=schemas.GamePlayer
+)
 async def manage_game_player_status(
     game_id: int,
     player_user_id: int,
     status_update: schemas.InvitationResponseRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Allows the game creator to manage the status of players who requested to join.
     """
     game = crud.game_crud.get_game(db, game_id=game_id)
     if not game:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Game not found"
+        )
 
     if not game.booking or game.booking.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the game creator can manage player status.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the game creator can manage player status.",
+        )
 
-    game_player_to_manage = crud.game_player_crud.get_game_player(db, game_id=game_id, user_id=player_user_id)
+    game_player_to_manage = crud.game_player_crud.get_game_player(
+        db, game_id=game_id, user_id=player_user_id
+    )
     if not game_player_to_manage:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Player not found in this game.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Player not found in this game.",
+        )
 
     if game_player_to_manage.status != GamePlayerStatus.REQUESTED_TO_JOIN:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Can only manage players who have requested to join.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only manage players who have requested to join.",
+        )
 
-    if status_update.status not in [GamePlayerStatus.ACCEPTED, GamePlayerStatus.DECLINED]:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status. Must be 'accepted' or 'declined'.")
+    if status_update.status not in [
+        GamePlayerStatus.ACCEPTED,
+        GamePlayerStatus.DECLINED,
+    ]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid status. Must be 'accepted' or 'declined'.",
+        )
 
     if status_update.status == GamePlayerStatus.ACCEPTED:
-        accepted_players_count = sum(1 for p in game.players if p.status == GamePlayerStatus.ACCEPTED)
+        accepted_players_count = sum(
+            1 for p in game.players if p.status == GamePlayerStatus.ACCEPTED
+        )
         if accepted_players_count >= MAX_PLAYERS_PER_GAME:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot accept player, game is full.")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot accept player, game is full.",
+            )
 
     updated_game_player = crud.game_player_crud.update_game_player_status(
         db=db, game_player=game_player_to_manage, status=status_update.status
     )
-    
+
     # Manually attach the loaded user to the relationship for the response
     updated_game_player.user = current_user
 
     return updated_game_player
+
 
 def validate_game_exists(db: Session, game_id: int) -> models.Game:
     game = crud.game_crud.game_crud.get_game_with_teams(db, game_id=game_id)
@@ -278,9 +385,13 @@ def validate_game_exists(db: Session, game_id: int) -> models.Game:
         raise HTTPException(status_code=404, detail="Game not found")
     return game
 
+
 def validate_game_not_scored(game: models.Game):
     if game.winning_team_id is not None:
-        raise HTTPException(status_code=400, detail="Game result has already been submitted")
+        raise HTTPException(
+            status_code=400, detail="Game result has already been submitted"
+        )
+
 
 def validate_winning_team(db: Session, team_id: int) -> models.Team:
     team = db.query(Team).filter(Team.id == team_id).first()
@@ -288,12 +399,17 @@ def validate_winning_team(db: Session, team_id: int) -> models.Team:
         raise HTTPException(status_code=404, detail="Winning team not found")
     return team
 
-@router.post("/{game_id}/result", response_model=schemas.GameWithRatingsResponse, status_code=status.HTTP_200_OK)
+
+@router.post(
+    "/{game_id}/result",
+    response_model=schemas.GameWithRatingsResponse,
+    status_code=status.HTTP_200_OK,
+)
 async def submit_game_result(
     game_id: int,
     result_in: schemas.GameResultRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Submit the result of a game, triggering ELO rating updates.
@@ -307,7 +423,9 @@ async def submit_game_result(
     elif game.team2_id == winning_team.id:
         losing_team = game.team1
     else:
-        raise HTTPException(status_code=400, detail="Winning team is not part of this game")
+        raise HTTPException(
+            status_code=400, detail="Winning team is not part of this game"
+        )
 
     winning_players = winning_team.players
     losing_players = losing_team.players
@@ -329,7 +447,9 @@ async def submit_game_result(
 
     return game
 
+
 # Game Invitation Endpoints
+
 
 @router.post("/{game_id}/invitations", response_model=GameInvitationResponse)
 async def create_game_invitation(
@@ -337,7 +457,7 @@ async def create_game_invitation(
     expires_in_hours: int = 24,
     max_uses: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Create a shareable invitation link for a game.
@@ -347,31 +467,30 @@ async def create_game_invitation(
     game = crud.game_crud.get_game(db, game_id=game_id)
     if not game:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Game not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Game not found"
         )
-    
+
     # Check if user is authorized (game creator or participant)
     user_in_game = any(player.user_id == current_user.id for player in game.players)
     if not user_in_game:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only game participants can create invitation links"
+            detail="Only game participants can create invitation links",
         )
-    
+
     # Create invitation
     invitation = game_invitation_crud.create_invitation(
         db=db,
         game_id=game_id,
         created_by=current_user.id,
         expires_in_hours=expires_in_hours,
-        max_uses=max_uses
+        max_uses=max_uses,
     )
-    
+
     # Build the invitation URL
     base_url = "https://padelgo-frontend-production.up.railway.app"  # TODO: Make this configurable
     invite_url = f"{base_url}/games/invite/{invitation.token}"
-    
+
     return GameInvitationResponse(
         id=invitation.id,
         game_id=invitation.game_id,
@@ -381,57 +500,56 @@ async def create_game_invitation(
         is_active=invitation.is_active,
         max_uses=invitation.max_uses,
         current_uses=invitation.current_uses,
-        invite_url=invite_url
+        invite_url=invite_url,
     )
 
+
 @router.get("/invitations/{token}/info", response_model=GameInvitationInfo)
-async def get_invitation_info(
-    token: str,
-    db: Session = Depends(get_db)
-):
+async def get_invitation_info(token: str, db: Session = Depends(get_db)):
     """
     Get public information about a game invitation.
     This endpoint doesn't require authentication and is used for preview.
     """
     invitation_info = game_invitation_crud.get_invitation_info(db, token)
-    
+
     if not invitation_info:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invitation not found or expired"
+            detail="Invitation not found or expired",
         )
-    
+
     return GameInvitationInfo(**invitation_info)
+
 
 @router.post("/invitations/{token}/accept")
 async def accept_game_invitation(
     token: str,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Accept a game invitation and join the game.
     User must be authenticated.
     """
     result = game_invitation_crud.accept_invitation(db, token, current_user.id)
-    
+
     if not result["success"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=result["message"]
+            status_code=status.HTTP_400_BAD_REQUEST, detail=result["message"]
         )
-    
+
     return {
         "message": result["message"],
         "game_id": result["game_id"],
-        "redirect_url": f"/games/{result['game_id']}"
+        "redirect_url": f"/games/{result['game_id']}",
     }
+
 
 @router.delete("/{game_id}/leave")
 async def leave_game(
     game_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Leave a game. Players can only leave if it's more than 24 hours before the start time.
@@ -439,31 +557,33 @@ async def leave_game(
     """
     # Check if game exists and auto-expire if needed
     game_expiration_service.check_single_game_expiration(db, game_id)
-    
+
     # Check if user can leave the game
     leave_check = crud.game_player_crud.can_leave_game(db, game_id, current_user.id)
-    
+
     if not leave_check["can_leave"]:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=leave_check["reason"]
+            status_code=status.HTTP_400_BAD_REQUEST, detail=leave_check["reason"]
         )
-    
+
     # Remove player from game
-    success = crud.game_player_crud.remove_player_from_game(db, game_id, current_user.id)
-    
+    success = crud.game_player_crud.remove_player_from_game(
+        db, game_id, current_user.id
+    )
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to leave game"
+            detail="Failed to leave game",
         )
-    
+
     return {"message": "Successfully left the game"}
+
 
 @router.post("/expire-past-games")
 async def expire_past_games(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Expire all games that are past their end time.
@@ -472,10 +592,10 @@ async def expire_past_games(
     # TODO: Add admin role check here if needed
     # if not current_user.is_admin:
     #     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
-    
+
     expired_game_ids = game_expiration_service.expire_past_games(db)
-    
+
     return {
         "message": f"Expired {len(expired_game_ids)} games",
-        "expired_game_ids": expired_game_ids
+        "expired_game_ids": expired_game_ids,
     }

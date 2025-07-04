@@ -1,5 +1,7 @@
-from typing import List, Optional
+from typing import Optional
+
 from pydantic import BaseModel
+
 
 class LeaderboardUserResponse(BaseModel):
     id: int
@@ -11,8 +13,9 @@ class LeaderboardUserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class LeaderboardResponse(BaseModel):
     total: int
     offset: int
     limit: int
-    users: List[LeaderboardUserResponse] 
+    users: list[LeaderboardUserResponse]

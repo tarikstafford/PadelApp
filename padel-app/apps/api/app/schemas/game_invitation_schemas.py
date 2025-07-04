@@ -1,11 +1,14 @@
-from typing import Optional
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
+
 
 class GameInvitationCreate(BaseModel):
     game_id: int
     expires_in_hours: Optional[int] = 24
     max_uses: Optional[int] = None
+
 
 class GameInvitationResponse(BaseModel):
     id: int
@@ -20,12 +23,16 @@ class GameInvitationResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
 class GameInvitationAccept(BaseModel):
     """Schema for accepting a game invitation"""
-    pass  # No additional data needed, just the token from URL
+
+    # No additional data needed, just the token from URL
+
 
 class GameInvitationInfo(BaseModel):
     """Public info about an invitation (before accepting)"""
+
     game_id: int
     game_name: str
     creator_name: str

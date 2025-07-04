@@ -33,11 +33,16 @@ const getAuthHeaders = (token?: string | null, authenticated = true): Headers =>
 };
 
 export const apiClient = {
-  get: async <T>(path: string, params?: Record<string, any>, token?: string | null, authenticated = true): Promise<T> => {
+  get: async <T>(path: string, params?: Record<string, string | number | boolean>, token?: string | null, authenticated = true): Promise<T> => {
     try {
       const url = new URL(`${getApiUrl()}${path}`);
       if (params) {
-        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        Object.keys(params).forEach(key => {
+          const value = params[key];
+          if (value !== undefined) {
+            url.searchParams.append(key, String(value));
+          }
+        });
       }
       const requestHeaders = getAuthHeaders(token, authenticated);
       console.log(`[API CLIENT] GET ${url.toString()}`, { Authorization: requestHeaders.get('Authorization') });
@@ -55,14 +60,14 @@ export const apiClient = {
     }
   },
 
-  post: async <T>(path: string, body: any, options?: { headers?: Record<string, string>, token?: string | null }): Promise<T> => {
+  post: async <T>(path: string, body: unknown, options?: { headers?: Record<string, string>, token?: string | null }): Promise<T> => {
     try {
       const isFormData = body instanceof FormData;
       const headers = options?.headers || getAuthHeaders(options?.token);
       
       // Do not set Content-Type for FormData, browser does it with boundary
       if (isFormData && headers instanceof Headers) {
-        (headers as Headers).delete('Content-Type');
+        headers.delete('Content-Type');
       }
 
       console.log('API Client POST Request:', { path, body: isFormData ? 'FormData' : body });
@@ -82,7 +87,7 @@ export const apiClient = {
     }
   },
 
-  put: async <T>(path: string, body: any, token?: string | null): Promise<T> => {
+  put: async <T>(path: string, body: unknown, token?: string | null): Promise<T> => {
     try {
       const response = await fetch(`${getApiUrl()}${path}`, {
         method: 'PUT',
@@ -187,7 +192,7 @@ export const createClub = async (data: ClubData, token?: string): Promise<Club> 
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  return apiClient.post<Club>('/clubs', data, { headers: headers as any });
+  return apiClient.post<Club>('/clubs', data, { headers: Object.fromEntries(headers.entries()) });
 };
 
 export const createCourt = async (data: CourtData, token?: string): Promise<Court> => {
@@ -195,7 +200,7 @@ export const createCourt = async (data: CourtData, token?: string): Promise<Cour
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
-  return apiClient.post<Court>('/courts', data, { headers: headers as any });
+  return apiClient.post<Court>('/courts', data, { headers: Object.fromEntries(headers.entries()) });
 };
 
 export const getMe = async (): Promise<User> => {

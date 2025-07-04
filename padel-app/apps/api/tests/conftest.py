@@ -1,9 +1,10 @@
 import os
+
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 # Set environment variables for testing BEFORE any other imports
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
@@ -13,9 +14,9 @@ os.environ["CLOUDINARY_API_KEY"] = "test"
 os.environ["CLOUDINARY_API_SECRET"] = "test"
 
 # Now import app modules
+from app import crud, models, schemas
 from app.database import Base, get_db
 from app.main import app
-from app import schemas, crud, models
 
 # Database engine and session for testing
 engine = create_engine(
@@ -25,6 +26,7 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 # Override the get_db dependency for the FastAPI app
 def override_get_db():
     database = TestingSessionLocal()
@@ -33,9 +35,11 @@ def override_get_db():
     finally:
         database.close()
 
+
 app.dependency_overrides[get_db] = override_get_db
 
-@pytest.fixture(scope="function")
+
+@pytest.fixture
 def db_session(client: TestClient):
     """
     Provides a transactional database session for each test function.
@@ -58,7 +62,8 @@ def client():
     with TestClient(app) as c:
         yield c
 
-@pytest.fixture(scope="function")
+
+@pytest.fixture
 def test_user(db_session: Session) -> models.User:
     """
     Create a test user in the database.
@@ -67,11 +72,12 @@ def test_user(db_session: Session) -> models.User:
         email="test@example.com",
         password="password123",
         full_name="Test User",
-        phone_number="1234567890"
+        phone_number="1234567890",
     )
     return crud.user_crud.create_user(db_session, user_in)
 
-@pytest.fixture(scope="function")
+
+@pytest.fixture
 def user_auth_headers(client: TestClient, test_user: models.User) -> dict:
     """
     Get authentication headers for a test user.

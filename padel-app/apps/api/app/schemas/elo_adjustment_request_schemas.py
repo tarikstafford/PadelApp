@@ -1,12 +1,16 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
+
+from pydantic import BaseModel, Field
+
 
 class EloAdjustmentRequestBase(BaseModel):
     requested_rating: float = Field(..., ge=1.0, le=7.0)
     reason: str = Field(..., min_length=10, max_length=500)
 
+
 class EloAdjustmentRequestCreate(EloAdjustmentRequestBase):
     pass
+
 
 class EloAdjustmentRequest(EloAdjustmentRequestBase):
     id: int
@@ -17,4 +21,4 @@ class EloAdjustmentRequest(EloAdjustmentRequestBase):
     requested_elo: float
 
     class Config:
-        from_attributes = True 
+        from_attributes = True

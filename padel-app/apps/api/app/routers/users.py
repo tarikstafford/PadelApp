@@ -1,80 +1,97 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
-from app.database import get_db
 from app.core import security
-from app.services import file_service
-from app.crud.tournament_crud import tournament_crud
 from app.crud.team_crud import team_crud
+from app.crud.tournament_crud import tournament_crud
+from app.database import get_db
+from app.services import file_service
 
 router = APIRouter()
 
+
 @router.get("/me", response_model=schemas.User)
-async def read_users_me(current_user: models.User = Depends(security.get_current_active_user)):
+async def read_users_me(
+    current_user: models.User = Depends(security.get_current_active_user),
+):
     """
     Get current user's profile.
     """
     return current_user
 
+
 @router.put("/me", response_model=schemas.User)
 async def update_user_me(
-    user_in: schemas.UserUpdate, 
-    db: Session = Depends(get_db), 
-    current_user: models.User = Depends(security.get_current_active_user)
+    user_in: schemas.UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Update current user's profile.
     """
     return crud.user_crud.update_user(db=db, db_user=current_user, user_in=user_in)
 
+
 @router.post("/me/profile-picture", response_model=schemas.User)
 async def upload_profile_picture(
-    file: UploadFile = File(...), 
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Upload a profile picture for the current user.
     """
     try:
         # Upload image and get the URL
-        image_url = await file_service.save_profile_picture(file=file, user_id=current_user.id)
-        
+        image_url = await file_service.save_profile_picture(
+            file=file, user_id=current_user.id
+        )
+
         # Update user's profile_picture_url in the database
         user_update_schema = schemas.UserUpdate(profile_picture_url=image_url)
-        updated_user = crud.user_crud.update_user(db=db, db_user=current_user, user_in=user_update_schema)
-        
-        return updated_user
+        return crud.user_crud.update_user(
+            db=db, db_user=current_user, user_in=user_update_schema
+        )
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
+    except Exception:
         # Generic error for other issues (e.g., cloud storage connection)
-        raise HTTPException(status_code=500, detail="An error occurred during file upload.")
+        raise HTTPException(
+            status_code=500, detail="An error occurred during file upload."
+        )
 
-@router.get("/me/elo-adjustment-requests", response_model=List[schemas.EloAdjustmentRequest])
+
+@router.get(
+    "/me/elo-adjustment-requests", response_model=list[schemas.EloAdjustmentRequest]
+)
 async def read_user_elo_adjustment_requests(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Retrieve ELO adjustment requests for the current user.
     """
-    return crud.elo_adjustment_request_crud.get_elo_adjustment_requests_by_user(db, user_id=current_user.id)
+    return crud.elo_adjustment_request_crud.get_elo_adjustment_requests_by_user(
+        db, user_id=current_user.id
+    )
 
-@router.get("/search", response_model=List[schemas.UserSearchResult])
+
+@router.get("/search", response_model=list[schemas.UserSearchResult])
 async def search_users(
     query: str = Query(..., min_length=2, max_length=50),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Search for users by name or email.
     """
-    users = crud.user_crud.search_users(db, query=query, limit=limit, current_user_id=current_user.id)
-    return users
+    return crud.user_crud.search_users(
+        db, query=query, limit=limit, current_user_id=current_user.id
+    )
+
 
 @router.post("/{user_id}/request-elo-adjustment", status_code=201)
 def request_elo_adjustment(
@@ -91,23 +108,23 @@ def request_elo_adjustment(
             status_code=403,
             detail="You can only request an ELO adjustment for yourself.",
         )
-    
+
     # Check the user's current ELO to store it with the request
     current_elo = current_user.elo_rating
-    
+
     crud.elo_adjustment_request_crud.create_elo_adjustment_request(
-        db=db, 
-        request=request, 
-        user_id=user_id,
-        current_elo=current_elo
+        db=db, request=request, user_id=user_id, current_elo=current_elo
     )
     return {"message": "ELO adjustment request submitted successfully."}
 
-@router.get("/{user_id}/trophies", response_model=List[schemas.TournamentTrophyResponse])
+
+@router.get(
+    "/{user_id}/trophies", response_model=list[schemas.TournamentTrophyResponse]
+)
 async def get_user_trophies(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Get tournament trophies for a user.
@@ -117,12 +134,11 @@ async def get_user_trophies(
         # For now, only allow users to see their own trophies
         # In the future, this could be made public or restricted to friends/teammates
         raise HTTPException(
-            status_code=403,
-            detail="You can only view your own trophies."
+            status_code=403, detail="You can only view your own trophies."
         )
-    
+
     trophies = tournament_crud.get_user_trophies(db=db, user_id=user_id)
-    
+
     return [
         schemas.TournamentTrophyResponse(
             id=trophy.id,
@@ -133,38 +149,41 @@ async def get_user_trophies(
             team_id=trophy.team_id,
             position=trophy.position,
             trophy_type=trophy.trophy_type,
-            awarded_at=trophy.awarded_at
+            awarded_at=trophy.awarded_at,
         )
         for trophy in trophies
     ]
 
-@router.get("/me/teams", response_model=List[schemas.Team])
+
+@router.get("/me/teams", response_model=list[schemas.Team])
 async def get_user_teams(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Get teams for the current user.
     """
     return team_crud.get_user_teams(db=db, user_id=current_user.id)
 
+
 @router.post("/me/teams", response_model=schemas.Team)
 async def create_team(
     team_in: schemas.TeamCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Create a new team for the current user.
     """
     return team_crud.create_team(db=db, team_data=team_in, creator_id=current_user.id)
 
+
 @router.post("/me/teams/{team_id}/players", response_model=schemas.Team)
 async def add_player_to_team(
     team_id: int,
     player_data: dict,  # Expecting {"user_id": int}
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_active_user)
+    current_user: models.User = Depends(security.get_current_active_user),
 ):
     """
     Add a player to the current user's team.
@@ -173,24 +192,26 @@ async def add_player_to_team(
     team = team_crud.get_team(db=db, team_id=team_id)
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
-    
+
     # Check if current user is in the team (has permission to add players)
     if current_user not in team.players:
-        raise HTTPException(status_code=403, detail="You can only add players to teams you're a member of")
-    
+        raise HTTPException(
+            status_code=403,
+            detail="You can only add players to teams you're a member of",
+        )
+
     # Get the user to add
     user_id = player_data.get("user_id")
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id is required")
-    
+
     user_to_add = db.query(models.User).filter(models.User.id == user_id).first()
     if not user_to_add:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Check if user is already in the team
     if user_to_add in team.players:
         raise HTTPException(status_code=400, detail="User is already in the team")
-    
+
     # Add the user to the team
-    updated_team = team_crud.add_player_to_team(db=db, team=team, user=user_to_add)
-    return updated_team 
+    return team_crud.add_player_to_team(db=db, team=team, user=user_to_add)

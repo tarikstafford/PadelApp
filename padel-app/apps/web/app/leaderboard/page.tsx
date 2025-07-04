@@ -14,7 +14,6 @@ import {
   TableRow,
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,

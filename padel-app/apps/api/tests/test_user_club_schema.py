@@ -7,7 +7,8 @@ from sqlalchemy.orm import sessionmaker
 # from app.database import Base
 # from app.core.config import settings
 
-@pytest.fixture(scope="function")
+
+@pytest.fixture
 def db_session():
     """
     Create a new database session for each test function.
@@ -15,12 +16,12 @@ def db_session():
     """
     from app.core.config import settings
     from app.database import Base
-    # Import all models to ensure they are registered with Base's metadata
-    from app.models import (
-        User, Club, Court, Booking, Game, GamePlayer, UserRole, BookingStatus, GameType, GamePlayerStatus
-    )
 
-    engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
+    # Import all models to ensure they are registered with Base's metadata
+
+    engine = create_engine(
+        settings.DATABASE_URL, connect_args={"check_same_thread": False}
+    )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     Base.metadata.create_all(bind=engine)
@@ -31,18 +32,19 @@ def db_session():
         session.close()
         Base.metadata.drop_all(bind=engine)
 
+
 def test_create_club_admin_and_club(db_session):
     """
     Test creating a user with CLUB_ADMIN role and a club owned by them.
     """
-    from app.models import User, Club, UserRole
+    from app.models import Club, User, UserRole
 
     # Create a club admin user
     admin_user = User(
         email="admin@example.com",
         full_name="Admin User",
         hashed_password="a_very_secret_password",
-        role=UserRole.CLUB_ADMIN
+        role=UserRole.CLUB_ADMIN,
     )
     db_session.add(admin_user)
     db_session.commit()
@@ -52,10 +54,7 @@ def test_create_club_admin_and_club(db_session):
     assert admin_user.role == UserRole.CLUB_ADMIN
 
     # Create a club owned by the admin
-    new_club = Club(
-        name="Test Padel Club",
-        owner_id=admin_user.id
-    )
+    new_club = Club(name="Test Padel Club", owner_id=admin_user.id)
     db_session.add(new_club)
     db_session.commit()
     db_session.refresh(new_club)
@@ -65,28 +64,26 @@ def test_create_club_admin_and_club(db_session):
     assert new_club.owner == admin_user
     assert admin_user.owned_club == new_club
 
+
 def test_user_cascade_delete_owned_club(db_session):
     """
     Test that deleting a user also deletes their owned club due to cascade.
     """
-    from app.models import User, Club, UserRole
-    
+    from app.models import Club, User, UserRole
+
     # Create a club admin user
     admin_user = User(
         email="admin_to_delete@example.com",
         full_name="Admin User to Delete",
         hashed_password="a_very_secret_password",
-        role=UserRole.CLUB_ADMIN
+        role=UserRole.CLUB_ADMIN,
     )
     db_session.add(admin_user)
     db_session.commit()
     db_session.refresh(admin_user)
 
     # Create a club owned by the admin
-    new_club = Club(
-        name="Club to be Deleted",
-        owner_id=admin_user.id
-    )
+    new_club = Club(name="Club to be Deleted", owner_id=admin_user.id)
     db_session.add(new_club)
     db_session.commit()
     db_session.refresh(new_club)
@@ -103,4 +100,4 @@ def test_user_cascade_delete_owned_club(db_session):
     deleted_club = db_session.query(Club).filter(Club.id == club_id).first()
 
     assert deleted_user is None
-    assert deleted_club is None 
+    assert deleted_club is None

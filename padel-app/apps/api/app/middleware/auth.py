@@ -1,11 +1,10 @@
 from fastapi import Request
-from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.status import HTTP_401_UNAUTHORIZED
 
 from app.core.security import decode_token_payload
 from app.crud import user_crud
 from app.database import SessionLocal
+
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -19,14 +18,15 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                     if token_payload and token_payload.sub:
                         db = SessionLocal()
                         try:
-                            user = user_crud.get_user_by_email(db, email=token_payload.sub)
+                            user = user_crud.get_user_by_email(
+                                db, email=token_payload.sub
+                            )
                             request.state.user = user
                         finally:
                             db.close()
             except Exception:
-                # This middleware should not block requests, just attach user if possible.
+                # This middleware should not block requests, just attach user.
                 # The authorization middleware will handle blocking.
                 pass
 
-        response = await call_next(request)
-        return response 
+        return await call_next(request)

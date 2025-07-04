@@ -5,20 +5,19 @@ Revises: 5f1f2e2e1e0a
 Create Date: 2025-06-27 12:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '627120000tsafe'
-down_revision = '5f1f2e2e1e0a'
+revision = "627120000tsafe"
+down_revision = "5f1f2e2e1e0a"
 branch_labels = None
 depends_on = None
 
 def upgrade() -> None:
     # Safe enum creation using DDL
     connection = op.get_bind()
-    
+
     # Create enums only if they don't exist
     connection.execute(sa.text("""
         DO $$ BEGIN
@@ -27,7 +26,7 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """))
-    
+
     connection.execute(sa.text("""
         DO $$ BEGIN
             CREATE TYPE tournamenttype AS ENUM ('SINGLE_ELIMINATION', 'DOUBLE_ELIMINATION', 'AMERICANO', 'FIXED_AMERICANO');
@@ -35,7 +34,7 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """))
-    
+
     connection.execute(sa.text("""
         DO $$ BEGIN
             CREATE TYPE tournamentcategory AS ENUM ('BRONZE', 'SILVER', 'GOLD', 'PLATINUM');
@@ -43,7 +42,7 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """))
-    
+
     connection.execute(sa.text("""
         DO $$ BEGIN
             CREATE TYPE matchstatus AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'WALKOVER');
@@ -70,7 +69,7 @@ def upgrade() -> None:
             updated_at TIMESTAMP NOT NULL DEFAULT NOW()
         );
     """))
-    
+
     connection.execute(sa.text("""
         CREATE INDEX IF NOT EXISTS ix_tournaments_club_id ON tournaments(club_id);
         CREATE INDEX IF NOT EXISTS ix_tournaments_id ON tournaments(id);
@@ -152,13 +151,13 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Drop tables in reverse order (only if they exist)
-    op.drop_table('tournament_trophies', if_exists=True)
-    op.drop_table('tournament_court_bookings', if_exists=True)
-    op.drop_table('tournament_matches', if_exists=True)
-    op.drop_table('tournament_teams', if_exists=True)
-    op.drop_table('tournament_category_configs', if_exists=True)
-    op.drop_table('tournaments', if_exists=True)
-    
+    op.drop_table("tournament_trophies", if_exists=True)
+    op.drop_table("tournament_court_bookings", if_exists=True)
+    op.drop_table("tournament_matches", if_exists=True)
+    op.drop_table("tournament_teams", if_exists=True)
+    op.drop_table("tournament_category_configs", if_exists=True)
+    op.drop_table("tournaments", if_exists=True)
+
     # Drop enum types (PostgreSQL will automatically handle dependencies)
     connection = op.get_bind()
     connection.execute(sa.text("DROP TYPE IF EXISTS matchstatus"))

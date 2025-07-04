@@ -3,6 +3,7 @@ import { render, fireEvent, waitFor, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ProfilePictureUpload from './ProfilePictureUpload';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 // Mock the useAuth hook
 jest.mock('@/contexts/AuthContext', () => ({
@@ -17,11 +18,11 @@ jest.mock('sonner', () => ({
   },
 }));
 
-global.fetch = jest.fn();
+global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 
 describe('ProfilePictureUpload', () => {
   const mockUseAuth = useAuth as jest.Mock;
-  const mockFetch = global.fetch as jest.Mock;
+  const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
   beforeEach(() => {
     // Reset mocks before each test
@@ -41,7 +42,8 @@ describe('ProfilePictureUpload', () => {
 
   it('allows a user to select a file', () => {
     render(<ProfilePictureUpload />);
-    const fileInput = screen.getByLabelText('Select Image').nextElementSibling as HTMLInputElement;
+    const selectButton = screen.getByText('Select Image');
+    const fileInput = selectButton.parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['(⌐□_□)'], 'chucknorris.png', { type: 'image/png' });
 
     fireEvent.change(fileInput, { target: { files: [file] } });
@@ -51,7 +53,8 @@ describe('ProfilePictureUpload', () => {
 
   it('shows an error for invalid file type', () => {
     render(<ProfilePictureUpload />);
-    const fileInput = screen.getByLabelText('Select Image').nextElementSibling as HTMLInputElement;
+    const selectButton = screen.getByText('Select Image');
+    const fileInput = selectButton.parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['just text'], 'test.txt', { type: 'text/plain' });
 
     fireEvent.change(fileInput, { target: { files: [file] } });
@@ -63,12 +66,13 @@ describe('ProfilePictureUpload', () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ profile_picture_url: 'http://new-image.jpg' }),
-    });
+    } as Response);
 
     const mockOnUploadSuccess = jest.fn();
     render(<ProfilePictureUpload onUploadSuccess={mockOnUploadSuccess} />);
     
-    const fileInput = screen.getByLabelText('Select Image').nextElementSibling as HTMLInputElement;
+    const selectButton = screen.getByText('Select Image');
+    const fileInput = selectButton.parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['(⌐□_□)'], 'chucknorris.png', { type: 'image/png' });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
@@ -77,7 +81,7 @@ describe('ProfilePictureUpload', () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(mockOnUploadSuccess).toHaveBeenCalledWith('http://new-image.jpg');
-      expect(require('sonner').toast.success).toHaveBeenCalledWith('Profile picture updated successfully!');
+      expect(toast.success).toHaveBeenCalledWith('Profile picture updated successfully!');
     });
   });
 
@@ -85,11 +89,12 @@ describe('ProfilePictureUpload', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       json: () => Promise.resolve({ detail: 'Upload failed' }),
-    });
+    } as Response);
 
     render(<ProfilePictureUpload />);
     
-    const fileInput = screen.getByLabelText('Select Image').nextElementSibling as HTMLInputElement;
+    const selectButton = screen.getByText('Select Image');
+    const fileInput = selectButton.parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['(⌐□_□)'], 'chucknorris.png', { type: 'image/png' });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
@@ -97,7 +102,7 @@ describe('ProfilePictureUpload', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Upload failed')).toBeInTheDocument();
-      expect(require('sonner').toast.error).toHaveBeenCalledWith('Upload failed');
+      expect(toast.error).toHaveBeenCalledWith('Upload failed');
     });
   });
 }); 

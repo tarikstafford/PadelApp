@@ -1,10 +1,9 @@
+from unittest.mock import Mock
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from sqlalchemy.orm import Session
 
 from app.services.elo_rating_service import EloRatingService, elo_rating_service
-from app.models.user import User
-from app.models.tournament import TournamentMatch
 
 
 class TestEloRatingService:
@@ -15,17 +14,22 @@ class TestEloRatingService:
         self.service = EloRatingService()
         self.mock_db = Mock(spec=Session)
 
-    @pytest.mark.parametrize("team_rating, opponent_rating, expected_score", [
-        (1500, 1500, 0.5),         # Equal ratings
-        (1600, 1500, 0.64),        # Higher rated team
-        (1500, 1600, 0.36),        # Lower rated team
-        (2000, 1000, 0.99),        # Large rating difference
-        (1000, 2000, 0.01),        # Large rating difference (inverted)
-        (1400, 1400, 0.5),         # Different equal ratings
-        (1800, 1200, 0.909),       # Large gap
-        (1200, 1800, 0.091),       # Large gap (inverted)
-    ])
-    def test_calculate_expected_score(self, team_rating, opponent_rating, expected_score):
+    @pytest.mark.parametrize(
+        ("team_rating", "opponent_rating", "expected_score"),
+        [
+            (1500, 1500, 0.5),  # Equal ratings
+            (1600, 1500, 0.64),  # Higher rated team
+            (1500, 1600, 0.36),  # Lower rated team
+            (2000, 1000, 0.99),  # Large rating difference
+            (1000, 2000, 0.01),  # Large rating difference (inverted)
+            (1400, 1400, 0.5),  # Different equal ratings
+            (1800, 1200, 0.909),  # Large gap
+            (1200, 1800, 0.091),  # Large gap (inverted)
+        ],
+    )
+    def test_calculate_expected_score(
+        self, team_rating, opponent_rating, expected_score
+    ):
         """Test the calculate_expected_score method with various rating combinations"""
         score = EloRatingService.calculate_expected_score(team_rating, opponent_rating)
         assert score == pytest.approx(expected_score, abs=1e-2)
@@ -35,23 +39,28 @@ class TestEloRatingService:
         # Test with very high rating difference
         score = EloRatingService.calculate_expected_score(3000, 500)
         assert score > 0.99
-        
+
         # Test with very low rating difference
         score = EloRatingService.calculate_expected_score(500, 3000)
         assert score < 0.01
 
-    @pytest.mark.parametrize("expected_score, actual_score, expected_change", [
-        (0.5, 1, 16),          # Win against equal opponent
-        (0.5, 0, -16),         # Loss against equal opponent
-        (0.5, 0.5, 0),         # Draw against equal opponent
-        (0.64, 1, 11.52),      # Expected win, and won
-        (0.64, 0, -20.48),     # Expected win, but lost (upset)
-        (0.36, 1, 20.48),      # Expected loss, but won (upset)
-        (0.36, 0, -11.52),     # Expected loss, and lost
-        (0.8, 1, 6.4),         # Strong favorite wins
-        (0.2, 0, -6.4),        # Underdog loses
-    ])
-    def test_calculate_rating_change(self, expected_score, actual_score, expected_change):
+    @pytest.mark.parametrize(
+        ("expected_score", "actual_score", "expected_change"),
+        [
+            (0.5, 1, 16),  # Win against equal opponent
+            (0.5, 0, -16),  # Loss against equal opponent
+            (0.5, 0.5, 0),  # Draw against equal opponent
+            (0.64, 1, 11.52),  # Expected win, and won
+            (0.64, 0, -20.48),  # Expected win, but lost (upset)
+            (0.36, 1, 20.48),  # Expected loss, but won (upset)
+            (0.36, 0, -11.52),  # Expected loss, and lost
+            (0.8, 1, 6.4),  # Strong favorite wins
+            (0.2, 0, -6.4),  # Underdog loses
+        ],
+    )
+    def test_calculate_rating_change(
+        self, expected_score, actual_score, expected_change
+    ):
         """Test the calculate_rating_change method"""
         change = EloRatingService.calculate_rating_change(expected_score, actual_score)
         assert change == pytest.approx(expected_change, abs=1e-2)
@@ -61,20 +70,26 @@ class TestEloRatingService:
         expected_score = 0.5
         actual_score = 1
         custom_k_factor = 50
-        
-        change = EloRatingService.calculate_rating_change(expected_score, actual_score, custom_k_factor)
+
+        change = EloRatingService.calculate_rating_change(
+            expected_score, actual_score, custom_k_factor
+        )
         expected_change = custom_k_factor * (actual_score - expected_score)
-        
+
         assert change == pytest.approx(expected_change, abs=1e-2)
 
     def test_calculate_rating_change_tournament_k_factor(self):
         """Test calculate_rating_change with tournament K-factor"""
         expected_score = 0.5
         actual_score = 1
-        
-        change = EloRatingService.calculate_rating_change(expected_score, actual_score, EloRatingService.TOURNAMENT_K_FACTOR)
-        expected_change = EloRatingService.TOURNAMENT_K_FACTOR * (actual_score - expected_score)
-        
+
+        change = EloRatingService.calculate_rating_change(
+            expected_score, actual_score, EloRatingService.TOURNAMENT_K_FACTOR
+        )
+        expected_change = EloRatingService.TOURNAMENT_K_FACTOR * (
+            actual_score - expected_score
+        )
+
         assert change == pytest.approx(expected_change, abs=1e-2)
 
     def test_calculate_team_rating_single_player(self):
@@ -82,7 +97,7 @@ class TestEloRatingService:
         player = Mock()
         player.elo_rating = 1500
         team = [player]
-        
+
         team_rating = EloRatingService._calculate_team_rating(team)
         assert team_rating == 1500
 
@@ -95,7 +110,7 @@ class TestEloRatingService:
         player3 = Mock()
         player3.elo_rating = 1400
         team = [player1, player2, player3]
-        
+
         team_rating = EloRatingService._calculate_team_rating(team)
         assert team_rating == 1500  # (1500 + 1600 + 1400) / 3
 
@@ -112,7 +127,7 @@ class TestEloRatingService:
         player2 = Mock()
         player2.elo_rating = 1600.3
         team = [player1, player2]
-        
+
         team_rating = EloRatingService._calculate_team_rating(team)
         assert team_rating == pytest.approx(1550.4, abs=1e-2)
 
@@ -131,7 +146,7 @@ class TestEloRatingService:
         # Winners should gain rating
         assert player_a1.elo_rating > 4.0
         assert player_a2.elo_rating > 4.0
-        
+
         # Losers should lose rating
         assert player_b1.elo_rating < 4.0
         assert player_b2.elo_rating < 4.0
@@ -151,7 +166,7 @@ class TestEloRatingService:
         # Losers should lose rating
         assert player_a1.elo_rating < 4.0
         assert player_a2.elo_rating < 4.0
-        
+
         # Winners should gain rating
         assert player_b1.elo_rating > 4.0
         assert player_b2.elo_rating > 4.0
@@ -189,7 +204,7 @@ class TestEloRatingService:
         # Lower-rated team should gain more points
         assert player_a1.elo_rating > 3.0
         assert player_a2.elo_rating > 3.0
-        
+
         # Higher-rated team should lose more points
         assert player_b1.elo_rating < 5.0
         assert player_b2.elo_rating < 5.0
@@ -228,7 +243,7 @@ class TestEloRatingService:
         """Test that ratings are clamped to upper bound (7.0)"""
         player_a1 = Mock(elo_rating=6.9)
         team_a = [player_a1]
-        
+
         player_b1 = Mock(elo_rating=1.1)
         team_b = [player_b1]
 
@@ -252,7 +267,7 @@ class TestEloRatingService:
         """Test rating clamping with extreme values"""
         player_a1 = Mock(elo_rating=7.0)
         team_a = [player_a1]
-        
+
         player_b1 = Mock(elo_rating=1.0)
         team_b = [player_b1]
 
@@ -425,7 +440,7 @@ class TestEloRatingService:
 
         # Team A wins
         EloRatingService.update_ratings(team_a, team_b, 1, 0)
-        
+
         rating_change_a = player_a.elo_rating - 4.0
         rating_change_b = player_b.elo_rating - 4.0
 
@@ -460,10 +475,14 @@ class TestEloRatingService:
         # Test expected score sum equals 1
         team_rating = 1500
         opponent_rating = 1600
-        
-        expected_a = EloRatingService.calculate_expected_score(team_rating, opponent_rating)
-        expected_b = EloRatingService.calculate_expected_score(opponent_rating, team_rating)
-        
+
+        expected_a = EloRatingService.calculate_expected_score(
+            team_rating, opponent_rating
+        )
+        expected_b = EloRatingService.calculate_expected_score(
+            opponent_rating, team_rating
+        )
+
         assert abs(expected_a + expected_b - 1.0) < 1e-10
 
     def test_boundary_conditions(self):
@@ -475,7 +494,7 @@ class TestEloRatingService:
         team_b = [player_b]
 
         EloRatingService.update_ratings(team_a, team_b, 1, 0)
-        
+
         assert player_a.elo_rating >= 1.0
         assert player_b.elo_rating >= 1.0
 
@@ -486,6 +505,6 @@ class TestEloRatingService:
         team_d = [player_d]
 
         EloRatingService.update_ratings(team_c, team_d, 1, 0)
-        
+
         assert player_c.elo_rating <= 7.0
         assert player_d.elo_rating <= 7.0

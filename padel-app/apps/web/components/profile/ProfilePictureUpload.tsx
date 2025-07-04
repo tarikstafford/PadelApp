@@ -3,9 +3,9 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@workspace/ui/components/button';
-// import { Input } from '@workspace/ui/components/input'; // For file input styling if needed, or just use native
 import { Label } from '@workspace/ui/components/label';
-import { toast } from 'sonner'; // Import toast
+import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface ProfilePictureUploadProps {
   onUploadSuccess?: (newImageUrl: string) => void; // Callback for when upload is successful (in future)
@@ -84,10 +84,11 @@ export default function ProfilePictureUpload({ onUploadSuccess }: ProfilePicture
       // TODO: Add success toast notification here
       alert("Profile picture updated!"); // Placeholder
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Profile picture upload error:", err);
-      toast.error(err.message || "An error occurred during upload.");
-      setError(err.message || "An error occurred during upload.");
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during upload.";
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -97,9 +98,11 @@ export default function ProfilePictureUpload({ onUploadSuccess }: ProfilePicture
     <div className="space-y-4 flex flex-col items-center text-center">
       <Label>Profile Picture</Label>
       <div className="flex flex-col items-center space-y-2">
-        <img 
-          src={previewUrl || currentProfilePic} 
-          alt="Profile" 
+        <Image
+          src={previewUrl || currentProfilePic}
+          alt="Profile"
+          width={96}
+          height={96}
           className="w-24 h-24 rounded-full border object-cover bg-muted"
         />
         <Button 

@@ -32,7 +32,7 @@ export const EloAdjustmentRequestModal = ({ canMakeRequest }: EloAdjustmentReque
       await requestEloAdjustment(parseFloat(requestedRating), reason);
       toast.success("Your ELO adjustment request has been submitted.");
       setIsOpen(false);
-    } catch (error) {
+    } catch {
       toast.error("Failed to submit your request. Please try again.");
     }
   };

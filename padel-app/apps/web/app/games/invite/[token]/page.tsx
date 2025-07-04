@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
+import { Button } from '@workspace/ui/components/button';
+import { Badge } from '@workspace/ui/components/badge';
 import { Calendar, Clock, MapPin, Users, Loader2, AlertTriangle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,9 +48,9 @@ export default function GameInvitePage() {
         false // Don't require auth for this call
       );
       setInvitationInfo(response);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch invitation info:', error);
-      setError('Invalid or expired invitation link');
+      setError(error instanceof Error ? error.message : 'Invalid or expired invitation link');
     } finally {
       setLoading(false);
     }
@@ -79,9 +79,9 @@ export default function GameInvitePage() {
       
       toast.success(response.message || 'Successfully joined the game!');
       router.push(`/games/${invitationInfo?.game_id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to join game:', error);
-      toast.error(error.response?.data?.detail || 'Failed to join game');
+      toast.error(error instanceof Error ? error.message : 'Failed to join game');
     } finally {
       setJoining(false);
     }

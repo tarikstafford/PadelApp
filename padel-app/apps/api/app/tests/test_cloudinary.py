@@ -1,5 +1,6 @@
 import cloudinary
 
+
 def test_cloudinary_config():
     """
     Tests that the Cloudinary SDK can be configured.
@@ -10,10 +11,10 @@ def test_cloudinary_config():
         cloud_name="dummy_cloud_name",
         api_key="dummy_api_key",
         api_secret="dummy_api_secret",
-        secure=True
+        secure=True,
     )
 
     config = cloudinary.config()
     assert config.cloud_name == "dummy_cloud_name"
     assert config.api_key == "dummy_api_key"
-    assert config.api_secret == "dummy_api_secret" 
+    assert config.api_secret == "dummy_api_secret"

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
+import { Button } from '@workspace/ui/components/button';
+import { Badge } from '@workspace/ui/components/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Trophy, Calendar, Users, DollarSign, MapPin, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Trophy, Calendar, Users, DollarSign, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 
@@ -77,27 +77,19 @@ const CATEGORY_LABELS = {
 
 export default function TournamentDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const tournamentId = params.id as string;
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [userTeams, setUserTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [eligibility, setEligibility] = useState<any>(null);
+  const [eligibility, setEligibility] = useState<{ eligible: boolean; average_elo: number; eligible_categories: string[] } | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (tournamentId) {
-      fetchTournamentData();
-      fetchUserTeams();
-    }
-  }, [tournamentId]);
-
-  const fetchTournamentData = async () => {
+  const fetchTournamentData = useCallback(async () => {
     try {
       // Fetch tournament details (public endpoint, no auth required)
       const data = await apiClient.get<Tournament>(`/tournaments/${tournamentId}`, {}, null, false);
@@ -117,20 +109,27 @@ export default function TournamentDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tournamentId]);
 
-  const fetchUserTeams = async () => {
+  const fetchUserTeams = useCallback(async () => {
     try {
       const data = await apiClient.get<Team[]>('/users/me/teams');
       setUserTeams(data);
     } catch (error) {
       console.error('Failed to fetch user teams:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (tournamentId) {
+      fetchTournamentData();
+      fetchUserTeams();
+    }
+  }, [tournamentId, fetchTournamentData, fetchUserTeams]);
 
   const checkEligibility = async (teamId: string) => {
     try {
-      const data = await apiClient.get(`/tournaments/${tournamentId}/eligibility/${teamId}`, {}, null, false);
+      const data = await apiClient.get<{ eligible: boolean; average_elo: number; eligible_categories: string[] }>(`/tournaments/${tournamentId}/eligibility/${teamId}`, {}, null, false);
       setEligibility(data);
     } catch (error) {
       console.error('Failed to check eligibility:', error);

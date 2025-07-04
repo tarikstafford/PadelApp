@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import withAuth from '@/components/auth/withAuth';
 import { format, parseISO } from 'date-fns';
-import UserSearchAndInvite, { UserSearchResult } from '@/components/game/UserSearchAndInvite';
+import UserSearchAndInvite from '@/components/game/UserSearchAndInvite';
 import { ToggleGroup, ToggleGroupItem } from "@workspace/ui/components/toggle-group";
 
 interface TimeSlot {
@@ -240,7 +240,7 @@ function BookingPageInternal() {
             let errorData;
             try {
                 errorData = await response.json();
-            } catch (e) {
+            } catch {
                 // If response is not JSON or empty
                 errorData = { detail: `Request failed with status ${response.status}. Please try again.` };
             }
@@ -251,7 +251,7 @@ function BookingPageInternal() {
                 errorMessage = errorData.detail;
             } else if (errorData && Array.isArray(errorData.detail)) {
                 // Handle validation errors (e.g., 422)
-                errorMessage = errorData.detail.map((err: { loc: any[]; msg: any; }) => `${err.loc.join(' > ')}: ${err.msg}`).join('; ');
+                errorMessage = errorData.detail.map((err: { loc: string[]; msg: string; }) => `${err.loc.join(' > ')}: ${err.msg}`).join('; ');
             }
             throw new Error(errorMessage);
         }
@@ -270,7 +270,7 @@ function BookingPageInternal() {
     }
   };
   
-  const handlePlayerInvited = (invitedPlayer: UserSearchResult) => {
+  const handlePlayerInvited = () => {
     if (createdGame) {
         fetchGameDetails(createdGame.id);
     }

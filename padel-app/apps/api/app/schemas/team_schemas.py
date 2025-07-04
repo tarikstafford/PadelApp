@@ -1,19 +1,25 @@
-from typing import List, Optional
+from typing import Optional
+
 from pydantic import BaseModel
-from .user_schemas import User
+
+from app.schemas.user_schemas import User
+
 
 class TeamBase(BaseModel):
     name: str
 
+
 class TeamCreate(TeamBase):
     pass
+
 
 class TeamUpdate(TeamBase):
     name: Optional[str] = None
 
+
 class Team(TeamBase):
     id: int
-    players: List[User] = []
+    players: list[User] = []
 
     class Config:
-        from_attributes = True 
+        from_attributes = True

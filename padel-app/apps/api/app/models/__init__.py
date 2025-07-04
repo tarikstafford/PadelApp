@@ -2,60 +2,63 @@
 
 # Import Base from database to make it accessible for Alembic and model definitions
 from app.database import Base
-
-# Import all model classes and enums to make them easily accessible
-from .user import User, PreferredPosition
-from .user_role import UserRole
-from .club import Club
-from .court import Court
-from .booking import Booking, BookingStatus
-from .game import Game, GameType
-from .game_player import GamePlayer, GamePlayerStatus
-from .team import Team, team_players
-from .elo_adjustment_request import EloAdjustmentRequest, EloAdjustmentRequestStatus
-from .club_admin import ClubAdmin
-from .tournament import (
-    Tournament, 
-    TournamentStatus, 
-    TournamentType, 
+from app.models.booking import Booking, BookingStatus
+from app.models.club import Club
+from app.models.club_admin import ClubAdmin
+from app.models.court import Court
+from app.models.elo_adjustment_request import (
+    EloAdjustmentRequest,
+    EloAdjustmentRequestStatus,
+)
+from app.models.game import Game, GameType
+from app.models.game_player import GamePlayer, GamePlayerStatus
+from app.models.team import Team, team_players
+from app.models.tournament import (
+    CATEGORY_ELO_RANGES,
+    MatchStatus,
+    Tournament,
     TournamentCategory,
     TournamentCategoryConfig,
-    TournamentTeam,
-    TournamentMatch,
-    MatchStatus,
     TournamentCourtBooking,
+    TournamentMatch,
+    TournamentStatus,
+    TournamentTeam,
     TournamentTrophy,
-    CATEGORY_ELO_RANGES
+    TournamentType,
 )
+
+# Import all model classes and enums to make them easily accessible
+from app.models.user import PreferredPosition, User
+from app.models.user_role import UserRole
 
 # Optional: Define __all__ to control `from app.models import *` behavior
 __all__ = [
+    "CATEGORY_ELO_RANGES",
     "Base",
-    "User",
-    "UserRole",
-    "Club",
-    "Court",
     "Booking",
     "BookingStatus",
-    "Game",
-    "GameType",
-    "GamePlayer",
-    "GamePlayerStatus",
-    "PreferredPosition",
-    "Team",
-    "team_players",
+    "Club",
+    "ClubAdmin",
+    "Court",
     "EloAdjustmentRequest",
     "EloAdjustmentRequestStatus",
-    "ClubAdmin",
+    "Game",
+    "GamePlayer",
+    "GamePlayerStatus",
+    "GameType",
+    "MatchStatus",
+    "PreferredPosition",
+    "Team",
     "Tournament",
-    "TournamentStatus",
-    "TournamentType", 
     "TournamentCategory",
     "TournamentCategoryConfig",
-    "TournamentTeam",
-    "TournamentMatch",
-    "MatchStatus",
     "TournamentCourtBooking",
+    "TournamentMatch",
+    "TournamentStatus",
+    "TournamentTeam",
     "TournamentTrophy",
-    "CATEGORY_ELO_RANGES",
-] 
+    "TournamentType",
+    "User",
+    "UserRole",
+    "team_players",
+]

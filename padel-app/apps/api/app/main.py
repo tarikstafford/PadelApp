@@ -1,37 +1,38 @@
+from pathlib import Path
+
 import cloudinary
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
+from app.middleware.auth import AuthenticationMiddleware
 from app.routers import (
+    admin_router,
     auth_router,
+    bookings_router,
     clubs_router,
     courts_router,
-    bookings_router,
     games_router,
-    users_router,
-    admin_router,
     leaderboard_router,
     public_router,
+    users_router,
 )
 from app.routers.tournaments import router as tournaments_router
-from app.middleware.auth import AuthenticationMiddleware
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="0.1.0",
-    description="API for the PadelGo application to manage bookings, players, and games.",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json" # Standard practice to version OpenAPI spec
+    description="API for the PadelGo application to manage bookings, players, games.",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",  # Standard practice
 )
 
 # Set all CORS enabled origins - MUST be added first
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now to fix immediate CORS issue
+    allow_origins=["*"],  # Allow all origins for now to fix CORS issue
     allow_credentials=False,  # Must be False when using allow_origins=["*"]
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
@@ -40,11 +41,12 @@ app.add_middleware(
 # Add Authentication Middleware after CORS
 app.add_middleware(AuthenticationMiddleware)
 
+
 # Custom exception handler for Pydantic validation errors
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     try:
-        body_str = exc.body.decode('utf-8')
+        body_str = exc.body.decode("utf-8")
     except (AttributeError, UnicodeDecodeError):
         body_str = "Could not decode request body"
 
@@ -53,21 +55,39 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors(), "body": body_str},
     )
 
+
 # Mount static files directory
 static_files_path = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=static_files_path), name="static")
 
 # Include the authentication router
 app.include_router(auth_router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
-app.include_router(clubs_router, prefix=f"{settings.API_V1_STR}/clubs", tags=["Clubs"]) # Corrected tag
-app.include_router(courts_router, prefix=f"{settings.API_V1_STR}/courts", tags=["Courts"]) # Added courts_router
-app.include_router(bookings_router, prefix=f"{settings.API_V1_STR}/bookings", tags=["Bookings"]) # Added bookings_router
-app.include_router(games_router, prefix=f"{settings.API_V1_STR}/games", tags=["Games"]) # Added games_router
-app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"]) # Added users_router
+app.include_router(
+    clubs_router, prefix=f"{settings.API_V1_STR}/clubs", tags=["Clubs"]
+)  # Corrected tag
+app.include_router(
+    courts_router, prefix=f"{settings.API_V1_STR}/courts", tags=["Courts"]
+)  # Added courts_router
+app.include_router(
+    bookings_router, prefix=f"{settings.API_V1_STR}/bookings", tags=["Bookings"]
+)  # Added bookings_router
+app.include_router(
+    games_router, prefix=f"{settings.API_V1_STR}/games", tags=["Games"]
+)  # Added games_router
+app.include_router(
+    users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"]
+)  # Added users_router
 app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
-app.include_router(leaderboard_router, prefix=f"{settings.API_V1_STR}/leaderboard", tags=["Leaderboard"])
-app.include_router(public_router, prefix=f"{settings.API_V1_STR}/public", tags=["Public"])
+app.include_router(
+    leaderboard_router,
+    prefix=f"{settings.API_V1_STR}/leaderboard",
+    tags=["Leaderboard"],
+)
+app.include_router(
+    public_router, prefix=f"{settings.API_V1_STR}/public", tags=["Public"]
+)
 app.include_router(tournaments_router, prefix=f"{settings.API_V1_STR}")
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -79,12 +99,14 @@ async def startup_event():
         secure=True,
     )
 
+
 @app.get("/")
 async def read_root():
     """Root endpoint to check if the API is running."""
     return {"message": f"Welcome to {settings.PROJECT_NAME}"}
 
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     """Health check endpoint."""
-    return {"status": "ok"} 
+    return {"status": "ok"}

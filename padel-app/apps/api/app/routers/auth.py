@@ -1,19 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.schemas import user_schemas, token_schemas, club_schemas
 from app import crud, models
 from app.core import security
 from app.database import get_db
-from app.services import file_service
+from app.schemas import token_schemas, user_schemas
 
 router = APIRouter()
 
-@router.post("/register-admin", response_model=token_schemas.Token, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/register-admin",
+    response_model=token_schemas.Token,
+    status_code=status.HTTP_201_CREATED,
+)
 async def register_admin(
-    user_in: user_schemas.AdminUserCreate, 
-    db: Session = Depends(get_db)
+    user_in: user_schemas.AdminUserCreate, db: Session = Depends(get_db)
 ):
     """
     Create a new club admin user and return tokens.
@@ -24,20 +26,22 @@ async def register_admin(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
-    
+
     # Create the user with the CLUB_ADMIN role
     user_to_create = user_schemas.UserCreate(
         email=user_in.email,
         password=user_in.password,
         full_name=user_in.full_name,
-        role=models.UserRole.CLUB_ADMIN
+        role=models.UserRole.CLUB_ADMIN,
     )
     new_user = crud.user_crud.create_user(db=db, user=user_to_create)
 
     # Generate tokens
-    access_token = security.create_access_token(subject=new_user.email, role=new_user.role.value)
+    access_token = security.create_access_token(
+        subject=new_user.email, role=new_user.role.value
+    )
     refresh_token = security.create_refresh_token(subject=new_user.email)
-    
+
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -45,10 +49,12 @@ async def register_admin(
         "role": new_user.role,
     }
 
-@router.post("/register", response_model=token_schemas.Token, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/register", response_model=token_schemas.Token, status_code=status.HTTP_201_CREATED
+)
 async def register_new_user(
-    user_in: user_schemas.UserCreate, 
-    db: Session = Depends(get_db)
+    user_in: user_schemas.UserCreate, db: Session = Depends(get_db)
 ):
     """
     Create new user and return tokens for immediate login.
@@ -59,7 +65,7 @@ async def register_new_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
-    
+
     # Ensure role is set to PLAYER if not provided
     if not user_in.role:
         user_in.role = models.UserRole.PLAYER
@@ -67,7 +73,9 @@ async def register_new_user(
     new_user = crud.user_crud.create_user(db=db, user=user_in)
 
     # Generate tokens
-    access_token = security.create_access_token(subject=new_user.email, role=new_user.role.value)
+    access_token = security.create_access_token(
+        subject=new_user.email, role=new_user.role.value
+    )
     refresh_token = security.create_refresh_token(subject=new_user.email)
 
     return {
@@ -77,10 +85,10 @@ async def register_new_user(
         "role": new_user.role,
     }
 
+
 @router.post("/login", response_model=token_schemas.Token)
 async def login_for_access_token(
-    user_in: user_schemas.UserLogin, 
-    db: Session = Depends(get_db)
+    user_in: user_schemas.UserLogin, db: Session = Depends(get_db)
 ):
     """
     OAuth2 compatible token login, get an access token and refresh token.
@@ -94,17 +102,15 @@ async def login_for_access_token(
         )
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Inactive user"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
-    
+
     access_token = security.create_access_token(
-        subject=user.email, # Using email as subject for simplicity, user.id is also common
-        role=user.role.value
+        subject=user.email,  # Using email as subject for simplicity, user.id is also common
+        role=user.role.value,
     )
     refresh_token = security.create_refresh_token(
-        subject=user.email,
-        role=user.role.value
+        subject=user.email, role=user.role.value
     )
     return {
         "access_token": access_token,
@@ -113,12 +119,16 @@ async def login_for_access_token(
         "role": user.role,
     }
 
+
 @router.get("/users/me", response_model=user_schemas.User)
-async def read_users_me(current_user: models.User = Depends(security.get_current_active_user)):
+async def read_users_me(
+    current_user: models.User = Depends(security.get_current_active_user),
+):
     """
     Get current user's profile.
     """
     return current_user
+
 
 @router.post("/refresh-token", response_model=token_schemas.Token)
 async def refresh_access_token(
@@ -136,27 +146,29 @@ async def refresh_access_token(
                 detail="Invalid refresh token: type mismatch or decoding failed",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         # Subject should be present if decode_token_payload was successful and checked for sub
         if payload.sub is None or payload.role is None:
-             raise HTTPException(
+            raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid refresh token: subject or role missing",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        new_access_token = security.create_access_token(subject=payload.sub, role=payload.role)
+        new_access_token = security.create_access_token(
+            subject=payload.sub, role=payload.role
+        )
         return {
             "access_token": new_access_token,
             "token_type": "bearer",
             "refresh_token": token_request.refresh_token,
             "role": payload.role,
         }
-    except HTTPException as e: # Re-raise HTTPExceptions from decode_token_payload
-        raise e
+    except HTTPException:  # Re-raise HTTPExceptions from decode_token_payload
+        raise
     except Exception as e:
         # Catch any other unexpected errors during refresh token processing
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing refresh token: {str(e)}",
-        ) 
+            detail=f"Error processing refresh token: {e!s}",
+        )

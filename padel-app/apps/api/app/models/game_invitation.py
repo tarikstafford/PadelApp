@@ -1,9 +1,12 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
-from sqlalchemy.orm import relationship
-from datetime import datetime, timedelta
 import secrets
+from datetime import datetime, timedelta
+from typing import Optional
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship
 
 from app.database import Base
+
 
 class GameInvitation(Base):
     __tablename__ = "game_invitations"
@@ -28,28 +31,31 @@ class GameInvitation(Base):
         return secrets.token_urlsafe(32)
 
     @classmethod
-    def create_invitation(cls, game_id: int, created_by: int, expires_in_hours: int = 24, max_uses: int = None):
+    def create_invitation(
+        cls,
+        game_id: int,
+        created_by: int,
+        expires_in_hours: int = 24,
+        max_uses: Optional[int] = None,
+    ):
         """Create a new game invitation with default expiration"""
         return cls(
             game_id=game_id,
             token=cls.generate_token(),
             created_by=created_by,
             expires_at=datetime.utcnow() + timedelta(hours=expires_in_hours),
-            max_uses=max_uses
+            max_uses=max_uses,
         )
 
     def is_valid(self) -> bool:
         """Check if invitation is still valid"""
         if not self.is_active:
             return False
-        
+
         if datetime.utcnow() > self.expires_at:
             return False
-        
-        if self.max_uses is not None and self.current_uses >= self.max_uses:
-            return False
-        
-        return True
+
+        return not (self.max_uses is not None and self.current_uses >= self.max_uses)
 
     def increment_usage(self):
         """Increment the usage counter"""

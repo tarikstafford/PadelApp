@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import React, { useState } from "react";
-// import { useRouter } from 'next/navigation'; // No longer needed for redirection here
 import { useAuth } from "@/contexts/AuthContext"; // Import useAuth
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@workspace/ui/components/card";
@@ -16,8 +15,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const { register, isLoading } = useAuth(); // Use register and isLoading from AuthContext
-  // const router = useRouter(); // No longer needed for redirection here
-
+  
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
@@ -36,9 +34,9 @@ export default function RegisterPage() {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Registration page error:", err);
-      setError(err.message || "An unexpected error occurred during registration.");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred during registration.");
     }
   };
 

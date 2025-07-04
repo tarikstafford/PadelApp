@@ -8,9 +8,11 @@
     "./utils/*": "./src/utils/*.ts"
   },
   "scripts": {
-    "lint": "eslint . --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx"
   },
   "devDependencies": {
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
     "eslint": "^8.57.0",
     "typescript": "^5.3.3"
   }

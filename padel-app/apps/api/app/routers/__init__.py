@@ -1,14 +1,16 @@
 # This file makes 'routers' a Python package
 
-from . import auth
-from . import users
-from . import clubs
-from . import courts
-from . import bookings
-from . import games
-from . import admin
-from . import leaderboard
-from . import public
+from app.routers import (
+    admin,
+    auth,
+    bookings,
+    clubs,
+    courts,
+    games,
+    leaderboard,
+    public,
+    users,
+)
 
 auth_router = auth.router
 users_router = users.router
@@ -24,12 +26,12 @@ public_router = public.router
 # from .items import router as items_router
 
 __all__ = [
-    "auth_router", 
     "admin_router",
-    "clubs_router", 
-    "courts_router", 
-    "bookings_router", 
+    "auth_router",
+    "bookings_router",
+    "clubs_router",
+    "courts_router",
     "games_router",
-    "users_router",
     "public_router",
-] # Add other router names here 
+    "users_router",
+]  # Add other router names here

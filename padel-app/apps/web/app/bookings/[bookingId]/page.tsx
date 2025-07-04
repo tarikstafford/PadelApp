@@ -75,9 +75,9 @@ function BookingDetailPageInternal() {
       const data = await fetchEnrichedBookingDetails(bookingId, accessToken);
       if (!data) throw new Error("Booking not found or access denied.");
       setBooking(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(`Error fetching booking ${bookingId} details:`, err);
-      setError(err.message || "An unexpected error occurred.");
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@workspace/ui/components/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@workspace/ui/components/command';
@@ -27,19 +27,6 @@ interface UserSearchAndInviteProps {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-// A more correctly typed debounce function
-function debounce<T extends (...args: any[]) => void>(func: T, delay: number) {
-  let timeoutId: NodeJS.Timeout | undefined;
-  return function(this: ThisParameterType<T>, ...args: Parameters<T>) {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-    timeoutId = setTimeout(() => {
-      func.apply(this, args);
-    }, delay);
-  };
-}
-
 export default function UserSearchAndInvite({ gameId, currentPlayers, onPlayerInvited }: UserSearchAndInviteProps) {
   const { accessToken } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,40 +34,50 @@ export default function UserSearchAndInvite({ gameId, currentPlayers, onPlayerIn
   const [isSearching, setIsSearching] = useState(false);
   const [inviteLoading, setInviteLoading] = useState<Record<number, boolean>>({}); // { userId: isLoading }
 
-  // Debounce search function
-  const debouncedSearch = useCallback(
-    debounce(async (query: string) => {
-      if (!query.trim() || query.trim().length < 2) { // Minimum 2 chars to search
-        setSearchResults([]);
-        setIsSearching(false);
-        return;
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const searchUsers = useCallback(async (query: string) => {
+    if (!query.trim() || query.trim().length < 2) { // Minimum 2 chars to search
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/users/search?query=${encodeURIComponent(query)}&limit=5`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to search users");
       }
-      setIsSearching(true);
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/users/search?query=${encodeURIComponent(query)}&limit=5`, {
-          headers: { 'Authorization': `Bearer ${accessToken}` },
-        });
-        if (!response.ok) {
-          throw new Error("Failed to search users");
-        }
-        const data: UserSearchResult[] = await response.json();
-        // Filter out users already in the game from search results
-        const currentPlayerIds = new Set(currentPlayers.map(p => p.user.id));
-        setSearchResults(data.filter(u => !currentPlayerIds.has(u.id)));
-      } catch (error) {
-        console.error("User search error:", error);
-        toast.error("Failed to search users.");
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 500), // 500ms debounce delay
-    [accessToken, currentPlayers] // Dependencies for useCallback
-  );
+      const data: UserSearchResult[] = await response.json();
+      // Filter out users already in the game from search results
+      const currentPlayerIds = new Set(currentPlayers.map(p => p.user.id));
+      setSearchResults(data.filter(u => !currentPlayerIds.has(u.id)));
+    } catch (error) {
+      console.error("User search error:", error);
+      toast.error("Failed to search users.");
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [accessToken, currentPlayers]);
 
   useEffect(() => {
-    debouncedSearch(searchTerm);
-  }, [searchTerm, debouncedSearch]);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      searchUsers(searchTerm);
+    }, 500);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchTerm, searchUsers]);
 
   const handleInvite = async (userToInvite: UserSearchResult) => {
     if (!accessToken) {

@@ -1,14 +1,23 @@
-from pydantic import BaseModel, Field, validator
-from typing import List, Optional, Dict, Any
 from datetime import datetime
-from enum import Enum
+from typing import Any, Optional
 
-from app.models.tournament import TournamentStatus, TournamentType, TournamentCategory, MatchStatus
+from pydantic import BaseModel, Field, field_validator
+
+from app.models.tournament import (
+    MatchStatus,
+    TournamentCategory,
+    TournamentStatus,
+    TournamentType,
+)
+
 
 # Base schemas
 class TournamentCategoryCreate(BaseModel):
     category: TournamentCategory
-    max_participants: int = Field(gt=0, description="Maximum number of participants for this category")
+    max_participants: int = Field(
+        gt=0, description="Maximum number of participants for this category"
+    )
+
 
 class TournamentCategoryResponse(BaseModel):
     id: int
@@ -21,6 +30,7 @@ class TournamentCategoryResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 # Tournament schemas
 class TournamentCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
@@ -31,20 +41,27 @@ class TournamentCreate(BaseModel):
     registration_deadline: datetime
     max_participants: int = Field(gt=0)
     entry_fee: Optional[float] = Field(ge=0, default=0.0)
-    categories: List[TournamentCategoryCreate] = Field(min_items=1, description="At least one category is required")
-    court_ids: List[int] = Field(description="List of court IDs to be used for the tournament")
+    categories: list[TournamentCategoryCreate] = Field(
+        min_items=1, description="At least one category is required"
+    )
+    court_ids: list[int] = Field(
+        description="List of court IDs to be used for the tournament"
+    )
 
-    @validator('end_date')
-    def end_date_after_start_date(cls, v, values):
-        if 'start_date' in values and v <= values['start_date']:
-            raise ValueError('End date must be after start date')
+    @field_validator("end_date")
+    @classmethod
+    def end_date_after_start_date(cls, v, info):
+        if info.data.get("start_date") and v <= info.data["start_date"]:
+            raise ValueError("End date must be after start date")
         return v
 
-    @validator('registration_deadline')
-    def registration_deadline_before_start(cls, v, values):
-        if 'start_date' in values and v >= values['start_date']:
-            raise ValueError('Registration deadline must be before start date')
+    @field_validator("registration_deadline")
+    @classmethod
+    def registration_deadline_before_start(cls, v, info):
+        if info.data.get("start_date") and v >= info.data["start_date"]:
+            raise ValueError("Registration deadline must be before start date")
         return v
+
 
 class TournamentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -55,6 +72,7 @@ class TournamentUpdate(BaseModel):
     max_participants: Optional[int] = Field(None, gt=0)
     entry_fee: Optional[float] = Field(None, ge=0)
     status: Optional[TournamentStatus] = None
+
 
 class TournamentResponse(BaseModel):
     id: int
@@ -70,11 +88,12 @@ class TournamentResponse(BaseModel):
     entry_fee: float
     created_at: datetime
     updated_at: datetime
-    categories: List[TournamentCategoryResponse] = []
+    categories: list[TournamentCategoryResponse] = []
     total_registered_teams: int = 0
 
     class Config:
         from_attributes = True
+
 
 class TournamentListResponse(BaseModel):
     id: int
@@ -91,10 +110,12 @@ class TournamentListResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 # Team registration schemas
 class TournamentTeamCreate(BaseModel):
     team_id: int
     category: TournamentCategory
+
 
 class TournamentTeamResponse(BaseModel):
     id: int
@@ -105,10 +126,11 @@ class TournamentTeamResponse(BaseModel):
     average_elo: float
     registration_date: datetime
     is_active: bool
-    players: List[Dict[str, Any]] = []  # Will contain player info
+    players: list[dict[str, Any]] = []  # Will contain player info
 
     class Config:
         from_attributes = True
+
 
 # Match schemas
 class TournamentMatchCreate(BaseModel):
@@ -119,6 +141,7 @@ class TournamentMatchCreate(BaseModel):
     scheduled_time: Optional[datetime] = None
     court_id: Optional[int] = None
 
+
 class TournamentMatchUpdate(BaseModel):
     scheduled_time: Optional[datetime] = None
     court_id: Optional[int] = None
@@ -126,6 +149,7 @@ class TournamentMatchUpdate(BaseModel):
     team1_score: Optional[int] = Field(None, ge=0)
     team2_score: Optional[int] = Field(None, ge=0)
     winning_team_id: Optional[int] = None
+
 
 class TournamentMatchResponse(BaseModel):
     id: int
@@ -150,6 +174,7 @@ class TournamentMatchResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 # Bracket schemas
 class BracketNode(BaseModel):
     match_id: Optional[int]
@@ -164,18 +189,21 @@ class BracketNode(BaseModel):
     team1_score: Optional[int] = None
     team2_score: Optional[int] = None
 
+
 class TournamentBracket(BaseModel):
     tournament_id: int
     category: TournamentCategory
     tournament_type: TournamentType
-    rounds: Dict[int, List[BracketNode]]  # round_number -> list of matches
+    rounds: dict[int, list[BracketNode]]  # round_number -> list of matches
     total_rounds: int
+
 
 # Court booking schemas
 class TournamentCourtBookingCreate(BaseModel):
     court_id: int
     start_time: datetime
     end_time: datetime
+
 
 class TournamentCourtBookingResponse(BaseModel):
     id: int
@@ -188,6 +216,7 @@ class TournamentCourtBookingResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 # Trophy schemas
 class TournamentTrophyResponse(BaseModel):
@@ -204,16 +233,19 @@ class TournamentTrophyResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 # Eligibility check schemas
 class TeamEligibilityCheck(BaseModel):
     team_id: int
     average_elo: float
-    eligible_categories: List[TournamentCategory]
-    reasons: Dict[TournamentCategory, str]  # Category -> reason if not eligible
+    eligible_categories: list[TournamentCategory]
+    reasons: dict[TournamentCategory, str]  # Category -> reason if not eligible
+
 
 class TournamentEligibilityResponse(BaseModel):
     tournament_id: int
-    teams: List[TeamEligibilityCheck]
+    teams: list[TeamEligibilityCheck]
+
 
 # Statistics schemas
 class TournamentStats(BaseModel):
@@ -222,13 +254,14 @@ class TournamentStats(BaseModel):
     completed_matches: int
     pending_matches: int
     total_teams: int
-    categories_breakdown: Dict[TournamentCategory, int]
+    categories_breakdown: dict[TournamentCategory, int]
     average_match_duration: Optional[float]  # in minutes
     completion_percentage: float
 
+
 # Admin dashboard schemas
 class TournamentDashboard(BaseModel):
-    tournaments: List[TournamentListResponse]
-    upcoming_matches: List[TournamentMatchResponse]
-    recent_results: List[TournamentMatchResponse]
-    stats: Dict[str, Any]
+    tournaments: list[TournamentListResponse]
+    upcoming_matches: list[TournamentMatchResponse]
+    recent_results: list[TournamentMatchResponse]
+    stats: dict[str, Any]

@@ -1,118 +1,173 @@
 # This file makes 'schemas' a Python package
 
 # --- Import all schemas to make them accessible ---
-from .user_schemas import User, UserCreate, UserUpdate, UserInDB, UserLogin, UserWithElo, EloAdjustmentRequest as EloAdjustmentRequestSchema, UserSearchResult
-from .token_schemas import Token, TokenData, RefreshTokenRequest
-from .club_schemas import Club, ClubCreate, ClubUpdate, ClubWithCourts, ClubRegistrationSchema, ClubCreateForAdmin, ScheduleResponse
-from .court_schemas import Court, CourtCreate, CourtUpdate, BookingTimeSlot, CalendarTimeSlot, DailyAvailability, AvailabilityResponse
-from .booking_schemas import Booking, BookingCreate, BookingUpdate, BookingStatus
-from .game_schemas import (
-    Game, GameCreate, GameUpdate, GameResponse, GameWithTeams,
-    GameResult, GameResultRequest, GameWithRatingsResponse,
-    UserInviteRequest, InvitationResponseRequest
-)
-from .game_player_schemas import GamePlayer, GamePlayerCreate, GamePlayerUpdate, GamePlayerStatus
-from .team_schemas import Team, TeamCreate, TeamUpdate
-from .leaderboard_schemas import LeaderboardResponse, LeaderboardUserResponse
-from .elo_adjustment_request_schemas import EloAdjustmentRequest, EloAdjustmentRequestCreate
-from .tournament_schemas import (
-    TournamentCreate, TournamentUpdate, TournamentResponse, TournamentListResponse,
-    TournamentCategoryCreate, TournamentCategoryResponse,
-    TournamentTeamCreate, TournamentTeamResponse,
-    TournamentMatchCreate, TournamentMatchUpdate, TournamentMatchResponse,
-    TournamentBracket, BracketNode,
-    TournamentCourtBookingCreate, TournamentCourtBookingResponse,
-    TournamentTrophyResponse,
-    TeamEligibilityCheck, TournamentEligibilityResponse,
-    TournamentStats, TournamentDashboard
-)
 from app.models.game import GameType
-
+from app.schemas.booking_schemas import (
+    Booking,
+    BookingCreate,
+    BookingStatus,
+    BookingUpdate,
+)
+from app.schemas.club_schemas import (
+    Club,
+    ClubCreate,
+    ClubCreateForAdmin,
+    ClubRegistrationSchema,
+    ClubUpdate,
+    ClubWithCourts,
+    ScheduleResponse,
+)
+from app.schemas.court_schemas import (
+    AvailabilityResponse,
+    BookingTimeSlot,
+    CalendarTimeSlot,
+    Court,
+    CourtCreate,
+    CourtUpdate,
+    DailyAvailability,
+)
+from app.schemas.elo_adjustment_request_schemas import (
+    EloAdjustmentRequest,
+    EloAdjustmentRequestCreate,
+)
+from app.schemas.game_player_schemas import (
+    GamePlayer,
+    GamePlayerCreate,
+    GamePlayerStatus,
+    GamePlayerUpdate,
+)
+from app.schemas.game_schemas import (
+    Game,
+    GameCreate,
+    GameResponse,
+    GameResult,
+    GameResultRequest,
+    GameUpdate,
+    GameWithRatingsResponse,
+    GameWithTeams,
+    InvitationResponseRequest,
+    UserInviteRequest,
+)
+from app.schemas.leaderboard_schemas import LeaderboardResponse, LeaderboardUserResponse
+from app.schemas.team_schemas import Team, TeamCreate, TeamUpdate
+from app.schemas.token_schemas import RefreshTokenRequest, Token, TokenData
+from app.schemas.tournament_schemas import (
+    BracketNode,
+    TeamEligibilityCheck,
+    TournamentBracket,
+    TournamentCategoryCreate,
+    TournamentCategoryResponse,
+    TournamentCourtBookingCreate,
+    TournamentCourtBookingResponse,
+    TournamentCreate,
+    TournamentDashboard,
+    TournamentEligibilityResponse,
+    TournamentListResponse,
+    TournamentMatchCreate,
+    TournamentMatchResponse,
+    TournamentMatchUpdate,
+    TournamentResponse,
+    TournamentStats,
+    TournamentTeamCreate,
+    TournamentTeamResponse,
+    TournamentTrophyResponse,
+    TournamentUpdate,
+)
+from app.schemas.user_schemas import EloAdjustmentRequest as EloAdjustmentRequestSchema
+from app.schemas.user_schemas import (
+    User,
+    UserCreate,
+    UserInDB,
+    UserLogin,
+    UserSearchResult,
+    UserUpdate,
+    UserWithElo,
+)
 
 # --- Define what is exported when 'from app.schemas import *' is used ---
 __all__ = [
-    # User
-    "User",
-    "UserCreate",
-    "UserUpdate",
-    "UserInDB",
-    "UserLogin",
-    "UserWithElo",
-    "UserSearchResult",
-    "EloAdjustmentRequestSchema",
-    # Token
-    "Token",
-    "TokenData",
-    "RefreshTokenRequest",
-    # Club
-    "Club",
-    "ClubCreate",
-    "ClubUpdate",
-    "ClubWithCourts",
-    "ClubRegistrationSchema",
-    "ClubCreateForAdmin",
-    "ScheduleResponse",
-    # Court
-    "Court",
-    "CourtCreate",
-    "CourtUpdate",
-    "BookingTimeSlot",
-    "CalendarTimeSlot",
-    "DailyAvailability",
     "AvailabilityResponse",
     # Booking
     "Booking",
     "BookingCreate",
-    "BookingUpdate",
     "BookingStatus",
-    # Game
-    "Game",
-    "GameCreate",
-    "GameUpdate",
-    "GameResponse",
-    "GameWithTeams",
-    "GameResult",
-    "GameResultRequest",
-    "GameWithRatingsResponse",
-    "UserInviteRequest",
-    "InvitationResponseRequest",
-    "GameType",
-    # GamePlayer
-    "GamePlayer",
-    "GamePlayerCreate",
-    "GamePlayerUpdate",
-    "GamePlayerStatus",
-    # Team
-    "Team",
-    "TeamCreate",
-    "TeamUpdate",
-    # Leaderboard
-    "LeaderboardResponse",
-    "LeaderboardUserResponse",
+    "BookingTimeSlot",
+    "BookingUpdate",
+    "BracketNode",
+    "CalendarTimeSlot",
+    # Club
+    "Club",
+    "ClubCreate",
+    "ClubCreateForAdmin",
+    "ClubRegistrationSchema",
+    "ClubUpdate",
+    "ClubWithCourts",
+    # Court
+    "Court",
+    "CourtCreate",
+    "CourtUpdate",
+    "DailyAvailability",
     # ELO
     "EloAdjustmentRequest",
     "EloAdjustmentRequestCreate",
-    # Tournament
-    "TournamentCreate",
-    "TournamentUpdate", 
-    "TournamentResponse",
-    "TournamentListResponse",
+    "EloAdjustmentRequestSchema",
+    # Game
+    "Game",
+    "GameCreate",
+    # GamePlayer
+    "GamePlayer",
+    "GamePlayerCreate",
+    "GamePlayerStatus",
+    "GamePlayerUpdate",
+    "GameResponse",
+    "GameResult",
+    "GameResultRequest",
+    "GameType",
+    "GameUpdate",
+    "GameWithRatingsResponse",
+    "GameWithTeams",
+    "InvitationResponseRequest",
+    # Leaderboard
+    "LeaderboardResponse",
+    "LeaderboardUserResponse",
+    "RefreshTokenRequest",
+    "ScheduleResponse",
+    # Team
+    "Team",
+    "TeamCreate",
+    "TeamEligibilityCheck",
+    "TeamUpdate",
+    # Token
+    "Token",
+    "TokenData",
+    "TournamentBracket",
     "TournamentCategoryCreate",
     "TournamentCategoryResponse",
-    "TournamentTeamCreate",
-    "TournamentTeamResponse",
-    "TournamentMatchCreate",
-    "TournamentMatchUpdate",
-    "TournamentMatchResponse",
-    "TournamentBracket",
-    "BracketNode",
     "TournamentCourtBookingCreate",
     "TournamentCourtBookingResponse",
-    "TournamentTrophyResponse",
-    "TeamEligibilityCheck",
-    "TournamentEligibilityResponse",
-    "TournamentStats",
+    # Tournament
+    "TournamentCreate",
     "TournamentDashboard",
+    "TournamentEligibilityResponse",
+    "TournamentListResponse",
+    "TournamentMatchCreate",
+    "TournamentMatchResponse",
+    "TournamentMatchUpdate",
+    "TournamentResponse",
+    "TournamentStats",
+    "TournamentTeamCreate",
+    "TournamentTeamResponse",
+    "TournamentTrophyResponse",
+    "TournamentUpdate",
+    # User
+    "User",
+    "UserCreate",
+    "UserInDB",
+    "UserInviteRequest",
+    "UserLogin",
+    "UserSearchResult",
+    "UserUpdate",
+    "UserWithElo",
 ]
 
 # --- Rebuild models to resolve Pydantic forward references ---
@@ -122,4 +177,4 @@ ScheduleResponse.model_rebuild()
 Game.model_rebuild()
 GameWithTeams.model_rebuild()
 GameWithRatingsResponse.model_rebuild()
-Team.model_rebuild() 
+Team.model_rebuild()

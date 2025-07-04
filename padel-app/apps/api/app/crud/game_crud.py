@@ -1,20 +1,28 @@
-from typing import Optional, List
-from sqlalchemy.orm import Session, joinedload, selectinload
-from sqlalchemy import func, and_
 from datetime import date, datetime, time
+from typing import Optional
 
-from app.models.game import Game as GameModel, GameType
-from app.models.game_player import GamePlayer as GamePlayerModel, GamePlayerStatus
-from app.models.user import User as UserModel
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload, selectinload
+
 from app.models.booking import Booking as BookingModel
 from app.models.court import Court as CourtModel
+from app.models.game import Game as GameModel
+from app.models.game import GameType
+from app.models.game_player import GamePlayer as GamePlayerModel
+from app.models.game_player import GamePlayerStatus
 from app.schemas.game_schemas import GameCreate
 
 MAX_PLAYERS_PER_GAME = 4
 
+
 class GameCRUD:
-    def create_game(self,
-        db: Session, game_in: GameCreate, club_id: int, start_time: datetime, end_time: datetime
+    def create_game(
+        self,
+        db: Session,
+        game_in: GameCreate,
+        club_id: int,
+        start_time: datetime,
+        end_time: datetime,
     ) -> GameModel:
         """Create a new game linked to a booking."""
         db_game = GameModel(
@@ -32,14 +40,17 @@ class GameCRUD:
 
     def get_game(self, db: Session, game_id: int) -> Optional[GameModel]:
         """
-        Retrieve a single game by its ID, eager loading booking, players, and their user details.
+        Retrieve a single game by its ID, eager loading booking, players, and
+        their user details.
         """
         return (
             db.query(GameModel)
             .filter(GameModel.id == game_id)
             .options(
-                joinedload(GameModel.booking).joinedload(BookingModel.court).joinedload(CourtModel.club),
-                joinedload(GameModel.players).joinedload(GamePlayerModel.user)
+                joinedload(GameModel.booking)
+                .joinedload(BookingModel.court)
+                .joinedload(CourtModel.club),
+                joinedload(GameModel.players).joinedload(GamePlayerModel.user),
             )
             .first()
         )
@@ -52,26 +63,27 @@ class GameCRUD:
             db.query(GameModel)
             .filter(GameModel.id == game_id)
             .options(
-                joinedload(GameModel.team1).joinedload('players'),
-                joinedload(GameModel.team2).joinedload('players')
+                joinedload(GameModel.team1).joinedload("players"),
+                joinedload(GameModel.team2).joinedload("players"),
             )
             .first()
         )
 
-    def get_public_games(self,
-        db: Session, 
-        skip: int = 0, 
+    def get_public_games(
+        self,
+        db: Session,
+        skip: int = 0,
         limit: int = 100,
-        target_date: Optional[date] = None
-    ) -> List[GameModel]:
+        target_date: Optional[date] = None,
+    ) -> list[GameModel]:
         """
-        Retrieve a list of public games with available slots, optionally filtered by date.
-        Eager loads necessary relationships for GameResponse.
+        Retrieve a list of public games with available slots, optionally
+        filtered by date. Eager loads necessary relationships for GameResponse.
         """
         subquery = (
             db.query(
                 GamePlayerModel.game_id,
-                func.count(GamePlayerModel.user_id).label("accepted_player_count")
+                func.count(GamePlayerModel.user_id).label("accepted_player_count"),
             )
             .filter(GamePlayerModel.status == GamePlayerStatus.ACCEPTED)
             .group_by(GamePlayerModel.game_id)
@@ -83,7 +95,10 @@ class GameCRUD:
             .outerjoin(subquery, GameModel.id == subquery.c.game_id)
             .join(GameModel.booking)
             .filter(GameModel.game_type == GameType.PUBLIC)
-            .filter(func.coalesce(subquery.c.accepted_player_count, 0) < MAX_PLAYERS_PER_GAME)
+            .filter(
+                func.coalesce(subquery.c.accepted_player_count, 0)
+                < MAX_PLAYERS_PER_GAME
+            )
         )
 
         if target_date:
@@ -91,12 +106,11 @@ class GameCRUD:
             end_datetime = datetime.combine(target_date, time.max)
             query = query.filter(
                 BookingModel.start_time >= start_datetime,
-                BookingModel.start_time <= end_datetime
+                BookingModel.start_time <= end_datetime,
             )
-        
-        games = (
-            query
-            .order_by(BookingModel.start_time)
+
+        return (
+            query.order_by(BookingModel.start_time)
             .offset(skip)
             .limit(limit)
             .options(
@@ -107,9 +121,10 @@ class GameCRUD:
             )
             .all()
         )
-        return games
 
-    def get_recent_games_by_club(self, db: Session, club_id: int, limit: int = 5) -> List[GameModel]:
+    def get_recent_games_by_club(
+        self, db: Session, club_id: int, limit: int = 5
+    ) -> list[GameModel]:
         """Get the most recent games for a specific club."""
         return (
             db.query(GameModel)
@@ -118,9 +133,7 @@ class GameCRUD:
             .filter(CourtModel.club_id == club_id)
             .order_by(GameModel.created_at.desc())
             .limit(limit)
-            .options(
-                selectinload(GameModel.players).selectinload(GamePlayerModel.user)
-            )
+            .options(selectinload(GameModel.players).selectinload(GamePlayerModel.user))
             .all()
         )
 
@@ -129,11 +142,10 @@ class GameCRUD:
         return (
             db.query(GameModel)
             .filter(GameModel.booking_id == booking_id)
-            .options(
-                joinedload(GameModel.players).joinedload(GamePlayerModel.user)
-            )
+            .options(joinedload(GameModel.players).joinedload(GamePlayerModel.user))
             .first()
         )
+
 
 # Create instance
 game_crud = GameCRUD()

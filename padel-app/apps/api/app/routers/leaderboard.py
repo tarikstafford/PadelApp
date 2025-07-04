@@ -1,4 +1,3 @@
-from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -6,6 +5,7 @@ from app import crud, schemas
 from app.database import get_db
 
 router = APIRouter()
+
 
 @router.get("", response_model=schemas.LeaderboardResponse)
 def get_leaderboard(
@@ -16,7 +16,9 @@ def get_leaderboard(
     """
     Retrieve a leaderboard of users, sorted by ELO rating.
     """
-    leaderboard_data = crud.leaderboard_crud.get_leaderboard_users(db, skip=skip, limit=limit)
+    leaderboard_data = crud.leaderboard_crud.get_leaderboard_users(
+        db, skip=skip, limit=limit
+    )
     users = leaderboard_data["data"]
     total = leaderboard_data["total"]
 
@@ -25,7 +27,7 @@ def get_leaderboard(
         club_name = None
         if user.club_admin_entries and user.club_admin_entries[0].club:
             club_name = user.club_admin_entries[0].club.name
-            
+
         formatted_users.append(
             schemas.LeaderboardUserResponse(
                 id=user.id,
@@ -41,4 +43,4 @@ def get_leaderboard(
         "total": total,
         "offset": skip,
         "limit": limit,
-    } 
+    }

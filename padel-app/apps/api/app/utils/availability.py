@@ -1,7 +1,10 @@
-from datetime import datetime, date, time, timedelta
-from typing import Iterator, Tuple
+from collections.abc import Iterator
+from datetime import date, datetime, time, timedelta
 
-def get_time_slots(start_time: time, end_time: time, duration_minutes: int) -> Iterator[Tuple[time, time]]:
+
+def get_time_slots(
+    start_time: time, end_time: time, duration_minutes: int
+) -> Iterator[tuple[time, time]]:
     """
     Generates time slots of a specific duration between a start and end time.
 
@@ -20,4 +23,4 @@ def get_time_slots(start_time: time, end_time: time, duration_minutes: int) -> I
     while current_time_dt + slot_duration <= end_time_dt:
         slot_end_time_dt = current_time_dt + slot_duration
         yield current_time_dt.time(), slot_end_time_dt.time()
-        current_time_dt = slot_end_time_dt 
+        current_time_dt = slot_end_time_dt

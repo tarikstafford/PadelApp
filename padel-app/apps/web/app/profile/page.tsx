@@ -1,16 +1,10 @@
 "use client"; // ProfilePage likely needs to be a client component if it uses hooks or interactivity later
 
-import React, { useState, useEffect } from 'react'; // Added useState, useEffect
-import { Button } from "@workspace/ui/components/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@workspace/ui/components/card";
-import { Input } from "@workspace/ui/components/input"; // Keep for potential future edit form
-import { Label } from "@workspace/ui/components/label";
-import withAuth from "@/components/auth/withAuth"; // Import the withAuth HOC
-import { useAuth } from "@/contexts/AuthContext"; // Import useAuth to access user data
-import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload'; // Import the new component
-import { toast } from "sonner"; // Import toast
-import Image from 'next/image';
-import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
+import React, { useState, useEffect } from 'react';
+import withAuth from "@/components/auth/withAuth";
+import { useAuth } from "@/contexts/AuthContext";
+import ProfilePictureUpload from '@/components/profile/ProfilePictureUpload';
+import { toast } from "sonner";
 import { Loader2 } from 'lucide-react';
 import { apiClient } from "@/lib/api";
 import { EloAdjustmentRequest } from "@/lib/types";
@@ -19,18 +13,14 @@ import { EloRatingDisplay } from "@/components/profile/EloRatingDisplay";
 import { PreferredPositionSelection } from "@/components/profile/PreferredPositionSelection";
 import { EloAdjustmentRequestHistory } from "@/components/profile/EloAdjustmentRequestHistory";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 function UserProfilePage() {
     const { user, isLoading, accessToken, fetchUser } = useAuth();
-    const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '' });
     const [requests, setRequests] = useState<EloAdjustmentRequest[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (user && accessToken) {
-            setFormData({ name: user.full_name || '', email: user.email || '' });
             apiClient
                 .get<EloAdjustmentRequest[]>("/users/me/elo-adjustment-requests", undefined, accessToken)
                 .then((data) => {
@@ -45,44 +35,6 @@ function UserProfilePage() {
         }
     }, [user, accessToken]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSave = async () => {
-        if (!accessToken) {
-            toast.error("You are not authenticated.");
-            return;
-        }
-
-        toast.loading("Saving your profile...");
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/users/me`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`
-                },
-                body: JSON.stringify({
-                    full_name: formData.name,
-                    email: formData.email,
-                }),
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.detail || "Failed to update profile.");
-            }
-
-            toast.success("Profile updated successfully!");
-            await fetchUser(); // Re-fetch user data to update the context
-            setIsEditing(false); // Exit editing mode
-        } catch (error: any) {
-            toast.error(error.message || "An unexpected error occurred.");
-        }
-    };
 
     const handleUploadSuccess = () => {
         toast.success("Profile picture updated!");
