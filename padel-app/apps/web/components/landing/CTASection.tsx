@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function CTASection() {
   return (
     <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-r from-blue-600 to-indigo-700">
-      <div className="container px-4 md:px-6">
+      <div className="container mx-auto px-4 md:px-6 max-w-7xl">
         <div className="text-center space-y-4">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-white">
             Ready to Elevate Your Padel Game?
