@@ -1,4 +1,3 @@
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -451,11 +450,10 @@ async def submit_game_result(
 # Game Invitation Endpoints
 
 
-@router.post("/{game_id}/invitations", response_model=GameInvitationResponse)
+@router.post("/{game_id}/invitations/links", response_model=GameInvitationResponse)
 async def create_game_invitation(
     game_id: int,
-    expires_in_hours: int = 24,
-    max_uses: Optional[int] = None,
+    invitation_data: schemas.GameInvitationCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_active_user),
 ):
@@ -483,8 +481,8 @@ async def create_game_invitation(
         db=db,
         game_id=game_id,
         created_by=current_user.id,
-        expires_in_hours=expires_in_hours,
-        max_uses=max_uses,
+        expires_in_hours=invitation_data.expires_in_hours,
+        max_uses=invitation_data.max_uses,
     )
 
     # Build the invitation URL

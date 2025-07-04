@@ -87,7 +87,7 @@ function GameDetailPageInternal() {
     
     setIsGeneratingInvite(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/games/${gameId}/invitations`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/games/${gameId}/invitations/links`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${accessToken}`,

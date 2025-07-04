@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 
 class GameInvitationCreate(BaseModel):
-    game_id: int
     expires_in_hours: Optional[int] = 24
     max_uses: Optional[int] = None
 

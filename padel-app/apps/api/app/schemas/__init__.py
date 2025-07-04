@@ -36,6 +36,11 @@ from app.schemas.game_player_schemas import (
     GamePlayerStatus,
     GamePlayerUpdate,
 )
+from app.schemas.game_invitation_schemas import (
+    GameInvitationCreate,
+    GameInvitationInfo,
+    GameInvitationResponse,
+)
 from app.schemas.game_schemas import (
     Game,
     GameCreate,
@@ -114,6 +119,10 @@ __all__ = [
     # Game
     "Game",
     "GameCreate",
+    # Game Invitations
+    "GameInvitationCreate",
+    "GameInvitationInfo", 
+    "GameInvitationResponse",
     # GamePlayer
     "GamePlayer",
     "GamePlayerCreate",
