@@ -273,7 +273,7 @@ async def manage_game_player_status(
     return updated_game_player
 
 def validate_game_exists(db: Session, game_id: int) -> models.Game:
-    game = crud.game_crud.get_game_with_teams(db, game_id=game_id)
+    game = crud.game_crud.game_crud.get_game_with_teams(db, game_id=game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     return game

@@ -40,7 +40,7 @@ def test_create_club_admin_and_club(db_session):
     # Create a club admin user
     admin_user = User(
         email="admin@example.com",
-        name="Admin User",
+        full_name="Admin User",
         hashed_password="a_very_secret_password",
         role=UserRole.CLUB_ADMIN
     )
@@ -74,7 +74,7 @@ def test_user_cascade_delete_owned_club(db_session):
     # Create a club admin user
     admin_user = User(
         email="admin_to_delete@example.com",
-        name="Admin User to Delete",
+        full_name="Admin User to Delete",
         hashed_password="a_very_secret_password",
         role=UserRole.CLUB_ADMIN
     )

@@ -17,6 +17,11 @@ dependencies = [
     "gunicorn>=21.2.0",
     "email-validator>=2.0.0",
     "pytest>=7.4.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
+    "faker>=19.0.0",
     "cloudinary>=1.44.0"
 ]
 
@@ -29,4 +34,41 @@ where = ["."]
 include = ["app*"]
 
 [tool.setuptools.package-data]
-app = ["py.typed"] 
+app = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--cov=app",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100"
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/tests/*",
+    "app/seeds/*",
+    "app/scripts/*",
+    "app/static/*",
+    "*/__init__.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "pass"
+]
+show_missing = true
