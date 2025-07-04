@@ -96,6 +96,55 @@ Endpoint for retrieving the user leaderboard.
 
 ---
 
+## 🏆 Tournaments (`/api/v1/tournaments`)
+
+Comprehensive tournament management system with ELO-based categories and automated bracket generation.
+
+| Method | Path                                     | Description                                       | Request Body                | Response Body               |
+| :----- | :--------------------------------------- | :------------------------------------------------ | :-------------------------- | :-------------------------- |
+| `POST` | `/`                                      | Create a new tournament (club admin only).        | `TournamentCreate`          | `Tournament`                |
+| `GET`  | `/`                                      | Get all public tournaments with filtering.        | - (Query)                   | `List[Tournament]`          |
+| `GET`  | `/club`                                  | Get tournaments for the current admin's club.     | - (Query)                   | `List[Tournament]`          |
+| `GET`  | `/{tournament_id}`                       | Get detailed tournament information.               | -                           | `TournamentDetail`          |
+| `PUT`  | `/{tournament_id}`                       | Update tournament details (club admin only).      | `TournamentUpdate`          | `Tournament`                |
+| `DELETE`| `/{tournament_id}`                      | Delete a tournament (club admin only).            | -                           | `{"message": "..."}`        |
+| `POST` | `/{tournament_id}/register`              | Register a team for the tournament.               | `TeamRegistrationRequest`   | `TournamentTeam`            |
+| `GET`  | `/{tournament_id}/teams`                 | Get all registered teams for the tournament.      | -                           | `List[TournamentTeam]`      |
+| `POST` | `/{tournament_id}/generate-bracket`      | Generate tournament bracket (club admin only).    | -                           | `TournamentBracket`         |
+| `GET`  | `/{tournament_id}/bracket`               | Get the tournament bracket and current standings.  | -                           | `TournamentBracket`         |
+| `GET`  | `/{tournament_id}/matches`               | Get all matches for the tournament.               | -                           | `List[TournamentMatch]`     |
+| `PUT`  | `/matches/{match_id}`                    | Update match results (club admin only).          | `MatchResultUpdate`         | `TournamentMatch`           |
+| `POST` | `/{tournament_id}/finalize`              | Finalize tournament and award trophies.           | -                           | `TournamentResult`          |
+
+---
+
+## 👥 Teams (`/api/v1/teams`)
+
+Team management for tournament participation and competitive play.
+
+| Method | Path                                     | Description                                       | Request Body                | Response Body               |
+| :----- | :--------------------------------------- | :------------------------------------------------ | :-------------------------- | :-------------------------- |
+| `POST` | `/`                                      | Create a new team.                                | `TeamCreate`                | `Team`                      |
+| `GET`  | `/`                                      | Get teams for the current user.                   | -                           | `List[Team]`                |
+| `GET`  | `/{team_id}`                             | Get team details.                                 | -                           | `TeamDetail`                |
+| `PUT`  | `/{team_id}`                             | Update team information.                          | `TeamUpdate`                | `Team`                      |
+| `DELETE`| `/{team_id}`                            | Delete a team.                                    | -                           | `{"message": "..."}`        |
+| `POST` | `/{team_id}/invite`                      | Invite a player to join the team.                 | `TeamInviteRequest`         | `{"message": "..."}`        |
+| `PUT`  | `/{team_id}/members/{user_id}`           | Accept/decline team invitation.                   | `TeamInviteResponse`        | `{"message": "..."}`        |
+
+---
+
+## 🌐 Public (`/api/v1/public`)
+
+Public endpoints accessible without authentication.
+
+| Method | Path                                     | Description                                       | Request Body                | Response Body               |
+| :----- | :--------------------------------------- | :------------------------------------------------ | :-------------------------- | :-------------------------- |
+| `GET`  | `/games`                                 | Get public games with available slots.            | - (Query)                   | `List[Game]`                |
+| `GET`  | `/tournaments`                           | Get public tournaments.                           | - (Query)                   | `List[Tournament]`          |
+
+---
+
 ## 🛡️ Admin (`/api/v1/admin`)
 
 Protected endpoints for administrative actions. Require `CLUB_ADMIN`, `ADMIN`, or `SUPER_ADMIN` role.

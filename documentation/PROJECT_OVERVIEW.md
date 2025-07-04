@@ -78,6 +78,13 @@ The PadelGo project is designed to serve two primary user groups: **Players** an
 *   Create an account and log in.
 *   Book courts for specific time slots.
 *   Create and join games with other players.
+*   **Join public games** with available slots.
+*   **Create and manage teams** for competitive play.
+*   **Participate in tournaments** with ELO-based categories.
+*   **Track ELO ratings** and view leaderboards.
+*   **Earn trophies** and achievements from tournament victories.
+*   **Invite players** to games via invitation system.
+*   **View game history** and statistics.
 
 ### 4.2. For Club Admins (Handled by `club-admin`)
 
@@ -85,10 +92,39 @@ The PadelGo project is designed to serve two primary user groups: **Players** an
 *   Manage their club's profile, including contact information and photos.
 *   Add, edit, and delete courts.
 *   View all bookings for their club.
-*   (Future) Manage players and accept payments.
+*   **Create and manage tournaments** with multiple categories.
+*   **Schedule tournament matches** and manage brackets.
+*   **View tournament analytics** and participant management.
+*   **Manage court availability** and scheduling.
+*   **Track club performance** through dashboard analytics.
+
+## 5. Advanced Features
+
+### 5.1. Tournament System
+The platform features a comprehensive tournament management system with:
+- **ELO-based categories**: Bronze, Silver, Gold, Platinum divisions
+- **Automated bracket generation** with single-elimination format
+- **Match scheduling** with court booking integration
+- **Trophy and achievement system** for winners
+- **Team registration** with eligibility verification
+
+### 5.2. ELO Rating System
+A sophisticated rating system that:
+- Tracks player skill levels across all games
+- Updates ratings based on match results and opponent strength
+- Provides leaderboards and historical tracking
+- Enables tournament category eligibility
+- Supports manual adjustment requests
+
+### 5.3. Enhanced Game Management
+- **Public games** with open slots for community play
+- **Private games** with invitation system
+- **Game expiration** for inactive sessions
+- **Result submission** with automatic ELO updates
+- **Team-based gameplay** with partner matching
 
 This document provides a complete picture of the PadelGo project's architecture and functionality. The use of a monorepo, a modern tech stack, and a clear separation of services creates a robust and scalable foundation for future development. 
 
-## 5. Design
+## 6. Design
 
 We use shadcn components to build out most of the ui/ux. Add feedback for users if things go well or they go wrong!

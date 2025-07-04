@@ -1,7 +1,8 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from datetime import date
+import logging
 
 from app import crud, schemas
 from app.database import get_db
@@ -18,7 +19,13 @@ async def read_public_games(
     """
     Retrieve a list of public games that have available slots.
     """
-    public_games = crud.game_crud.get_public_games(
-        db=db, skip=skip, limit=limit, target_date=target_date
-    )
-    return public_games 
+    try:
+        logging.info(f"Fetching public games: skip={skip}, limit={limit}, target_date={target_date}")
+        public_games = crud.game_crud.get_public_games(
+            db=db, skip=skip, limit=limit, target_date=target_date
+        )
+        logging.info(f"Successfully fetched {len(public_games)} public games")
+        return public_games
+    except Exception as e:
+        logging.error(f"Error fetching public games: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch public games: {str(e)}") 
