@@ -1,0 +1,47 @@
+#!/bin/bash
+set -e
+
+echo "🚀 PadelGo Pre-push Hook - Full Test Suite"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Change to the padel-app directory
+cd "$(git rev-parse --show-toplevel)/padel-app"
+
+echo -e "${YELLOW}📦 Installing dependencies...${NC}"
+pnpm install --frozen-lockfile
+
+echo -e "${YELLOW}🧪 Running full test suite...${NC}"
+
+# API tests
+echo -e "${YELLOW}🐍 API tests...${NC}"
+cd apps/api
+if ! python -m pytest tests/ -v --cov=app --cov-fail-under=80; then
+    echo -e "${RED}❌ API tests failed${NC}"
+    exit 1
+fi
+
+cd ../../
+
+# E2E tests for club admin
+echo -e "${YELLOW}🎭 E2E tests...${NC}"
+cd apps/club-admin
+if ! pnpm cy:run; then
+    echo -e "${RED}❌ E2E tests failed${NC}"
+    exit 1
+fi
+
+cd ../../
+
+# Security check - ensure no secrets in code
+echo -e "${YELLOW}🔐 Security scan...${NC}"
+if grep -r "password\|secret\|key" --include="*.py" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.git . | grep -v "# nosec" | grep -v "password_hash" | grep -v "typing"; then
+    echo -e "${RED}❌ Potential secrets found in code${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ All pre-push checks passed!${NC}"

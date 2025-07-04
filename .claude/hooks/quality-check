@@ -1,0 +1,78 @@
+#!/bin/bash
+# Quality check script for PadelGo - Run manually or from CI
+set -e
+
+echo "🔍 PadelGo Quality Check - Complete Verification"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Change to the padel-app directory
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT/padel-app"
+
+echo -e "${BLUE}📍 Working directory: $(pwd)${NC}"
+
+# Function to run with status reporting
+run_check() {
+    local name="$1"
+    local command="$2"
+    echo -e "${YELLOW}🔍 $name...${NC}"
+    if eval "$command"; then
+        echo -e "${GREEN}✅ $name passed${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ $name failed${NC}"
+        return 1
+    fi
+}
+
+# Initialize failure flag
+FAILED=0
+
+# Install dependencies
+run_check "Installing dependencies" "pnpm install --frozen-lockfile" || FAILED=1
+
+# Build check
+run_check "Build verification" "pnpm build" || FAILED=1
+
+# Linting
+run_check "ESLint checks" "pnpm lint" || FAILED=1
+
+# TypeScript checks
+run_check "Web app TypeScript" "cd apps/web && pnpm typecheck" || FAILED=1
+run_check "Club admin TypeScript" "cd apps/club-admin && pnpm typecheck" || FAILED=1
+
+# Python quality checks
+run_check "Python linting (ruff)" "cd apps/api && ruff check ." || FAILED=1
+run_check "Python formatting (black)" "cd apps/api && black --check ." || FAILED=1
+run_check "Python types (mypy)" "cd apps/api && mypy ." || FAILED=1
+
+# Tests
+run_check "API tests" "cd apps/api && python -m pytest tests/ -v" || FAILED=1
+run_check "API coverage" "cd apps/api && python -m pytest tests/ --cov=app --cov-fail-under=80" || FAILED=1
+
+# Database checks
+run_check "Database migration check" "cd apps/api && alembic check" || FAILED=1
+
+# Security scan
+echo -e "${YELLOW}🔐 Security scan...${NC}"
+if grep -r -n "password\|secret\|key" --include="*.py" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=htmlcov . | grep -v "# nosec" | grep -v "password_hash" | grep -v "typing" | grep -v "secretOrKey" | grep -v "passwordField"; then
+    echo -e "${RED}❌ Potential secrets found in code${NC}"
+    FAILED=1
+else
+    echo -e "${GREEN}✅ Security scan passed${NC}"
+fi
+
+# Final result
+if [ $FAILED -eq 0 ]; then
+    echo -e "${GREEN}🎉 All quality checks passed!${NC}"
+    exit 0
+else
+    echo -e "${RED}💥 Some quality checks failed${NC}"
+    exit 1
+fi

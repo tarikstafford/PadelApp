@@ -1,6 +1,6 @@
 ---
 allowed-tools: all
-description: Execute production-quality implementation with strict standards
+description: Execute production-quality implementation for PadelGo with strict standards
 ---
 
 🚨 **CRITICAL WORKFLOW - NO SHORTCUTS!** 🚨
@@ -23,92 +23,128 @@ Consult ~/.claude/CLAUDE.md IMMEDIATELY and follow it EXACTLY.
 
 **Critical Requirements:**
 
-🛑 **HOOKS ARE WATCHING** 🛑
-The smart-lint.sh hook will verify EVERYTHING. It will:
-- Block operations if you ignore linter warnings
-- Track repeated violations
-- Prevent commits with any issues
-- Force you to fix problems before proceeding
+🛑 **PADEL GO QUALITY STANDARDS** 🛑
+ALL quality checks must pass:
+- TypeScript/ESLint checks for frontend apps
+- Python linting (ruff, black, mypy) for API
+- All tests passing (pytest for API, Cypress for E2E)
+- Build succeeds for all apps
+
+**PadelGo Architecture Overview:**
+- **Monorepo**: Turborepo with pnpm workspaces
+- **Frontend**: Next.js 14+ apps (web, club-admin) with TypeScript, Tailwind, shadcn/ui
+- **Backend**: FastAPI with Python 3.9+, SQLAlchemy 2.0, PostgreSQL
+- **Testing**: Pytest (API), Cypress (E2E), Jest/Testing Library (components)
+- **Database**: PostgreSQL with Alembic migrations
+
+**Working Directories:**
+- Root: `/Users/tarikstafford/Desktop/Projects/PadelApp/padel-app/`
+- API: `apps/api/` (FastAPI Python)
+- Web App: `apps/web/` (Next.js TypeScript)
+- Club Admin: `apps/club-admin/` (Next.js TypeScript)
+
+**Quality Commands (run from padel-app/):**
+```bash
+# Install dependencies
+pnpm install
+
+# Build all apps
+pnpm build
+
+# Lint all packages
+pnpm lint
+
+# Format code
+pnpm format
+
+# Individual app checks
+cd apps/api && python -m pytest tests/ -v
+cd apps/api && ruff check . && black --check . && mypy .
+cd apps/web && pnpm typecheck && pnpm lint
+cd apps/club-admin && pnpm typecheck && pnpm lint
+```
 
 **Completion Standards (NOT NEGOTIABLE):**
-- The task is NOT complete until ALL linters pass with zero warnings (golangci-lint with all checks enabled)
-- ALL tests must pass with meaningful coverage of business logic (skip testing main(), simple CLI parsing, etc.)
-- The feature must be fully implemented and working end-to-end
+- ALL TypeScript errors resolved (`pnpm typecheck`)
+- ALL ESLint issues fixed (`pnpm lint`)
+- ALL Python linting passes (ruff, black, mypy)
+- ALL tests pass with meaningful coverage
+- Feature works end-to-end in all affected apps
 - No placeholder comments, TODOs, or "good enough" compromises
 
 **Reality Checkpoints (MANDATORY):**
-- After EVERY 3 file edits: Run linters
+- After EVERY 3 file edits: Run relevant linters
 - After implementing each component: Validate it works
 - Before saying "done": Run FULL test suite
-- If hooks fail: STOP and fix immediately
+- If quality checks fail: STOP and fix immediately
+
+**PadelGo-Specific Patterns:**
+
+**Frontend (Next.js/TypeScript):**
+- Use shadcn/ui components consistently
+- Follow existing TypeScript patterns
+- Proper error boundaries and loading states
+- API calls via centralized `/lib/api.ts`
+- Authentication via `AuthContext`
+- NO `any` types unless absolutely necessary
+- Proper Next.js 14+ conventions (app router)
+
+**Backend (FastAPI/Python):**
+- Follow existing SQLAlchemy 2.0 patterns
+- Use Pydantic schemas for validation
+- Proper dependency injection patterns
+- Database operations via CRUD modules
+- Authentication via JWT middleware
+- NO hardcoded secrets (use environment variables)
+- Follow existing router patterns
+
+**Database (PostgreSQL/Alembic):**
+- Use Alembic for all schema changes
+- Proper foreign key relationships
+- Index optimization for queries
+- Reversible migrations
+
+**Testing Standards:**
+- API: pytest with fixtures, proper mocking
+- Frontend: Jest/Testing Library for components
+- E2E: Cypress for critical user flows
+- Coverage requirements as defined in pyproject.toml
 
 **Code Evolution Rules:**
 - This is a feature branch - implement the NEW solution directly
 - DELETE old code when replacing it - no keeping both versions
 - NO migration functions, compatibility layers, or deprecated methods
-- NO versioned function names (e.g., processDataV2, processDataNew)
 - When refactoring, replace the existing implementation entirely
-- If changing an API, change it everywhere - no gradual transitions
-
-**Language-Specific Quality Requirements:**
-
-**For ALL languages:**
-- Follow established patterns in the codebase
-- Use language-appropriate linters at MAX strictness
-- Delete old code when replacing functionality
-- No compatibility shims or transition helpers
-
-**For Go specifically:**
-- Absolutely NO interface{} or any{} - use concrete types or properly defined interfaces
-- Simple, focused interfaces following the Interface Segregation Principle (prefer many small interfaces over large ones)
-- Error handling must use simple error returns or well-established patterns (NO custom error structs unless absolutely necessary)
-- Avoid unnecessary type assertions and interface casting - if you need to cast, reconsider your design
-- Follow standard Go project layout (cmd/, internal/, pkg/ where appropriate)
-- NO time.Sleep() or busy waits - use channels and message passing for synchronization
-- Use channels to signal readiness, completion, or state changes between goroutines
-- Use select with timeout channels instead of sleep loops for timing operations
-
-**Documentation Requirements:**
-- Reference specific sections of relevant documentation (e.g., "Per the Go Memory Model documentation section 3.2...")
-- Include links to official Go docs, relevant RFCs, or API documentation as needed
-- Document WHY decisions were made, not just WHAT the code does
+- Update all affected imports and references
 
 **Implementation Approach:**
 - Start by outlining the complete solution architecture
-- When modifying existing code, replace it entirely - don't create parallel implementations
+- Consider impact on all three apps (api, web, club-admin)
 - Run linters after EVERY file creation/modification
 - If a linter fails, fix it immediately before proceeding
-- Write meaningful tests for business logic, skip trivial tests for main() or simple wiring
-- Benchmark critical paths
+- Write meaningful tests for business logic
+- Ensure database migrations are included if needed
 
 **Procrastination Patterns (FORBIDDEN):**
-- "I'll fix the linter warnings at the end" → NO, fix immediately
+- "I'll fix the TypeScript errors at the end" → NO, fix immediately
 - "Let me get it working first" → NO, write clean code from the start
 - "This is good enough for now" → NO, do it right the first time
 - "The tests can come later" → NO, test as you go
-- "I'll refactor in a follow-up" → NO, implement the final design now
-
-**Specific Antipatterns to Avoid:**
-- Do NOT create elaborate error type hierarchies
-- Do NOT use reflection unless absolutely necessary
-- Do NOT keep old implementations alongside new ones
-- Do NOT create "transition" or "compatibility" code
-- Do NOT stop at "mostly working" - the code must be production-ready
-- Do NOT accept any linter warnings as "acceptable" - fix them all
-- Do NOT use time.Sleep() for synchronization - use channels instead
-- Do NOT poll with loops - use channel selects for event-driven code
+- "I'll handle the other apps later" → NO, consider all affected apps
 
 **Completion Checklist (ALL must be ✅):**
 - [ ] Research phase completed with codebase understanding
 - [ ] Plan reviewed and approach validated  
-- [ ] ALL linters pass with ZERO warnings
-- [ ] ALL tests pass (including race detection where applicable)
-- [ ] Feature works end-to-end in realistic scenarios
+- [ ] ALL TypeScript checks pass (`pnpm typecheck`)
+- [ ] ALL ESLint checks pass (`pnpm lint`)
+- [ ] ALL Python linting passes (ruff, black, mypy)
+- [ ] ALL tests pass (pytest + coverage requirements)
+- [ ] Build succeeds (`pnpm build`)
+- [ ] Feature works end-to-end in all affected apps
+- [ ] Database migrations created if needed
 - [ ] Old/replaced code is DELETED
-- [ ] Documentation/comments are complete
-- [ ] Reality checkpoints were performed regularly
 - [ ] NO TODOs, FIXMEs, or "temporary" code remains
 
-**STARTING NOW** with research phase to understand the codebase...
+**STARTING NOW** with research phase to understand the PadelGo codebase...
 
-(Remember: The hooks will verify everything. No excuses. No shortcuts.)
+(Remember: Quality checks will verify everything. No excuses. No shortcuts.)
