@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { UserNav } from "../auth/UserNav";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/admin", label: "Dashboard" },
   { href: "/courts", label: "Courts" },
   { href: "/bookings", label: "Bookings" },
   { href: "/tournaments", label: "Tournaments" },
@@ -60,7 +60,7 @@ export function DashboardSidebar() {
   return (
     <aside className="w-64 flex-shrink-0 border-r bg-gray-50 p-4 flex flex-col">
       <div className="mb-8">
-        <Link href="/dashboard" className="text-2xl font-bold">
+        <Link href="/admin" className="text-2xl font-bold">
           Club Admin
         </Link>
       </div>
