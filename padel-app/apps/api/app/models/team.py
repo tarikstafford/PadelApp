@@ -24,7 +24,10 @@ class Team(Base):
         "TeamStats", back_populates="team", uselist=False, cascade="all, delete-orphan"
     )
 
-    # Team game history
+    # Team game history  
     game_history = relationship(
-        "TeamGameHistory", back_populates="team", cascade="all, delete-orphan"
+        "TeamGameHistory", 
+        foreign_keys="[TeamGameHistory.team_id]",
+        back_populates="team", 
+        cascade="all, delete-orphan"
     )
