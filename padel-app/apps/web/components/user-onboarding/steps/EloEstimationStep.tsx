@@ -6,6 +6,7 @@ import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
 import { useUserOnboarding } from '../UserOnboardingProvider';
 import { getEloSkillLevel, getEloExplanation } from '../utils/eloEstimation';
+import { EloRatingWithBadge } from '@/components/shared/EloBadge';
 import { Trophy, TrendingUp, Users, Calendar, Target, Info } from 'lucide-react';
 
 export function EloEstimationStep() {
@@ -46,13 +47,15 @@ export function EloEstimationStep() {
           </div>
           
           <div className="space-y-4">
-            <div className="text-6xl font-bold text-primary">
-              {estimatedElo.toFixed(1)}
-            </div>
+            <EloRatingWithBadge 
+              eloRating={estimatedElo} 
+              size="lg" 
+              className="justify-center text-primary" 
+            />
             
             <Badge 
               variant="secondary" 
-              className={`text-lg px-4 py-2 bg-${skillLevel.color}-100 text-${skillLevel.color}-800 border-${skillLevel.color}-200`}
+              className="text-lg px-4 py-2"
             >
               Level {skillLevel.level} - {skillLevel.title}
             </Badge>

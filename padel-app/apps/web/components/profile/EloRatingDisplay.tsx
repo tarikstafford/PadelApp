@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from "@workspace/ui/components/dialog";
 import { InfoIcon } from "lucide-react";
+import { EloRatingWithBadge, ELO_CATEGORIES } from "@/components/shared/EloBadge";
 
 interface EloRatingDisplayProps {
   eloRating: number;
@@ -21,7 +22,7 @@ export const EloRatingDisplay = ({ eloRating }: EloRatingDisplayProps) => {
   return (
     <>
       <div className="flex items-center space-x-2">
-        <span className="text-lg font-semibold">{eloRating.toFixed(1)}</span>
+        <EloRatingWithBadge eloRating={eloRating} size="md" />
         <Button variant="ghost" size="sm" onClick={() => setShowEloInfo(true)}>
           <InfoIcon className="h-4 w-4" />
         </Button>
@@ -30,28 +31,28 @@ export const EloRatingDisplay = ({ eloRating }: EloRatingDisplayProps) => {
       <Dialog open={showEloInfo} onOpenChange={setShowEloInfo}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Padel Skill Levels</DialogTitle>
+            <DialogTitle>Padel ELO Rating Categories</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2">
-            <p>
-              <strong>Level 1:</strong> Beginner – just learning fundamentals.
-            </p>
-            <p>
-              <strong>Level 2:</strong> Lower intermediate – developing
-              consistency and positioning.
-            </p>
-            <p>
-              <strong>Level 3–4:</strong> Intermediate – tactical play and
-              stronger shots.
-            </p>
-            <p>
-              <strong>Level 4–5:</strong> Advanced – high control, strategy,
-              experience.
-            </p>
-            <p>
-              <strong>Level 6–7:</strong> Professional – national/international
-              competitor.
-            </p>
+          <div className="space-y-4">
+            {ELO_CATEGORIES.map((category) => (
+              <div key={category.name} className="flex items-center gap-3">
+                <div className={`w-12 h-12 ${category.bgColor} ${category.borderColor} border-2 rounded-lg flex items-center justify-center`}>
+                  <span className="text-xl">{category.icon}</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{category.name}</span>
+                    <span className="text-sm text-muted-foreground">({category.range})</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {category.name === 'Bronze' && 'Beginners learning fundamentals and basic techniques'}
+                    {category.name === 'Silver' && 'Developing consistency, positioning, and game awareness'}
+                    {category.name === 'Gold' && 'Advanced tactical play, strong shots, and strategy'}
+                    {category.name === 'Platinum' && 'Elite players with professional-level skills'}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
           <DialogFooter>
             <Button onClick={() => setShowEloInfo(false)}>Close</Button>

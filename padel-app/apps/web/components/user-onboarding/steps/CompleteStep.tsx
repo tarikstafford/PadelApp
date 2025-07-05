@@ -19,6 +19,7 @@ import {
   Gift
 } from 'lucide-react';
 import { getEloSkillLevel } from '../utils/eloEstimation';
+import { EloRatingWithBadge } from '@/components/shared/EloBadge';
 
 export function CompleteStep() {
   const { userData } = useUserOnboarding();
@@ -137,14 +138,7 @@ export function CompleteStep() {
                 </div>
                 <div>
                   <p className="font-medium">Estimated ELO Rating</p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-primary">
-                      {userData.estimatedElo.toFixed(1)}
-                    </span>
-                    <Badge variant="outline">
-                      {skillLevel.title}
-                    </Badge>
-                  </div>
+                  <EloRatingWithBadge eloRating={userData.estimatedElo} size="sm" />
                   {userData.estimatedElo > 1.0 && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Adjustment request submitted
