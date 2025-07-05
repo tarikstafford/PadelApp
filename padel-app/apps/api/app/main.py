@@ -22,6 +22,8 @@ from app.routers import (
 )
 from app.routers.tournaments import router as tournaments_router
 from app.routers.business import router as business_router
+from app.routers.game_scores import router as game_scores_router
+from app.routers.notifications import router as notifications_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -89,6 +91,8 @@ app.include_router(
 )
 app.include_router(tournaments_router, prefix=f"{settings.API_V1_STR}")
 app.include_router(business_router, prefix=f"{settings.API_V1_STR}")
+app.include_router(game_scores_router, prefix=f"{settings.API_V1_STR}", tags=["Game Scores"])
+app.include_router(notifications_router, prefix=f"{settings.API_V1_STR}/notifications", tags=["Notifications"])
 
 
 @app.on_event("startup")

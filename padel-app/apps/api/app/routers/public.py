@@ -19,6 +19,9 @@ async def read_public_games(
     target_date: Optional[date] = Query(
         None, description="Filter public games by a specific date (YYYY-MM-DD)"
     ),
+    future_only: bool = Query(
+        True, description="Only show games in the future (default: true)"
+    ),
 ):
     """
     Retrieve a list of public games that have available slots.
@@ -28,7 +31,7 @@ async def read_public_games(
             f"Fetching public games: skip={skip}, limit={limit}, target_date={target_date}"
         )
         public_games = crud.game_crud.get_public_games(
-            db=db, skip=skip, limit=limit, target_date=target_date
+            db=db, skip=skip, limit=limit, target_date=target_date, future_only=future_only
         )
         logging.info(f"Successfully fetched {len(public_games)} public games")
         return public_games

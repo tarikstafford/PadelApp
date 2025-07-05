@@ -1,6 +1,8 @@
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from datetime import date
+from typing import Optional
 
 from app import crud, models, schemas
 from app.core import security
@@ -17,6 +19,28 @@ from app.services.elo_rating_service import elo_rating_service
 from app.services.game_expiration_service import game_expiration_service
 
 router = APIRouter()
+
+
+@router.get("/public", response_model=list[schemas.Game])
+async def read_public_games_list(
+    db: Session = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+    target_date: Optional[date] = Query(
+        None, description="Filter public games by a specific date (YYYY-MM-DD)"
+    ),
+    future_only: bool = Query(
+        True, description="Only show games in the future (default: true)"
+    ),
+):
+    """
+    Retrieve a list of public games that have available slots.
+    By default, only shows future games unless future_only=false.
+    """
+    public_games = crud.game_crud.get_public_games(
+        db=db, skip=skip, limit=limit, target_date=target_date, future_only=future_only
+    )
+    return public_games
 
 
 @router.post("", response_model=schemas.Game, status_code=status.HTTP_201_CREATED)

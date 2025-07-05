@@ -155,21 +155,18 @@ export default function TeamsPage() {
                     </div>
 
                     <div className="pt-4 space-y-2">
+                      <Link href={`/teams/${team.id}`} className="w-full">
+                        <Button className="w-full" variant="default">
+                          <Users className="h-4 w-4 mr-2" />
+                          View Team Details
+                        </Button>
+                      </Link>
                       <Link href="/tournaments" className="w-full">
                         <Button className="w-full" variant="outline">
                           <Trophy className="h-4 w-4 mr-2" />
                           Browse Tournaments
                         </Button>
                       </Link>
-                      {/* Future: Add team management button */}
-                      {/*
-                      <Link href={`/teams/${team.id}/manage`} className="w-full">
-                        <Button className="w-full" variant="ghost">
-                          <Users className="h-4 w-4 mr-2" />
-                          Manage Team
-                        </Button>
-                      </Link>
-                      */}
                     </div>
                   </div>
                 </CardContent>

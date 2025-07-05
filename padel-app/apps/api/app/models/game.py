@@ -84,6 +84,11 @@ class Game(Base):
     players = relationship(
         "GamePlayer", back_populates="game", cascade="all, delete-orphan"
     )
+    
+    # Relationship to GameScore model (score submissions and confirmations)
+    scores = relationship(
+        "GameScore", back_populates="game", cascade="all, delete-orphan"
+    )
 
     def is_expired(self) -> bool:
         """Check if the game is expired (past end time)"""

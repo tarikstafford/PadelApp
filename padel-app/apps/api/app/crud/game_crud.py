@@ -75,10 +75,12 @@ class GameCRUD:
         skip: int = 0,
         limit: int = 100,
         target_date: Optional[date] = None,
+        future_only: bool = True,
     ) -> list[GameModel]:
         """
         Retrieve a list of public games with available slots, optionally
-        filtered by date. Eager loads necessary relationships for GameResponse.
+        filtered by date. By default only shows future games.
+        Eager loads necessary relationships for GameResponse.
         """
         subquery = (
             db.query(
@@ -108,6 +110,10 @@ class GameCRUD:
                 BookingModel.start_time >= start_datetime,
                 BookingModel.start_time <= end_datetime,
             )
+        
+        # Filter for future games only (default behavior)
+        if future_only:
+            query = query.filter(BookingModel.start_time > datetime.utcnow())
 
         return (
             query.order_by(BookingModel.start_time)

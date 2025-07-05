@@ -65,6 +65,7 @@ function PublicGamesPageInternal() {
       if (selectedDate) {
         params.append('target_date', format(selectedDate, 'yyyy-MM-dd'));
       }
+      params.append('future_only', 'true');
       const response = await fetch(`${API_BASE_URL}/api/v1/games/public?${params.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Failed to fetch public games" }));

@@ -145,3 +145,17 @@ async def get_current_active_user(
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+
+async def get_current_admin_user(
+    current_user: UserModel = Depends(get_current_active_user),
+) -> UserModel:
+    """Dependency to ensure current user has admin privileges"""
+    from app.models.user_role import UserRole
+    
+    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions. Admin access required."
+        )
+    return current_user

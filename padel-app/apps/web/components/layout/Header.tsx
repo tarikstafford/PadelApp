@@ -16,6 +16,7 @@ import {
   Button,
 } from '@workspace/ui/components';
 import { Loader2 } from 'lucide-react';
+import { NotificationCenter } from '@/components/notifications/notification-center';
 
 export default function Header() {
   const { user, logout, isLoading } = useAuth();
@@ -52,7 +53,9 @@ export default function Header() {
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : user ? (
-                <DropdownMenu>
+                <>
+                  <NotificationCenter />
+                  <DropdownMenu>
                   <DropdownMenuTrigger>
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user.profile_picture_url || ''} alt={user.full_name || 'User'} />
@@ -65,6 +68,9 @@ export default function Header() {
                     <Link href="/profile" passHref>
                       <DropdownMenuItem>Profile</DropdownMenuItem>
                     </Link>
+                    <Link href="/profile/notifications" passHref>
+                      <DropdownMenuItem>Notification Settings</DropdownMenuItem>
+                    </Link>
                     <DropdownMenuItem disabled>Settings</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout}>
@@ -72,6 +78,7 @@ export default function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </>
               ) : (
                 <>
                   <Link href="/auth/login" passHref>

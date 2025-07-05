@@ -37,6 +37,11 @@ from app.models.revenue_record import RevenueRecord
 from app.models.club_daily_analytics import ClubDailyAnalytics
 from app.models.club_membership import ClubMembership
 
+# Import new game score and notification models
+from app.models.game_score import GameScore, ScoreConfirmation, ScoreStatus, ConfirmationAction
+from app.models.notification import Notification, NotificationPreference, NotificationType, NotificationPriority
+from app.models.team_stats import TeamStats, TeamGameHistory
+
 # Optional: Define __all__ to control `from app.models import *` behavior
 __all__ = [
     "CATEGORY_ELO_RANGES",
@@ -47,18 +52,28 @@ __all__ = [
     "ClubAdmin",
     "ClubDailyAnalytics",
     "ClubMembership",
+    "ConfirmationAction",
     "Court",
     "EloAdjustmentRequest",
     "EloAdjustmentRequestStatus",
     "Game",
     "GamePlayer",
     "GamePlayerStatus",
+    "GameScore",
     "GameType",
     "MatchStatus",
+    "Notification",
+    "NotificationPreference",
+    "NotificationPriority",
+    "NotificationType",
     "PaymentTransaction",
     "PreferredPosition",
     "RevenueRecord",
+    "ScoreConfirmation",
+    "ScoreStatus",
     "Team",
+    "TeamGameHistory",
+    "TeamStats",
     "Tournament",
     "TournamentCategory",
     "TournamentCategoryConfig",
