@@ -32,4 +32,7 @@ class GamePlayer(Base):
     user = relationship("User", back_populates="games")
 
     def __repr__(self):
-        return f"<GamePlayer(game_id={self.game_id}, user_id={self.user_id}, status='{self.status.value}')>"
+        return (
+            f"<GamePlayer(game_id={self.game_id}, user_id={self.user_id}, "
+            f"status='{self.status.value}')>"
+        )

@@ -7,11 +7,9 @@ import { Input } from '@workspace/ui/components/input';
 import { Label } from '@workspace/ui/components/label';
 import { Checkbox } from '@workspace/ui/components/checkbox';
 import { RadioGroup, RadioGroupItem } from '@workspace/ui/components/radio-group';
-import { Separator } from '@workspace/ui/components/separator';
 import { useUserOnboarding } from '../UserOnboardingProvider';
 import { ExperienceAssessment, PlayingFrequency, SkillLevel } from '../types';
-import { HelpCircle, Trophy, Calendar, Users, Target } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { HelpCircle, Trophy, Calendar, Target } from 'lucide-react';
 
 const SPORT_OPTIONS = [
   'Tennis',

@@ -5,6 +5,8 @@ from app.database import Base
 from app.models.booking import Booking, BookingStatus
 from app.models.club import Club
 from app.models.club_admin import ClubAdmin
+from app.models.club_daily_analytics import ClubDailyAnalytics
+from app.models.club_membership import ClubMembership
 from app.models.court import Court
 from app.models.elo_adjustment_request import (
     EloAdjustmentRequest,
@@ -12,7 +14,26 @@ from app.models.elo_adjustment_request import (
 )
 from app.models.game import Game, GameType
 from app.models.game_player import GamePlayer, GamePlayerStatus
+
+# Import new game score and notification models
+from app.models.game_score import (
+    ConfirmationAction,
+    GameScore,
+    ScoreConfirmation,
+    ScoreStatus,
+)
+from app.models.notification import (
+    Notification,
+    NotificationPreference,
+    NotificationPriority,
+    NotificationType,
+)
+
+# Import new financial and analytics models
+from app.models.payment_transaction import PaymentTransaction
+from app.models.revenue_record import RevenueRecord
 from app.models.team import Team, team_players
+from app.models.team_stats import TeamGameHistory, TeamStats
 from app.models.tournament import (
     CATEGORY_ELO_RANGES,
     MatchStatus,
@@ -30,17 +51,6 @@ from app.models.tournament import (
 # Import all model classes and enums to make them easily accessible
 from app.models.user import PreferredPosition, User
 from app.models.user_role import UserRole
-
-# Import new financial and analytics models
-from app.models.payment_transaction import PaymentTransaction
-from app.models.revenue_record import RevenueRecord
-from app.models.club_daily_analytics import ClubDailyAnalytics
-from app.models.club_membership import ClubMembership
-
-# Import new game score and notification models
-from app.models.game_score import GameScore, ScoreConfirmation, ScoreStatus, ConfirmationAction
-from app.models.notification import Notification, NotificationPreference, NotificationType, NotificationPriority
-from app.models.team_stats import TeamStats, TeamGameHistory
 
 # Optional: Define __all__ to control `from app.models import *` behavior
 __all__ = [

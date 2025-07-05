@@ -39,7 +39,7 @@ export default function EloSystemSection() {
             Fair Play with ELO Rating System
           </h2>
           <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl mt-4">
-            Our advanced ELO rating system ensures you're matched with players of similar skill levels. Compete fairly and track your improvement over time.
+            Our advanced ELO rating system ensures you&apos;re matched with players of similar skill levels. Compete fairly and track your improvement over time.
           </p>
         </div>
         

@@ -1,8 +1,8 @@
+from datetime import date
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-from datetime import date
-from typing import Optional
 
 from app import crud, models, schemas
 from app.core import security
@@ -37,10 +37,9 @@ async def read_public_games_list(
     Retrieve a list of public games that have available slots.
     By default, only shows future games unless future_only=false.
     """
-    public_games = crud.game_crud.get_public_games(
+    return crud.game_crud.get_public_games(
         db=db, skip=skip, limit=limit, target_date=target_date, future_only=future_only
     )
-    return public_games
 
 
 @router.post("", response_model=schemas.Game, status_code=status.HTTP_201_CREATED)

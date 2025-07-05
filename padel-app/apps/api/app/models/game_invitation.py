@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
@@ -43,7 +43,7 @@ class GameInvitation(Base):
             game_id=game_id,
             token=cls.generate_token(),
             created_by=created_by,
-            expires_at=datetime.utcnow() + timedelta(hours=expires_in_hours),
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=expires_in_hours),
             max_uses=max_uses,
         )
 
@@ -52,7 +52,7 @@ class GameInvitation(Base):
         if not self.is_active:
             return False
 
-        if datetime.utcnow() > self.expires_at:
+        if datetime.now(timezone.utc) > self.expires_at:
             return False
 
         return not (self.max_uses is not None and self.current_uses >= self.max_uses)
@@ -62,4 +62,7 @@ class GameInvitation(Base):
         self.current_uses += 1
 
     def __repr__(self):
-        return f"<GameInvitation(id={self.id}, game_id={self.game_id}, token={self.token[:8]}...)>"
+        return (
+            f"<GameInvitation(id={self.id}, game_id={self.game_id}, "
+            f"token={self.token[:8]}...)>"
+        )

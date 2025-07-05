@@ -20,7 +20,9 @@ class PaymentTransaction(Base):
     amount = Column(Numeric(10, 2), nullable=False)
     currency = Column(String(3), nullable=False, server_default="EUR")
     payment_method = Column(String(50), nullable=True)
-    payment_status = Column(String(20), nullable=False)  # pending, completed, failed, refunded
+    payment_status = Column(
+        String(20), nullable=False
+    )  # pending, completed, failed, refunded
     payment_gateway = Column(String(50), nullable=True)
     gateway_transaction_id = Column(String(255), nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())

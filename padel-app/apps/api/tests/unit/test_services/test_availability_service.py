@@ -37,7 +37,9 @@ class TestAvailabilityService:
 
         # Mock booking
         self.mock_booking = Mock()
-        self.mock_booking.start_time = datetime.datetime(2024, 1, 15, 10, 0)
+        self.mock_booking.start_time = datetime.datetime(
+            2024, 1, 15, 10, 0, tzinfo=timezone.utc
+        )
 
     @patch("app.services.availability_service.crud.court_crud.get_court")
     @patch(
@@ -138,7 +140,7 @@ class TestAvailabilityService:
     ):
         """Test that past time slots are marked as unavailable"""
         # Setup - current time is 11:00 AM
-        mock_now = datetime.datetime(2024, 1, 15, 11, 0)
+        mock_now = datetime.datetime(2024, 1, 15, 11, 0, tzinfo=timezone.utc)
         mock_datetime.datetime.now.return_value = mock_now
         mock_datetime.datetime.combine = datetime.datetime.combine
 
@@ -172,7 +174,9 @@ class TestAvailabilityService:
         """Test that booked time slots are marked as unavailable"""
         # Setup - booking at 10:30 AM
         mock_booking_1030 = Mock()
-        mock_booking_1030.start_time = datetime.datetime(2024, 1, 15, 10, 30)
+        mock_booking_1030.start_time = datetime.datetime(
+            2024, 1, 15, 10, 30, tzinfo=timezone.utc
+        )
 
         mock_get_court.return_value = self.mock_court
         mock_get_bookings.return_value = [mock_booking_1030]
@@ -293,7 +297,9 @@ class TestAvailabilityService:
         end_date = datetime.date(2024, 1, 15)  # Single day
 
         mock_booking = Mock()
-        mock_booking.start_time = datetime.datetime(2024, 1, 15, 9, 0)
+        mock_booking.start_time = datetime.datetime(
+            2024, 1, 15, 9, 0, tzinfo=datetime.timezone.utc
+        )
 
         mock_get_court.return_value = self.mock_court
         mock_get_bookings.return_value = [mock_booking]

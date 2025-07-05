@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
@@ -11,12 +11,10 @@ import {
   ArrowLeft, 
   Users, 
   Trophy, 
-  TrendingUp, 
-  TrendingDown, 
+ 
   Calendar,
   UserPlus,
   UserMinus,
-  MoreVertical,
   Settings,
   BarChart3,
   Target,
@@ -24,7 +22,6 @@ import {
   Crown
 } from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api';
 import { format } from 'date-fns';
@@ -102,7 +99,6 @@ interface TeamDetail {
 
 function TeamDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const { accessToken } = useAuth();
   const [team, setTeam] = useState<TeamDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,7 +106,7 @@ function TeamDetailPage() {
 
   const teamId = params.teamId as string;
 
-  const fetchTeamDetail = async () => {
+  const fetchTeamDetail = useCallback(async () => {
     if (!accessToken || !teamId) return;
 
     setIsLoading(true);
@@ -118,17 +114,17 @@ function TeamDetailPage() {
       // Note: This endpoint would need to be created in the backend
       const response = await apiClient.get<TeamDetail>(`/teams/${teamId}`, undefined, accessToken);
       setTeam(response);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching team details:', error);
-      setError(error.response?.data?.detail || 'Failed to load team details');
+      setError((error as any).response?.data?.detail || 'Failed to load team details');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [teamId, accessToken]);
 
   useEffect(() => {
     fetchTeamDetail();
-  }, [teamId, accessToken]);
+  }, [fetchTeamDetail]);
 
   if (isLoading) {
     return (
@@ -424,7 +420,7 @@ function TeamDetailPage() {
               Recent Games
             </CardTitle>
             <CardDescription>
-              Your team's recent game history and performance
+              Your team&apos;s recent game history and performance
             </CardDescription>
           </CardHeader>
           <CardContent>

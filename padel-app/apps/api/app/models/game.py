@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import (
     Boolean,
@@ -77,14 +77,13 @@ class Game(Base):
     team2 = relationship("Team", foreign_keys=[team2_id])
     winning_team = relationship("Team", foreign_keys=[winning_team_id])
 
-    # Relationship to User model (creator of the game - can be derived from booking.user_id or be explicit here)
-    # creator = relationship("User", back_populates="created_games") # Add to User model later
+    # Relationship to User model (creator can be derived from booking.user_id)
 
     # Relationship to GamePlayer model (players participating in the game)
     players = relationship(
         "GamePlayer", back_populates="game", cascade="all, delete-orphan"
     )
-    
+
     # Relationship to GameScore model (score submissions and confirmations)
     scores = relationship(
         "GameScore", back_populates="game", cascade="all, delete-orphan"
@@ -92,15 +91,18 @@ class Game(Base):
 
     def is_expired(self) -> bool:
         """Check if the game is expired (past end time)"""
-        return datetime.utcnow() > self.end_time
+        return datetime.now(timezone.utc) > self.end_time
 
     def can_leave_game(self) -> bool:
-        """Check if players can still leave the game (more than 24 hours before start)"""
-        return datetime.utcnow() < (self.start_time - timedelta(hours=24))
+        """Check if players can leave (more than 24 hours before start)"""
+        return datetime.now(timezone.utc) < (self.start_time - timedelta(hours=24))
 
     def should_auto_expire(self) -> bool:
         """Check if game should be automatically expired"""
         return self.is_expired() and self.game_status == GameStatus.SCHEDULED
 
     def __repr__(self):
-        return f"<Game(id={self.id}, booking_id={self.booking_id}, type='{self.game_type}', status='{self.game_status}')>"
+        return (
+            f"<Game(id={self.id}, booking_id={self.booking_id}, "
+            f"type='{self.game_type}', status='{self.game_status}')>"
+        )

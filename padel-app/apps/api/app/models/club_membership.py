@@ -24,7 +24,9 @@ class ClubMembership(Base):
     id = Column(Integer, primary_key=True, index=True)
     club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    membership_type = Column(String(50), nullable=False)  # monthly, yearly, premium, etc.
+    membership_type = Column(
+        String(50), nullable=False
+    )  # monthly, yearly, premium, etc.
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=True)
     monthly_fee = Column(Numeric(10, 2), nullable=True)

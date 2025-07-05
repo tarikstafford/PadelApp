@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Switch } from '@workspace/ui/components/switch';
 import { Label } from '@workspace/ui/components/label';
-import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Separator } from '@workspace/ui/components/separator';
 import { toast } from 'sonner';
@@ -35,7 +34,7 @@ export function NotificationPreferences() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const fetchPreferences = async () => {
+  const fetchPreferences = useCallback(async () => {
     if (!accessToken) return;
     
     setIsLoading(true);
@@ -48,7 +47,7 @@ export function NotificationPreferences() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [accessToken]);
 
   const updatePreferences = async (updates: Partial<NotificationPreferences>) => {
     if (!accessToken || !preferences) return;
@@ -87,7 +86,7 @@ export function NotificationPreferences() {
 
   useEffect(() => {
     fetchPreferences();
-  }, [accessToken]);
+  }, [fetchPreferences]);
 
   if (isLoading || !preferences) {
     return (

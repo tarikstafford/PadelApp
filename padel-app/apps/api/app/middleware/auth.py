@@ -24,7 +24,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                             request.state.user = user
                         finally:
                             db.close()
-            except Exception:
+            except Exception:  # noqa: S110
                 # This middleware should not block requests, just attach user.
                 # The authorization middleware will handle blocking.
                 pass

@@ -18,9 +18,13 @@ class Team(Base):
     name = Column(String, index=True)
 
     players = relationship("User", secondary=team_players, back_populates="teams")
-    
+
     # Team statistics relationship
-    stats = relationship("TeamStats", back_populates="team", uselist=False, cascade="all, delete-orphan")
-    
+    stats = relationship(
+        "TeamStats", back_populates="team", uselist=False, cascade="all, delete-orphan"
+    )
+
     # Team game history
-    game_history = relationship("TeamGameHistory", back_populates="team", cascade="all, delete-orphan")
+    game_history = relationship(
+        "TeamGameHistory", back_populates="team", cascade="all, delete-orphan"
+    )

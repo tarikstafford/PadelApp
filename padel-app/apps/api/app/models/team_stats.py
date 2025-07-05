@@ -16,7 +16,9 @@ class TeamStats(Base):
     __tablename__ = "team_stats"
 
     id = Column(Integer, primary_key=True, index=True)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False, unique=True, index=True)
+    team_id = Column(
+        Integer, ForeignKey("teams.id"), nullable=False, unique=True, index=True
+    )
 
     # Game statistics
     games_played = Column(Integer, default=0, nullable=False)
@@ -46,7 +48,9 @@ class TeamStats(Base):
 
     # Last activity
     last_game_date = Column(DateTime, nullable=True)
-    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    last_updated = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
@@ -85,7 +89,9 @@ class TeamStats(Base):
             return 0.0
         return (self.tournaments_won / self.tournaments_participated) * 100
 
-    def update_after_game(self, won: bool, points_scored: int, points_conceded: int, game_date: datetime):
+    def update_after_game(
+        self, won: bool, points_scored: int, points_conceded: int, game_date: datetime
+    ):
         """Update stats after a game"""
         self.games_played += 1
         self.total_points_scored += points_scored
@@ -96,12 +102,16 @@ class TeamStats(Base):
             self.games_won += 1
             self.current_win_streak += 1
             self.current_loss_streak = 0
-            self.longest_win_streak = max(self.longest_win_streak, self.current_win_streak)
+            self.longest_win_streak = max(
+                self.longest_win_streak, self.current_win_streak
+            )
         else:
             self.games_lost += 1
             self.current_loss_streak += 1
             self.current_win_streak = 0
-            self.longest_loss_streak = max(self.longest_loss_streak, self.current_loss_streak)
+            self.longest_loss_streak = max(
+                self.longest_loss_streak, self.current_loss_streak
+            )
 
     def update_elo(self, new_average_elo: float):
         """Update ELO statistics"""
@@ -139,7 +149,9 @@ class TeamGameHistory(Base):
 
     # Game context
     game_date = Column(DateTime, nullable=False)
-    is_tournament_game = Column(Integer, default=0, nullable=False)  # 1 if tournament, 0 if regular
+    is_tournament_game = Column(
+        Integer, default=0, nullable=False
+    )  # 1 if tournament, 0 if regular
     tournament_id = Column(Integer, ForeignKey("tournaments.id"), nullable=True)
 
     # Timestamps

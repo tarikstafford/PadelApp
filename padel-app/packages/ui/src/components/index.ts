@@ -20,4 +20,6 @@ export * from "./alert-dialog";
 export * from "./dropdown-menu";
 export * from "./avatar";
 export * from "./pagination";
-export * from "./skeleton"; 
+export * from "./scroll-area";
+export * from "./skeleton";
+export * from "./switch"; 

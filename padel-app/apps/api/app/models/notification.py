@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     JSON,
@@ -63,7 +63,9 @@ class Notification(Base):
 
     # Action link/route for frontend navigation
     action_url = Column(String(500), nullable=True)
-    action_text = Column(String(100), nullable=True)  # "View Game", "Confirm Score", etc.
+    action_text = Column(
+        String(100), nullable=True
+    )  # "View Game", "Confirm Score", etc.
 
     # Status tracking
     read = Column(Boolean, default=False, nullable=False)
@@ -79,13 +81,13 @@ class Notification(Base):
     def mark_as_read(self):
         """Mark notification as read"""
         self.read = True
-        self.read_at = datetime.utcnow()
+        self.read_at = datetime.now(timezone.utc)
 
     def is_expired(self) -> bool:
         """Check if notification has expired"""
         if self.expires_at is None:
             return False
-        return datetime.utcnow() > self.expires_at
+        return datetime.now(timezone.utc) > self.expires_at
 
     def __repr__(self):
         return f"<Notification(id={self.id}, user_id={self.user_id}, type='{self.type}', read={self.read})>"
@@ -95,7 +97,9 @@ class NotificationPreference(Base):
     __tablename__ = "notification_preferences"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id"), nullable=False, unique=True, index=True
+    )
 
     # Notification type preferences (enable/disable specific types)
     game_starting_enabled = Column(Boolean, default=True, nullable=False)
@@ -108,7 +112,9 @@ class NotificationPreference(Base):
     general_notifications_enabled = Column(Boolean, default=True, nullable=False)
 
     # Timing preferences
-    game_reminder_minutes = Column(Integer, default=30, nullable=False)  # Remind X minutes before game
+    game_reminder_minutes = Column(
+        Integer, default=30, nullable=False
+    )  # Remind X minutes before game
 
     # Delivery preferences (for future email/SMS integration)
     email_notifications_enabled = Column(Boolean, default=False, nullable=False)
@@ -116,7 +122,9 @@ class NotificationPreference(Base):
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
     # Relationships
     user = relationship("User", back_populates="notification_preferences")

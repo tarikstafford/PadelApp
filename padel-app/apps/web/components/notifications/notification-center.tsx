@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Bell, BellOff, X, Check, Trash2, Settings } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Bell, BellOff, X, Check, Trash2 } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@workspace/ui/component
 import { ScrollArea } from '@workspace/ui/components/scroll-area';
 import { Separator } from '@workspace/ui/components/separator';
 import { toast } from 'sonner';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api';
 
@@ -19,7 +19,7 @@ interface Notification {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   title: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   action_url?: string;
   action_text?: string;
   read: boolean;
@@ -63,7 +63,7 @@ export function NotificationCenter() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
-  const fetchNotifications = async (reset: boolean = false) => {
+  const fetchNotifications = useCallback(async (reset: boolean = false) => {
     if (!accessToken) return;
     
     setIsLoading(true);
@@ -92,9 +92,9 @@ export function NotificationCenter() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [accessToken, page]);
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     if (!accessToken) return;
     
     try {
@@ -103,13 +103,13 @@ export function NotificationCenter() {
     } catch (error) {
       console.error('Error fetching unread count:', error);
     }
-  };
+  }, [accessToken]);
 
   const markAsRead = async (notificationId: number) => {
     if (!accessToken) return;
     
     try {
-      await apiClient.post(`/notifications/${notificationId}/mark-read`, {}, accessToken);
+      await apiClient.post(`/notifications/${notificationId}/mark-read`, {}, { token: accessToken });
       setNotifications(prev => 
         prev.map(n => n.id === notificationId ? { ...n, read: true, read_at: new Date().toISOString() } : n)
       );
@@ -124,7 +124,7 @@ export function NotificationCenter() {
     if (!accessToken) return;
     
     try {
-      await apiClient.post('/notifications/mark-all-read', {}, accessToken);
+      await apiClient.post('/notifications/mark-all-read', {}, { token: accessToken });
       setNotifications(prev => 
         prev.map(n => ({ ...n, read: true, read_at: new Date().toISOString() }))
       );
@@ -167,7 +167,7 @@ export function NotificationCenter() {
     if (isOpen && accessToken) {
       fetchNotifications(true);
     }
-  }, [isOpen, accessToken]);
+  }, [isOpen, accessToken, fetchNotifications]);
 
   useEffect(() => {
     if (accessToken) {
@@ -176,11 +176,11 @@ export function NotificationCenter() {
       const interval = setInterval(fetchUnreadCount, 30000);
       return () => clearInterval(interval);
     }
-  }, [accessToken]);
+  }, [accessToken, fetchUnreadCount]);
 
   const NotificationItem = ({ notification }: { notification: Notification }) => {
-    const typeInfo = NOTIFICATION_TYPES[notification.type] || NOTIFICATION_TYPES.GENERAL;
-    const priorityColor = PRIORITY_COLORS[notification.priority] || PRIORITY_COLORS.MEDIUM;
+    const typeInfo = NOTIFICATION_TYPES[notification.type] || NOTIFICATION_TYPES.GENERAL!;
+    const priorityColor = PRIORITY_COLORS[notification.priority] || PRIORITY_COLORS.MEDIUM!
     
     return (
       <Card 

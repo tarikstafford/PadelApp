@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -21,7 +20,9 @@ async def get_user_notifications(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_active_user),
     skip: int = Query(0, ge=0, description="Number of notifications to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Number of notifications to return"),
+    limit: int = Query(
+        50, ge=1, le=100, description="Number of notifications to return"
+    ),
     include_read: bool = Query(True, description="Include read notifications"),
 ):
     """Get notifications for the current user"""
@@ -31,7 +32,7 @@ async def get_user_notifications(
         user_id=current_user.id,
         skip=skip,
         limit=limit,
-        include_read=include_read
+        include_read=include_read,
     )
 
     unread_count = notification_service.get_unread_count(db, current_user.id)
@@ -39,7 +40,7 @@ async def get_user_notifications(
     return NotificationListResponse(
         notifications=notifications,
         total_unread=unread_count,
-        has_more=len(notifications) == limit
+        has_more=len(notifications) == limit,
     )
 
 
@@ -52,9 +53,7 @@ async def get_unread_notification_count(
 
     unread_count = notification_service.get_unread_count(db, current_user.id)
 
-    return {
-        "unread_count": unread_count
-    }
+    return {"unread_count": unread_count}
 
 
 @router.post("/{notification_id}/mark-read")
@@ -66,15 +65,12 @@ async def mark_notification_read(
     """Mark a specific notification as read"""
 
     success = notification_service.mark_notification_read(
-        db=db,
-        notification_id=notification_id,
-        user_id=current_user.id
+        db=db, notification_id=notification_id, user_id=current_user.id
     )
 
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
         )
 
     return {"message": "Notification marked as read"}
@@ -89,9 +85,7 @@ async def mark_all_notifications_read(
 
     count = notification_service.mark_all_notifications_read(db, current_user.id)
 
-    return {
-        "message": f"Marked {count} notifications as read"
-    }
+    return {"message": f"Marked {count} notifications as read"}
 
 
 @router.get("/preferences", response_model=NotificationPreferencesResponse)
@@ -158,16 +152,14 @@ async def delete_notification(
     notification = (
         db.query(Notification)
         .filter(
-            Notification.id == notification_id,
-            Notification.user_id == current_user.id
+            Notification.id == notification_id, Notification.user_id == current_user.id
         )
         .first()
     )
 
     if not notification:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
         )
 
     db.delete(notification)
@@ -185,6 +177,4 @@ async def cleanup_expired_notifications(
 
     count = notification_service.cleanup_expired_notifications(db)
 
-    return {
-        "message": f"Cleaned up {count} expired notifications"
-    }
+    return {"message": f"Cleaned up {count} expired notifications"}

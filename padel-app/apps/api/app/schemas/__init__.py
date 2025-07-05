@@ -30,16 +30,16 @@ from app.schemas.elo_adjustment_request_schemas import (
     EloAdjustmentRequest,
     EloAdjustmentRequestCreate,
 )
+from app.schemas.game_invitation_schemas import (
+    GameInvitationCreate,
+    GameInvitationInfo,
+    GameInvitationResponse,
+)
 from app.schemas.game_player_schemas import (
     GamePlayer,
     GamePlayerCreate,
     GamePlayerStatus,
     GamePlayerUpdate,
-)
-from app.schemas.game_invitation_schemas import (
-    GameInvitationCreate,
-    GameInvitationInfo,
-    GameInvitationResponse,
 )
 from app.schemas.game_schemas import (
     Game,
@@ -121,7 +121,7 @@ __all__ = [
     "GameCreate",
     # Game Invitations
     "GameInvitationCreate",
-    "GameInvitationInfo", 
+    "GameInvitationInfo",
     "GameInvitationResponse",
     # GamePlayer
     "GamePlayer",

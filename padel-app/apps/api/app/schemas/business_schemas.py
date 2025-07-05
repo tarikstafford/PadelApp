@@ -8,12 +8,14 @@ from pydantic import BaseModel, Field
 
 class DateRange(BaseModel):
     """Date range for filtering analytics."""
+
     start_date: date
     end_date: date
 
 
 class RevenueMetrics(BaseModel):
     """Revenue metrics response."""
+
     total_revenue: Decimal = Field(..., description="Total revenue for the period")
     booking_revenue: Decimal = Field(..., description="Revenue from bookings")
     tournament_revenue: Decimal = Field(..., description="Revenue from tournaments")
@@ -28,6 +30,7 @@ class RevenueMetrics(BaseModel):
 
 class BookingAnalytics(BaseModel):
     """Booking analytics response."""
+
     total_bookings: int = Field(..., description="Total number of bookings")
     confirmed_bookings: int = Field(..., description="Number of confirmed bookings")
     cancelled_bookings: int = Field(..., description="Number of cancelled bookings")
@@ -41,6 +44,7 @@ class BookingAnalytics(BaseModel):
 
 class TournamentMetrics(BaseModel):
     """Tournament metrics response."""
+
     active_tournaments: int = Field(..., description="Number of active tournaments")
     completed_tournaments: int = Field(
         ..., description="Number of completed tournaments"
@@ -54,6 +58,7 @@ class TournamentMetrics(BaseModel):
 
 class BusinessMetrics(BaseModel):
     """Comprehensive business metrics response."""
+
     revenue: RevenueMetrics
     bookings: BookingAnalytics
     tournaments: TournamentMetrics
@@ -62,6 +67,7 @@ class BusinessMetrics(BaseModel):
 
 class UpcomingBooking(BaseModel):
     """Upcoming booking details."""
+
     id: int
     court_name: str
     court_id: int
@@ -78,6 +84,7 @@ class UpcomingBooking(BaseModel):
 
 class TournamentSummary(BaseModel):
     """Tournament summary for dashboard."""
+
     id: int
     name: str
     status: str
@@ -93,6 +100,7 @@ class TournamentSummary(BaseModel):
 
 class ClubOverview(BaseModel):
     """Multi-club overview metrics."""
+
     club_id: int
     club_name: str
     today_bookings: int
@@ -103,6 +111,7 @@ class ClubOverview(BaseModel):
 
 class MultiClubMetrics(BaseModel):
     """Aggregated metrics across multiple clubs."""
+
     clubs: list[ClubOverview]
     total_revenue: Decimal
     total_bookings: int
@@ -112,6 +121,7 @@ class MultiClubMetrics(BaseModel):
 
 class DailyAnalytics(BaseModel):
     """Daily analytics data point."""
+
     date: date
     total_bookings: int
     total_revenue: Decimal
@@ -124,6 +134,7 @@ class DailyAnalytics(BaseModel):
 
 class RevenueChart(BaseModel):
     """Revenue chart data."""
+
     dates: list[date]
     daily_revenue: list[Decimal]
     booking_revenue: list[Decimal]
@@ -132,6 +143,7 @@ class RevenueChart(BaseModel):
 
 class PaymentTransactionCreate(BaseModel):
     """Create payment transaction schema."""
+
     booking_id: Optional[int] = None
     tournament_id: Optional[int] = None
     user_id: int
@@ -147,6 +159,7 @@ class PaymentTransactionCreate(BaseModel):
 
 class PaymentTransactionResponse(BaseModel):
     """Payment transaction response schema."""
+
     id: int
     booking_id: Optional[int]
     tournament_id: Optional[int]

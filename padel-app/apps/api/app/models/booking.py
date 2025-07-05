@@ -41,12 +41,9 @@ class Booking(Base):
 
     # Relationship to Game model (one-to-one with Booking)
     game = relationship(
-        "Game",
-        uselist=False,
-        back_populates="booking",
-        cascade="all, delete-orphan"
+        "Game", uselist=False, back_populates="booking", cascade="all, delete-orphan"
     )
-    
+
     # Financial relationships
     payment_transactions = relationship(
         "PaymentTransaction", back_populates="booking", cascade="all, delete-orphan"

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,7 @@ class GameExpirationService:
             db.query(Game)
             .filter(
                 Game.game_status == GameStatus.SCHEDULED,
-                Game.end_time < datetime.utcnow(),
+                Game.end_time < datetime.now(timezone.utc),
             )
             .all()
         )

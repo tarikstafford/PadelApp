@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from app.models.game_score import ScoreStatus, ConfirmationAction
+from app.models.game_score import ConfirmationAction, ScoreStatus
 
 
 # Base schemas
@@ -73,10 +73,10 @@ class GameScore(GameScoreBase):
     confirmed_at: Optional[datetime] = None
     admin_resolved: bool = False
     admin_notes: Optional[str] = None
-    
+
     # Related data
     submitted_by: Optional[UserBasic] = None
-    confirmations: List[ScoreConfirmation] = []
+    confirmations: list[ScoreConfirmation] = []
 
     class Config:
         from_attributes = True
@@ -120,7 +120,7 @@ class ScoreConfirmationResponse(BaseModel):
 
 
 class GameScoreListResponse(BaseModel):
-    scores: List[GameScore]
+    scores: list[GameScore]
     total_count: int
     latest_score: Optional[GameScore] = None
 

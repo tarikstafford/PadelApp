@@ -1,6 +1,6 @@
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -25,7 +25,7 @@ class NotificationService:
         title: str,
         message: str,
         priority: NotificationPriority = NotificationPriority.MEDIUM,
-        data: Optional[Dict] = None,
+        data: Optional[dict] = None,
         action_url: Optional[str] = None,
         action_text: Optional[str] = None,
         expires_in_hours: Optional[int] = None,
@@ -35,12 +35,14 @@ class NotificationService:
         # Check user's notification preferences
         preferences = self._get_user_preferences(db, user_id)
         if not self._should_send_notification(notification_type, preferences):
-            self.logger.info(f"Notification type {notification_type} disabled for user {user_id}")
+            self.logger.info(
+                f"Notification type {notification_type} disabled for user {user_id}"
+            )
             return None
 
         expires_at = None
         if expires_in_hours:
-            expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours)
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=expires_in_hours)
 
         notification = Notification(
             user_id=user_id,
@@ -58,10 +60,14 @@ class NotificationService:
         db.commit()
         db.refresh(notification)
 
-        self.logger.info(f"Created notification {notification.id} for user {user_id}: {title}")
+        self.logger.info(
+            f"Created notification {notification.id} for user {user_id}: {title}"
+        )
         return notification
 
-    def send_game_starting_notifications(self, db: Session, game_id: int) -> List[Notification]:
+    def send_game_starting_notifications(
+        self, db: Session, game_id: int
+    ) -> list[Notification]:
         """Send notifications to all game participants that the game is starting"""
         game = crud.game_crud.get_game(db, game_id)
         if not game:
@@ -69,7 +75,11 @@ class NotificationService:
             return []
 
         notifications = []
-        club_name = game.booking.court.club.name if game.booking and game.booking.court and game.booking.court.club else "Unknown Club"
+        club_name = (
+            game.booking.court.club.name
+            if game.booking and game.booking.court and game.booking.court.club
+            else "Unknown Club"
+        )
 
         for game_player in game.players:
             if game_player.status.value == "ACCEPTED":  # Only notify accepted players
@@ -94,7 +104,9 @@ class NotificationService:
 
         return notifications
 
-    def send_game_ended_notifications(self, db: Session, game_id: int) -> List[Notification]:
+    def send_game_ended_notifications(
+        self, db: Session, game_id: int
+    ) -> list[Notification]:
         """Send notifications to all game participants that the game has ended"""
         game = crud.game_crud.get_game(db, game_id)
         if not game:
@@ -102,7 +114,11 @@ class NotificationService:
             return []
 
         notifications = []
-        club_name = game.booking.court.club.name if game.booking and game.booking.court and game.booking.court.club else "Unknown Club"
+        club_name = (
+            game.booking.court.club.name
+            if game.booking and game.booking.court and game.booking.court.club
+            else "Unknown Club"
+        )
 
         for game_player in game.players:
             if game_player.status.value == "ACCEPTED":
@@ -129,7 +145,7 @@ class NotificationService:
 
     def send_score_submitted_notifications(
         self, db: Session, game_id: int, score_id: int, submitting_team: int
-    ) -> List[Notification]:
+    ) -> list[Notification]:
         """Send notifications to opposing team that a score was submitted"""
         game = crud.game_crud.get_game(db, game_id)
         if not game:
@@ -165,7 +181,9 @@ class NotificationService:
 
         return notifications
 
-    def send_score_confirmed_notifications(self, db: Session, game_id: int) -> List[Notification]:
+    def send_score_confirmed_notifications(
+        self, db: Session, game_id: int
+    ) -> list[Notification]:
         """Send notifications to all players that the score has been confirmed"""
         game = crud.game_crud.get_game(db, game_id)
         if not game:
@@ -227,7 +245,9 @@ class NotificationService:
             expires_in_hours=72,
         )
 
-    def mark_notification_read(self, db: Session, notification_id: int, user_id: int) -> bool:
+    def mark_notification_read(
+        self, db: Session, notification_id: int, user_id: int
+    ) -> bool:
         """Mark a notification as read"""
         notification = (
             db.query(Notification)
@@ -246,7 +266,7 @@ class NotificationService:
         """Mark all notifications as read for a user"""
         unread_notifications = (
             db.query(Notification)
-            .filter(Notification.user_id == user_id, Notification.read == False)
+            .filter(Notification.user_id == user_id, not Notification.read)
             .all()
         )
 
@@ -264,19 +284,19 @@ class NotificationService:
         user_id: int,
         skip: int = 0,
         limit: int = 50,
-        include_read: bool = True
-    ) -> List[Notification]:
+        include_read: bool = True,
+    ) -> list[Notification]:
         """Get notifications for a user"""
         query = db.query(Notification).filter(Notification.user_id == user_id)
 
         if not include_read:
-            query = query.filter(Notification.read == False)
+            query = query.filter(not Notification.read)
 
         # Filter out expired notifications
         query = query.filter(
             db.or_(
                 Notification.expires_at.is_(None),
-                Notification.expires_at > datetime.utcnow()
+                Notification.expires_at > datetime.now(timezone.utc),
             )
         )
 
@@ -293,16 +313,18 @@ class NotificationService:
             db.query(Notification)
             .filter(
                 Notification.user_id == user_id,
-                Notification.read == False,
+                not Notification.read,
                 db.or_(
                     Notification.expires_at.is_(None),
-                    Notification.expires_at > datetime.utcnow()
-                )
+                    Notification.expires_at > datetime.now(timezone.utc),
+                ),
             )
             .count()
         )
 
-    def _get_user_preferences(self, db: Session, user_id: int) -> NotificationPreference:
+    def _get_user_preferences(
+        self, db: Session, user_id: int
+    ) -> NotificationPreference:
         """Get user's notification preferences, creating default if none exist"""
         preferences = (
             db.query(NotificationPreference)
@@ -344,7 +366,7 @@ class NotificationService:
             db.query(Notification)
             .filter(
                 Notification.expires_at.isnot(None),
-                Notification.expires_at <= datetime.utcnow()
+                Notification.expires_at <= datetime.now(timezone.utc),
             )
             .all()
         )

@@ -1,4 +1,4 @@
-import { ExperienceAssessment, SkillLevel, PlayingFrequency } from '../types';
+import { ExperienceAssessment, PlayingFrequency } from '../types';
 
 interface EloFactors {
   baseExperience: number;

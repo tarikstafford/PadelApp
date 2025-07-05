@@ -63,7 +63,9 @@ class GameScore(Base):
     # Relationships
     game = relationship("Game", back_populates="scores")
     submitted_by = relationship("User", foreign_keys=[submitted_by_user_id])
-    confirmations = relationship("ScoreConfirmation", back_populates="game_score", cascade="all, delete-orphan")
+    confirmations = relationship(
+        "ScoreConfirmation", back_populates="game_score", cascade="all, delete-orphan"
+    )
 
     def get_winning_team(self) -> int:
         """Get winning team number (1 or 2) based on final or current score"""
@@ -88,7 +90,9 @@ class ScoreConfirmation(Base):
     __tablename__ = "score_confirmations"
 
     id = Column(Integer, primary_key=True, index=True)
-    game_score_id = Column(Integer, ForeignKey("game_scores.id"), nullable=False, index=True)
+    game_score_id = Column(
+        Integer, ForeignKey("game_scores.id"), nullable=False, index=True
+    )
 
     # Confirmation details
     confirming_team = Column(Integer, nullable=False)  # 1 for team1, 2 for team2

@@ -29,7 +29,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
-import { apiClient } from "@/lib/api";
 import { Game, GamePlayer } from "@/lib/types";
 
 const MAX_PLAYERS_PER_GAME = 4; // Define the constant here

@@ -31,7 +31,11 @@ async def read_public_games(
             f"Fetching public games: skip={skip}, limit={limit}, target_date={target_date}"
         )
         public_games = crud.game_crud.get_public_games(
-            db=db, skip=skip, limit=limit, target_date=target_date, future_only=future_only
+            db=db,
+            skip=skip,
+            limit=limit,
+            target_date=target_date,
+            future_only=future_only,
         )
         logging.info(f"Successfully fetched {len(public_games)} public games")
         return public_games

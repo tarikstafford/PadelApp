@@ -9,7 +9,7 @@ import { Upload, Camera, User, Sparkles, ArrowRight, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils';
 
 export function WelcomeStep() {
-  const { userData, setProfilePicture, nextStep, skipStep } = useUserOnboarding();
+  const { setProfilePicture, nextStep, skipStep } = useUserOnboarding();
   const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -113,6 +113,7 @@ export function WelcomeStep() {
             {previewUrl ? (
               <div className="space-y-4">
                 <div className="relative w-24 h-24 mx-auto">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={previewUrl}
                     alt="Profile preview"

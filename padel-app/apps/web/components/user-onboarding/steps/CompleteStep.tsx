@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
-import { Badge } from '@workspace/ui/components/badge';
 import { useUserOnboarding } from '../UserOnboardingProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -18,7 +17,6 @@ import {
   ArrowRight,
   Gift
 } from 'lucide-react';
-import { getEloSkillLevel } from '../utils/eloEstimation';
 import { EloRatingWithBadge } from '@/components/shared/EloBadge';
 
 export function CompleteStep() {
@@ -28,7 +26,6 @@ export function CompleteStep() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [animationStep, setAnimationStep] = useState(0);
 
-  const skillLevel = getEloSkillLevel(userData.estimatedElo);
 
   useEffect(() => {
     // Trigger confetti animation

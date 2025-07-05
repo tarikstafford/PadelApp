@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
-from app.models.notification import NotificationType, NotificationPriority
+from app.models.notification import NotificationPriority, NotificationType
 
 
 # Base schemas
@@ -12,7 +12,7 @@ class NotificationBase(BaseModel):
     priority: NotificationPriority
     title: str
     message: str
-    data: Optional[Dict[str, Any]] = None
+    data: Optional[dict[str, Any]] = None
     action_url: Optional[str] = None
     action_text: Optional[str] = None
 
@@ -76,14 +76,14 @@ class NotificationPreferencesResponse(NotificationPreferencesBase):
 
 
 class NotificationListResponse(BaseModel):
-    notifications: List[NotificationResponse]
+    notifications: list[NotificationResponse]
     total_unread: int
     has_more: bool
 
 
 # Request schemas
 class MarkReadRequest(BaseModel):
-    notification_ids: List[int]
+    notification_ids: list[int]
 
 
 class NotificationTestRequest(BaseModel):

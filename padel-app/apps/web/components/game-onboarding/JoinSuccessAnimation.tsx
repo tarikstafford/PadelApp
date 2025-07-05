@@ -101,7 +101,7 @@ export function JoinSuccessAnimation() {
               animationStep >= 2 ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
             }`}
           >
-            You're In!
+            You&apos;re In!
           </CardTitle>
           
           <p
@@ -147,7 +147,7 @@ export function JoinSuccessAnimation() {
 
           {/* Next Steps */}
           <div className="space-y-3">
-            <h4 className="font-medium text-sm">What's Next?</h4>
+            <h4 className="font-medium text-sm">What&apos;s Next?</h4>
             
             <div className="space-y-2">
               <Button

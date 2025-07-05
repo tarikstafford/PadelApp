@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@workspace/ui/components/radio-group
 import { Label } from '@workspace/ui/components/label';
 import { useUserOnboarding } from '../UserOnboardingProvider';
 import { PreferredPosition } from '../types';
-import { Target, Shield, Sword, Users, Info } from 'lucide-react';
+import { Target, Shield, Sword, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const POSITION_INFO = {

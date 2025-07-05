@@ -55,13 +55,14 @@ const initialState: UserOnboardingState = {
 
 function onboardingReducer(state: UserOnboardingState, action: OnboardingAction): UserOnboardingState {
   switch (action.type) {
-    case 'SET_CURRENT_STEP':
+    case 'SET_CURRENT_STEP': {
       const stepConfig = ONBOARDING_STEPS.find(s => s.id === action.payload);
       return {
         ...state,
         currentStep: action.payload,
         isOptional: stepConfig?.isOptional || false
       };
+    }
     case 'ADD_COMPLETED_STEP':
       if (!state.completedSteps.includes(action.payload)) {
         return {

@@ -60,7 +60,7 @@ class User(Base):
     elo_adjustment_requests = relationship(
         "EloAdjustmentRequest", back_populates="user"
     )
-    
+
     # Financial relationships
     payment_transactions = relationship(
         "PaymentTransaction", back_populates="user", cascade="all, delete-orphan"
@@ -68,13 +68,16 @@ class User(Base):
     club_memberships = relationship(
         "ClubMembership", back_populates="user", cascade="all, delete-orphan"
     )
-    
+
     # Notification relationships
     notifications = relationship(
         "Notification", back_populates="user", cascade="all, delete-orphan"
     )
     notification_preferences = relationship(
-        "NotificationPreference", back_populates="user", uselist=False, cascade="all, delete-orphan"
+        "NotificationPreference",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self):

@@ -92,7 +92,9 @@ def get_court_availability(
             db=db, court_id=court_id, target_date=date, duration=duration
         )
     except Exception as e:
-        logging.exception(f"Error fetching availability for court {court_id} on {date}: {e}")
+        logging.exception(
+            f"Error fetching availability for court {court_id} on {date}: {e}"
+        )
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while calculating court availability.",

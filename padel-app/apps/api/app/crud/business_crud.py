@@ -37,18 +37,13 @@ class BusinessCRUD:
     ) -> RevenueMetrics:
         """Get revenue metrics for a club within a date range."""
         # Current period revenue
-        current_revenue = (
-            db.query(func.sum(RevenueRecord.amount))
-            .filter(
-                and_(
-                    RevenueRecord.club_id == club_id,
-                    RevenueRecord.date >= date_range.start_date,
-                    RevenueRecord.date <= date_range.end_date,
-                )
+        current_revenue = db.query(func.sum(RevenueRecord.amount)).filter(
+            and_(
+                RevenueRecord.club_id == club_id,
+                RevenueRecord.date >= date_range.start_date,
+                RevenueRecord.date <= date_range.end_date,
             )
-            .scalar()
-            or Decimal("0")
-        )
+        ).scalar() or Decimal("0")
 
         # Revenue by type
         revenue_by_type = (
@@ -74,18 +69,13 @@ class BusinessCRUD:
         prev_start = date_range.start_date - timedelta(days=period_days)
         prev_end = date_range.start_date - timedelta(days=1)
 
-        previous_revenue = (
-            db.query(func.sum(RevenueRecord.amount))
-            .filter(
-                and_(
-                    RevenueRecord.club_id == club_id,
-                    RevenueRecord.date >= prev_start,
-                    RevenueRecord.date <= prev_end,
-                )
+        previous_revenue = db.query(func.sum(RevenueRecord.amount)).filter(
+            and_(
+                RevenueRecord.club_id == club_id,
+                RevenueRecord.date >= prev_start,
+                RevenueRecord.date <= prev_end,
             )
-            .scalar()
-            or Decimal("0")
-        )
+        ).scalar() or Decimal("0")
 
         # Calculate growth rate
         growth_rate = None
@@ -115,8 +105,10 @@ class BusinessCRUD:
             .filter(
                 and_(
                     Court.club_id == club_id,
-                    Booking.start_time >= datetime.combine(date_range.start_date, datetime.min.time()),
-                    Booking.start_time <= datetime.combine(date_range.end_date, datetime.max.time()),
+                    Booking.start_time
+                    >= datetime.combine(date_range.start_date, datetime.min.time()),
+                    Booking.start_time
+                    <= datetime.combine(date_range.end_date, datetime.max.time()),
                 )
             )
         )
@@ -132,15 +124,13 @@ class BusinessCRUD:
             .all()
         )
 
-        status_dict = {status: count for status, count in booking_counts}
+        status_dict = dict(booking_counts)
         confirmed_bookings = status_dict.get(BookingStatus.CONFIRMED, 0)
         cancelled_bookings = status_dict.get(BookingStatus.CANCELLED, 0)
 
         # Unique players
         unique_players = (
-            bookings_query.with_entities(Booking.user_id)
-            .distinct()
-            .count()
+            bookings_query.with_entities(Booking.user_id).distinct().count()
         )
 
         # Average duration and peak hour
@@ -152,7 +142,9 @@ class BusinessCRUD:
             (booking.end_time - booking.start_time).total_seconds() / 3600
             for booking in completed_bookings
         )
-        avg_duration = total_duration / len(completed_bookings) if completed_bookings else 0
+        avg_duration = (
+            total_duration / len(completed_bookings) if completed_bookings else 0
+        )
 
         # Peak hour calculation
         hours = [booking.start_time.hour for booking in completed_bookings]
@@ -160,12 +152,16 @@ class BusinessCRUD:
 
         # Court utilization calculation
         club_courts = db.query(Court).filter(Court.club_id == club_id).all()
-        total_court_hours = len(club_courts) * 24 * (date_range.end_date - date_range.start_date).days
+        total_court_hours = (
+            len(club_courts) * 24 * (date_range.end_date - date_range.start_date).days
+        )
         utilized_hours = sum(
             (booking.end_time - booking.start_time).total_seconds() / 3600
             for booking in completed_bookings
         )
-        utilization_rate = (utilized_hours / total_court_hours * 100) if total_court_hours > 0 else 0
+        utilization_rate = (
+            (utilized_hours / total_court_hours * 100) if total_court_hours > 0 else 0
+        )
 
         return BookingAnalytics(
             total_bookings=total_bookings,
@@ -185,17 +181,20 @@ class BusinessCRUD:
         tournaments_query = db.query(Tournament).filter(
             and_(
                 Tournament.club_id == club_id,
-                Tournament.start_date >= datetime.combine(date_range.start_date, datetime.min.time()),
-                Tournament.start_date <= datetime.combine(date_range.end_date, datetime.max.time()),
+                Tournament.start_date
+                >= datetime.combine(date_range.start_date, datetime.min.time()),
+                Tournament.start_date
+                <= datetime.combine(date_range.end_date, datetime.max.time()),
             )
         )
 
-        total_tournaments = tournaments_query.count()
         active_tournaments = tournaments_query.filter(
-            Tournament.status.in_([
-                TournamentStatus.REGISTRATION_OPEN,
-                TournamentStatus.IN_PROGRESS,
-            ])
+            Tournament.status.in_(
+                [
+                    TournamentStatus.REGISTRATION_OPEN,
+                    TournamentStatus.IN_PROGRESS,
+                ]
+            )
         ).count()
 
         completed_tournaments = tournaments_query.filter(
@@ -203,19 +202,14 @@ class BusinessCRUD:
         ).count()
 
         # Tournament revenue
-        tournament_revenue = (
-            db.query(func.sum(RevenueRecord.amount))
-            .filter(
-                and_(
-                    RevenueRecord.club_id == club_id,
-                    RevenueRecord.revenue_type == "tournament",
-                    RevenueRecord.date >= date_range.start_date,
-                    RevenueRecord.date <= date_range.end_date,
-                )
+        tournament_revenue = db.query(func.sum(RevenueRecord.amount)).filter(
+            and_(
+                RevenueRecord.club_id == club_id,
+                RevenueRecord.revenue_type == "tournament",
+                RevenueRecord.date >= date_range.start_date,
+                RevenueRecord.date <= date_range.end_date,
             )
-            .scalar()
-            or Decimal("0")
-        )
+        ).scalar() or Decimal("0")
 
         # Total participants (this would need tournament teams implementation)
         total_participants = 0
@@ -262,7 +256,9 @@ class BusinessCRUD:
                     Court.club_id == club_id,
                     Booking.start_time >= start_date,
                     Booking.start_time <= end_date,
-                    Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+                    Booking.status.in_(
+                        [BookingStatus.CONFIRMED, BookingStatus.PENDING]
+                    ),
                 )
             )
             .order_by(Booking.start_time)
@@ -277,10 +273,12 @@ class BusinessCRUD:
             .filter(
                 and_(
                     Tournament.club_id == club_id,
-                    Tournament.status.in_([
-                        TournamentStatus.REGISTRATION_OPEN,
-                        TournamentStatus.IN_PROGRESS,
-                    ]),
+                    Tournament.status.in_(
+                        [
+                            TournamentStatus.REGISTRATION_OPEN,
+                            TournamentStatus.IN_PROGRESS,
+                        ]
+                    ),
                 )
             )
             .order_by(Tournament.start_date)

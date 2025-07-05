@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import Optional
 
 from sqlalchemy.orm import Session, joinedload
 
@@ -45,7 +45,7 @@ class GameScoreCRUD:
             .first()
         )
 
-    def get_game_scores_by_game(self, db: Session, game_id: int) -> List[GameScore]:
+    def get_game_scores_by_game(self, db: Session, game_id: int) -> list[GameScore]:
         """Get all score submissions for a game"""
         return (
             db.query(GameScore)
@@ -94,11 +94,7 @@ class GameScoreCRUD:
         return confirmation
 
     def confirm_score(
-        self,
-        db: Session,
-        score_id: int,
-        confirming_team: int,
-        confirming_user_id: int
+        self, db: Session, score_id: int, confirming_team: int, confirming_user_id: int
     ) -> Optional[GameScore]:
         """Confirm a score submission"""
         game_score = self.get_game_score(db, score_id)
@@ -140,7 +136,7 @@ class GameScoreCRUD:
         )
 
         # Count unique teams that have confirmed
-        confirmed_teams = set(conf.confirming_team for conf in confirmations)
+        confirmed_teams = {conf.confirming_team for conf in confirmations}
         confirmed_teams.add(confirming_team)  # Add the current confirmation
 
         if len(confirmed_teams) >= 2:
@@ -148,7 +144,7 @@ class GameScoreCRUD:
             game_score.status = ScoreStatus.CONFIRMED
             game_score.final_team1_score = game_score.team1_score
             game_score.final_team2_score = game_score.team2_score
-            game_score.confirmed_at = datetime.utcnow()
+            game_score.confirmed_at = datetime.now(timezone.utc)
 
             # Update the game's result
             self._update_game_result(db, game_score)
@@ -208,7 +204,7 @@ class GameScoreCRUD:
         game_score.status = ScoreStatus.RESOLVED
         game_score.final_team1_score = final_team1_score
         game_score.final_team2_score = final_team2_score
-        game_score.confirmed_at = datetime.utcnow()
+        game_score.confirmed_at = datetime.now(timezone.utc)
         game_score.admin_resolved = True
         game_score.admin_notes = admin_notes
 
@@ -219,14 +215,16 @@ class GameScoreCRUD:
         db.refresh(game_score)
         return game_score
 
-    def can_submit_score(self, db: Session, game_id: int, user_id: int) -> tuple[bool, str]:
+    def can_submit_score(
+        self, db: Session, game_id: int, user_id: int
+    ) -> tuple[bool, str]:
         """Check if a user can submit a score for a game"""
         game = db.query(Game).filter(Game.id == game_id).first()
         if not game:
             return False, "Game not found"
 
         # Check if game has ended
-        if datetime.utcnow() < game.end_time:
+        if datetime.now(timezone.utc) < game.end_time:
             return False, "Cannot submit score before game ends"
 
         # Check if user is part of the game
@@ -239,7 +237,10 @@ class GameScoreCRUD:
 
         # Check if score already confirmed
         latest_score = self.get_latest_game_score(db, game_id)
-        if latest_score and latest_score.status in [ScoreStatus.CONFIRMED, ScoreStatus.RESOLVED]:
+        if latest_score and latest_score.status in [
+            ScoreStatus.CONFIRMED,
+            ScoreStatus.RESOLVED,
+        ]:
             return False, "Score has already been confirmed for this game"
 
         return True, "Can submit score"
@@ -253,7 +254,10 @@ class GameScoreCRUD:
             return False, "Score not found"
 
         if game_score.status != ScoreStatus.PENDING:
-            return False, f"Score is not pending confirmation (status: {game_score.status})"
+            return (
+                False,
+                f"Score is not pending confirmation (status: {game_score.status})",
+            )
 
         # Check if user is part of the game
         game = game_score.game
@@ -270,7 +274,9 @@ class GameScoreCRUD:
 
         return True, "Can confirm score"
 
-    def get_user_team_for_game(self, db: Session, game_id: int, user_id: int) -> Optional[int]:
+    def get_user_team_for_game(
+        self, db: Session, game_id: int, user_id: int
+    ) -> Optional[int]:
         """Get which team (1 or 2) a user belongs to in a game"""
         game = db.query(Game).filter(Game.id == game_id).first()
         if not game:

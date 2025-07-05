@@ -98,7 +98,7 @@ const FEATURES = [
 ];
 
 export function FeatureIntroductionStep() {
-  const { nextStep, skipStep, completeOnboarding } = useUserOnboarding();
+  const { skipStep, completeOnboarding } = useUserOnboarding();
   const [activeFeature, setActiveFeature] = useState(0);
   const [viewedFeatures, setViewedFeatures] = useState<Set<number>>(new Set([0]));
 

@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Badge } from '@workspace/ui/components/badge';
-import { Button } from '@workspace/ui/components/button';
 import { 
   History, 
   CheckCircle, 
@@ -79,7 +78,7 @@ export function ScoreHistory({
   const [scoreHistory, setScoreHistory] = useState<ScoreHistoryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchScoreHistory = async () => {
+  const fetchScoreHistory = useCallback(async () => {
     if (!accessToken) return;
     
     setIsLoading(true);
@@ -90,20 +89,20 @@ export function ScoreHistory({
         accessToken
       );
       setScoreHistory(response);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching score history:', error);
       // Don't show error toast if user doesn't have permission (expected for non-participants)
-      if (error.response?.status !== 403) {
+      if ((error as any).response?.status !== 403) {
         toast.error('Failed to load score history');
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [gameId, accessToken]);
 
   useEffect(() => {
     fetchScoreHistory();
-  }, [gameId, accessToken]);
+  }, [fetchScoreHistory]);
 
   if (isLoading) {
     return (
@@ -288,7 +287,7 @@ export function ScoreHistory({
                               </div>
                               {confirmation.counter_notes && (
                                 <div className="text-sm text-muted-foreground">
-                                  "{confirmation.counter_notes}"
+                                  &quot;{confirmation.counter_notes}&quot;
                                 </div>
                               )}
                             </div>

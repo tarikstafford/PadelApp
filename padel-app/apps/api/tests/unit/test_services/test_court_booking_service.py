@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch
 
 import pytest
@@ -20,8 +20,8 @@ class TestCourtBookingService:
         self.service = CourtBookingService()
         self.mock_db = Mock(spec=Session)
         self.court_id = 1
-        self.start_time = datetime(2024, 1, 15, 10, 0)
-        self.end_time = datetime(2024, 1, 15, 11, 30)
+        self.start_time = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+        self.end_time = datetime(2024, 1, 15, 11, 30, tzinfo=timezone.utc)
 
         # Mock court with club
         self.mock_court = Mock()
@@ -302,12 +302,16 @@ class TestCourtBookingService:
     def test_get_tournament_blocked_times_success(self):
         """Test successful retrieval of tournament blocked times"""
         # Setup
-        start_date = datetime(2024, 1, 15)
-        end_date = datetime(2024, 1, 16)
+        start_date = datetime(2024, 1, 15, tzinfo=timezone.utc)
+        end_date = datetime(2024, 1, 16, tzinfo=timezone.utc)
 
         mock_tournament_booking = Mock()
-        mock_tournament_booking.start_time = datetime(2024, 1, 15, 10, 0)
-        mock_tournament_booking.end_time = datetime(2024, 1, 15, 12, 0)
+        mock_tournament_booking.start_time = datetime(
+            2024, 1, 15, 10, 0, tzinfo=timezone.utc
+        )
+        mock_tournament_booking.end_time = datetime(
+            2024, 1, 15, 12, 0, tzinfo=timezone.utc
+        )
         mock_tournament_booking.tournament_id = 1
         mock_tournament_booking.is_occupied = True
         mock_tournament_booking.match_id = 1
@@ -335,8 +339,8 @@ class TestCourtBookingService:
     def test_get_tournament_blocked_times_no_bookings(self):
         """Test tournament blocked times when no bookings exist"""
         # Setup
-        start_date = datetime(2024, 1, 15)
-        end_date = datetime(2024, 1, 16)
+        start_date = datetime(2024, 1, 15, tzinfo=timezone.utc)
+        end_date = datetime(2024, 1, 16, tzinfo=timezone.utc)
 
         self.mock_db.query.return_value.filter.return_value.all.return_value = []
 
@@ -470,15 +474,30 @@ class TestCourtBookingService:
         # Test exact boundary cases
         test_cases = [
             # Start time equals end time of existing booking - should not conflict
-            (datetime(2024, 1, 15, 11, 30), datetime(2024, 1, 15, 13, 0)),
+            (
+                datetime(2024, 1, 15, 11, 30, tzinfo=timezone.utc),
+                datetime(2024, 1, 15, 13, 0, tzinfo=timezone.utc),
+            ),
             # End time equals start time of existing booking - should not conflict
-            (datetime(2024, 1, 15, 8, 30), datetime(2024, 1, 15, 10, 0)),
+            (
+                datetime(2024, 1, 15, 8, 30, tzinfo=timezone.utc),
+                datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
+            ),
             # Overlapping start
-            (datetime(2024, 1, 15, 9, 30), datetime(2024, 1, 15, 12, 0)),
+            (
+                datetime(2024, 1, 15, 9, 30, tzinfo=timezone.utc),
+                datetime(2024, 1, 15, 12, 0, tzinfo=timezone.utc),
+            ),
             # Overlapping end
-            (datetime(2024, 1, 15, 9, 0), datetime(2024, 1, 15, 11, 0)),
+            (
+                datetime(2024, 1, 15, 9, 0, tzinfo=timezone.utc),
+                datetime(2024, 1, 15, 11, 0, tzinfo=timezone.utc),
+            ),
             # Complete overlap
-            (datetime(2024, 1, 15, 10, 30), datetime(2024, 1, 15, 11, 0)),
+            (
+                datetime(2024, 1, 15, 10, 30, tzinfo=timezone.utc),
+                datetime(2024, 1, 15, 11, 0, tzinfo=timezone.utc),
+            ),
         ]
 
         for start, end in test_cases:

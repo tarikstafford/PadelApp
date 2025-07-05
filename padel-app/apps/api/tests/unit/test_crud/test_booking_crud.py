@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from unittest.mock import Mock
 
 from sqlalchemy.orm import Session
@@ -86,7 +86,9 @@ class TestCreateBooking:
         mock_db = Mock(spec=Session)
 
         booking_data = BookingCreate(
-            court_id=1, start_time=datetime(2024, 1, 15, 10, 0), duration=60
+            court_id=1,
+            start_time=datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
+            duration=60,
         )
         user_id = 1
 
@@ -140,7 +142,7 @@ class TestCreateBooking:
     def test_create_booking_calculates_end_time(self):
         mock_db = Mock(spec=Session)
 
-        start_time = datetime(2024, 1, 15, 10, 0)
+        start_time = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
         duration = 90  # 1.5 hours
 
         booking_data = BookingCreate(
@@ -171,7 +173,7 @@ class TestCreateBooking:
         for duration, expected_delta in test_cases:
             mock_db.reset_mock()
 
-            start_time = datetime(2024, 1, 15, 10, 0)
+            start_time = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
             booking_data = BookingCreate(
                 court_id=1, start_time=start_time, duration=duration
             )
@@ -196,8 +198,8 @@ class TestGetBooking:
             id=booking_id,
             court_id=1,
             user_id=1,
-            start_time=datetime(2024, 1, 15, 10, 0),
-            end_time=datetime(2024, 1, 15, 11, 0),
+            start_time=datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
+            end_time=datetime(2024, 1, 15, 11, 0, tzinfo=timezone.utc),
         )
 
         mock_db.query.return_value.filter.return_value.options.return_value.first.return_value = (
@@ -455,7 +457,9 @@ class TestCreateBookingWithGame:
         mock_db = Mock(spec=Session)
 
         booking_data = BookingCreate(
-            court_id=1, start_time=datetime(2024, 1, 15, 10, 0), duration=60
+            court_id=1,
+            start_time=datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
+            duration=60,
         )
         user_id = 1
 
@@ -483,7 +487,9 @@ class TestCreateBookingWithGame:
         mock_db = Mock(spec=Session)
 
         booking_data = BookingCreate(
-            court_id=1, start_time=datetime(2024, 1, 15, 10, 0), duration=60
+            court_id=1,
+            start_time=datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
+            duration=60,
         )
         user_id = 1
 
@@ -505,7 +511,7 @@ class TestBookingCRUDEdgeCases:
 
         booking_data = BookingCreate(
             court_id=1,
-            start_time=datetime(2024, 1, 15, 10, 0),
+            start_time=datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
             duration=0,  # Edge case: zero duration
         )
         user_id = 1
@@ -558,7 +564,7 @@ class TestBookingCRUDEdgeCases:
         mock_db = Mock(spec=Session)
 
         # Create booking with past time
-        past_time = datetime(2020, 1, 15, 10, 0)
+        past_time = datetime(2020, 1, 15, 10, 0, tzinfo=timezone.utc)
         booking_data = BookingCreate(court_id=1, start_time=past_time, duration=60)
         user_id = 1
 
@@ -581,7 +587,9 @@ class TestBookingCRUDIntegration:
 
         # Create booking
         booking_data = BookingCreate(
-            court_id=1, start_time=datetime(2024, 1, 15, 10, 0), duration=60
+            court_id=1,
+            start_time=datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
+            duration=60,
         )
         user_id = 1
 
@@ -620,7 +628,9 @@ class TestBookingCRUDIntegration:
 
         # Create booking with game
         booking_data = BookingCreate(
-            court_id=1, start_time=datetime(2024, 1, 15, 10, 0), duration=60
+            court_id=1,
+            start_time=datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
+            duration=60,
         )
 
         booking_with_game = Booking(

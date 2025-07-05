@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
 import pytest
@@ -29,7 +29,7 @@ class TestTournamentService:
         tournament = Mock(spec=Tournament)
         tournament.id = 1
         tournament.tournament_type = TournamentType.SINGLE_ELIMINATION
-        tournament.start_date = datetime(2024, 1, 15, 9, 0)
+        tournament.start_date = datetime(2024, 1, 15, 9, 0, tzinfo=timezone.utc)
         return tournament
 
     @pytest.fixture
@@ -827,9 +827,7 @@ class TestFinalizeTournament:
             mock_query_result = mock_db.query.return_value.filter.return_value
             mock_query_result.first.return_value = mock_winning_team
 
-            result = tournament_service_instance.finalize_tournament(
-                mock_db, 1
-            )
+            result = tournament_service_instance.finalize_tournament(mock_db, 1)
 
             assert result is True
             mock_update_tournament.assert_called_once()
@@ -866,9 +864,7 @@ class TestFinalizeTournament:
                 "app.services.tournament_service.tournament_crud.award_trophy"
             ) as mock_award,
         ):
-            result = tournament_service_instance.finalize_tournament(
-                mock_db, 1
-            )
+            result = tournament_service_instance.finalize_tournament(mock_db, 1)
 
             assert result is True
             mock_update_tournament.assert_called_once()
@@ -927,9 +923,7 @@ class TestFinalizeTournament:
                 mock_winning_teams
             )
 
-            result = tournament_service_instance.finalize_tournament(
-                mock_db, 1
-            )
+            result = tournament_service_instance.finalize_tournament(mock_db, 1)
 
             assert result is True
             mock_update_tournament.assert_called_once()
@@ -948,6 +942,7 @@ class TestTournamentServiceSingleton:
         instance."""
         # Check that the service instance is a singleton
         from app.services.tournament_service import TournamentService
+
         assert isinstance(tournament_service, TournamentService)
 
 
@@ -1160,23 +1155,17 @@ class TestTournamentServiceIntegration:
                 "app.services.tournament_service.tournament_crud.get_tournament",
                 return_value=mock_tournament,
             ),
-            patch(
-                "app.services.tournament_service.tournament_crud.update_tournament"
-            ),
+            patch("app.services.tournament_service.tournament_crud.update_tournament"),
             patch(
                 "app.services.tournament_service.tournament_crud.get_tournament_matches",
                 return_value=[mock_final_match],
             ),
-            patch(
-                "app.services.tournament_service.tournament_crud.award_trophy"
-            ),
+            patch("app.services.tournament_service.tournament_crud.award_trophy"),
         ):
             mock_db.query.return_value.filter.return_value.first.return_value = (
                 mock_winning_team
             )
 
-            finalized = tournament_service_instance.finalize_tournament(
-                mock_db, 1
-            )
+            finalized = tournament_service_instance.finalize_tournament(mock_db, 1)
 
             assert finalized is True

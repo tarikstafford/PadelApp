@@ -214,7 +214,7 @@ class TestTokenRefresh:
             "app.core.security.create_access_token"
         ) as mock_access_token:
             # Mock token data
-            from app.schemas.token_schemas import TokenData
+            from app.schemas.token_schemas import TokenData  # noqa: PLC0415
 
             mock_token_data = TokenData(
                 sub="test@example.com", role="PLAYER", token_type="refresh"
@@ -260,7 +260,7 @@ class TestTokenRefresh:
     def test_refresh_token_wrong_type(self, client: TestClient):
         """Test refresh with access token instead of refresh token."""
         with patch("app.core.security.decode_token_payload") as mock_decode:
-            from app.schemas.token_schemas import TokenData
+            from app.schemas.token_schemas import TokenData  # noqa: PLC0415
 
             mock_token_data = TokenData(
                 sub="test@example.com", role="PLAYER", token_type="access"  # Wrong type
@@ -281,7 +281,7 @@ class TestTokenRefresh:
         with patch("app.core.security.decode_token_payload") as mock_decode, patch(
             "app.crud.user_crud.get_user_by_email", return_value=None
         ):
-            from app.schemas.token_schemas import TokenData
+            from app.schemas.token_schemas import TokenData  # noqa: PLC0415
 
             mock_token_data = TokenData(
                 sub="deleted@example.com", role="PLAYER", token_type="refresh"
@@ -302,7 +302,7 @@ class TestTokenRefresh:
         with patch("app.core.security.decode_token_payload") as mock_decode, patch(
             "app.crud.user_crud.get_user_by_email"
         ) as mock_get_user:
-            from app.schemas.token_schemas import TokenData
+            from app.schemas.token_schemas import TokenData  # noqa: PLC0415
 
             mock_token_data = TokenData(
                 sub="test@example.com", role="PLAYER", token_type="refresh"
@@ -477,7 +477,7 @@ class TestAuthIntegration:
             tokens = login_response.json()
 
             # Refresh phase
-            from app.schemas.token_schemas import TokenData
+            from app.schemas.token_schemas import TokenData  # noqa: PLC0415
 
             mock_token_data = TokenData(
                 sub="test@example.com", role="PLAYER", token_type="refresh"

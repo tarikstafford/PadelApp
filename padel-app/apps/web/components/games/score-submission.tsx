@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
@@ -11,13 +11,12 @@ import { Separator } from '@workspace/ui/components/separator';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { 
   Trophy, 
-  Users, 
+ 
   Clock, 
   AlertTriangle, 
   CheckCircle, 
   XCircle,
   Info,
-  MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -99,7 +98,7 @@ export function ScoreSubmission({
   const [counterTeam2Score, setCounterTeam2Score] = useState('');
   const [counterNotes, setCounterNotes] = useState('');
 
-  const fetchScoreStatus = async () => {
+  const fetchScoreStatus = useCallback(async () => {
     if (!accessToken) return;
     
     setIsLoading(true);
@@ -122,7 +121,7 @@ export function ScoreSubmission({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [gameId, accessToken]);
 
   const submitScore = async () => {
     if (!accessToken || !scoreStatus) return;
@@ -149,7 +148,7 @@ export function ScoreSubmission({
           team2_score: team2ScoreNum,
           submitted_by_team: scoreStatus.user_team,
         },
-        accessToken
+        { token: accessToken }
       );
       
       toast.success('Score submitted successfully! Waiting for confirmation from the opposing team.');
@@ -157,9 +156,9 @@ export function ScoreSubmission({
       setTeam2Score('');
       fetchScoreStatus();
       onScoreSubmitted?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error submitting score:', error);
-      const message = error.response?.data?.detail || 'Failed to submit score';
+      const message = (error as any).response?.data?.detail || 'Failed to submit score';
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -174,15 +173,15 @@ export function ScoreSubmission({
       await apiClient.post(
         `/games/${gameId}/scores/${scoreId}/confirm`,
         { action: 'CONFIRM' },
-        accessToken
+        { token: accessToken }
       );
       
       toast.success('Score confirmed!');
       fetchScoreStatus();
       onScoreSubmitted?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error confirming score:', error);
-      const message = error.response?.data?.detail || 'Failed to confirm score';
+      const message = (error as any).response?.data?.detail || 'Failed to confirm score';
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -215,7 +214,7 @@ export function ScoreSubmission({
           counter_team2_score: team2ScoreNum,
           counter_notes: counterNotes,
         },
-        accessToken
+        { token: accessToken }
       );
       
       toast.success('Score disputed! The original submitting team can now review your counter-proposal.');
@@ -225,9 +224,9 @@ export function ScoreSubmission({
       setCounterNotes('');
       fetchScoreStatus();
       onScoreSubmitted?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error countering score:', error);
-      const message = error.response?.data?.detail || 'Failed to dispute score';
+      const message = (error as any).response?.data?.detail || 'Failed to dispute score';
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -236,7 +235,7 @@ export function ScoreSubmission({
 
   useEffect(() => {
     fetchScoreStatus();
-  }, [gameId, accessToken]);
+  }, [fetchScoreStatus]);
 
   if (isLoading) {
     return (
@@ -275,7 +274,7 @@ export function ScoreSubmission({
     );
   }
 
-  const { latest_score, can_submit, can_confirm, message, user_team } = scoreStatus;
+  const { latest_score, can_submit, can_confirm, message } = scoreStatus;
 
   const getStatusIcon = (status: string) => {
     switch (status) {

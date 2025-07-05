@@ -4,10 +4,9 @@ from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_db, role_checker
 from app.core.security import get_current_active_user
 from app.crud.business_crud import BusinessCRUD
-from app.core.dependencies import role_checker
 from app.models import User, UserRole
 from app.schemas.business_schemas import (
     BusinessMetrics,
@@ -26,7 +25,9 @@ async def get_club_business_metrics(
     start_date: date = Query(..., description="Start date for metrics"),
     end_date: date = Query(..., description="End date for metrics"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(
+        role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])
+    ),
 ):
     """Get comprehensive business metrics for a club."""
     # TODO: Add club admin permission check
@@ -34,10 +35,11 @@ async def get_club_business_metrics(
     date_range = DateRange(start_date=start_date, end_date=end_date)
 
     try:
-        metrics = BusinessCRUD.get_business_metrics(db, club_id, date_range)
-        return metrics
+        return BusinessCRUD.get_business_metrics(db, club_id, date_range)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get business metrics: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get business metrics: {e!s}"
+        )
 
 
 @router.get("/club/{club_id}/upcoming-bookings", response_model=list[UpcomingBooking])
@@ -45,7 +47,9 @@ async def get_upcoming_bookings(
     club_id: int,
     days_ahead: int = Query(7, description="Number of days to look ahead"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(
+        role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])
+    ),
 ):
     """Get upcoming bookings for a club."""
     # TODO: Add club admin permission check
@@ -71,14 +75,20 @@ async def get_upcoming_bookings(
 
         return upcoming_bookings
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get upcoming bookings: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get upcoming bookings: {e!s}"
+        )
 
 
-@router.get("/club/{club_id}/tournaments/active", response_model=list[TournamentSummary])
+@router.get(
+    "/club/{club_id}/tournaments/active", response_model=list[TournamentSummary]
+)
 async def get_active_tournaments(
     club_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(
+        role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])
+    ),
 ):
     """Get active tournaments for a club."""
     # TODO: Add club admin permission check
@@ -106,7 +116,9 @@ async def get_active_tournaments(
 
         return tournament_summaries
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get active tournaments: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get active tournaments: {e!s}"
+        )
 
 
 @router.get("/my-clubs", response_model=list[dict])
@@ -120,13 +132,15 @@ async def get_my_clubs(
 
         club_list = []
         for club in clubs:
-            club_list.append({
-                "id": club.id,
-                "name": club.name,
-                "address": club.address,
-                "city": club.city,
-                "image_url": club.image_url,
-            })
+            club_list.append(
+                {
+                    "id": club.id,
+                    "name": club.name,
+                    "address": club.address,
+                    "city": club.city,
+                    "image_url": club.image_url,
+                }
+            )
 
         return club_list
     except Exception as e:
@@ -136,7 +150,9 @@ async def get_my_clubs(
 @router.get("/multi-club/overview", response_model=MultiClubMetrics)
 async def get_multi_club_overview(
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(
+        role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])
+    ),
 ):
     """Get overview metrics across all clubs that the user administers."""
     try:
@@ -191,7 +207,9 @@ async def get_multi_club_overview(
             total_active_tournaments=total_active_tournaments,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get multi-club overview: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get multi-club overview: {e!s}"
+        )
 
 
 @router.get("/club/{club_id}/revenue-chart")
@@ -199,7 +217,9 @@ async def get_revenue_chart_data(
     club_id: int,
     days: int = Query(30, description="Number of days for chart data"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(
+        role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])
+    ),
 ):
     """Get revenue chart data for a club."""
     # TODO: Add club admin permission check
@@ -223,19 +243,27 @@ async def get_revenue_chart_data(
             chart_data["dates"].append(analytics.date)
             chart_data["daily_revenue"].append(float(analytics.total_revenue))
             # TODO: Break down by revenue type
-            chart_data["booking_revenue"].append(float(analytics.total_revenue * 0.8))  # Mock data
-            chart_data["tournament_revenue"].append(float(analytics.total_revenue * 0.2))  # Mock data
+            chart_data["booking_revenue"].append(
+                float(analytics.total_revenue * 0.8)
+            )  # Mock data
+            chart_data["tournament_revenue"].append(
+                float(analytics.total_revenue * 0.2)
+            )  # Mock data
 
         return chart_data
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get revenue chart data: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get revenue chart data: {e!s}"
+        )
 
 
 @router.get("/club/{club_id}/dashboard-summary")
 async def get_enhanced_dashboard_summary(
     club_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])),
+    current_user: User = Depends(
+        role_checker([UserRole.CLUB_ADMIN, UserRole.SUPER_ADMIN])
+    ),
 ):
     """Get enhanced dashboard summary for a club."""
     # TODO: Add club admin permission check
@@ -270,4 +298,6 @@ async def get_enhanced_dashboard_summary(
             },
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get dashboard summary: {e!s}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get dashboard summary: {e!s}"
+        )

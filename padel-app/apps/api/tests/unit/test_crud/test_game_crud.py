@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from unittest.mock import Mock
 
 import pytest
@@ -26,8 +26,8 @@ class TestCreateGame:
         game_data = GameCreate(booking_id=1, game_type=GameType.PUBLIC, skill_level=3.5)
 
         club_id = 1
-        start_time = datetime(2024, 1, 15, 10, 0)
-        end_time = datetime(2024, 1, 15, 11, 0)
+        start_time = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+        end_time = datetime(2024, 1, 15, 11, 0, tzinfo=timezone.utc)
 
         # Mock the created game
         Game(
@@ -75,8 +75,8 @@ class TestCreateGame:
         )
 
         club_id = 2
-        start_time = datetime(2024, 1, 15, 14, 0)
-        end_time = datetime(2024, 1, 15, 15, 0)
+        start_time = datetime(2024, 1, 15, 14, 0, tzinfo=timezone.utc)
+        end_time = datetime(2024, 1, 15, 15, 0, tzinfo=timezone.utc)
 
         def mock_refresh(game):
             game.id = 2
@@ -567,8 +567,8 @@ class TestGameCRUDIntegration:
         game_data = GameCreate(booking_id=1, game_type=GameType.PUBLIC, skill_level=3.5)
 
         club_id = 1
-        start_time = datetime(2024, 1, 15, 10, 0)
-        end_time = datetime(2024, 1, 15, 11, 0)
+        start_time = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+        end_time = datetime(2024, 1, 15, 11, 0, tzinfo=timezone.utc)
 
         def mock_refresh(game):
             game.id = 1

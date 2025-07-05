@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
 import pytest
@@ -19,7 +19,9 @@ class TestGameExpirationService:
         """Set up test fixtures"""
         self.service = GameExpirationService()
         self.mock_db = Mock(spec=Session)
-        self.current_time = datetime(2024, 1, 15, 12, 0)  # Noon on Jan 15, 2024
+        self.current_time = datetime(
+            2024, 1, 15, 12, 0, tzinfo=timezone.utc
+        )  # Noon on Jan 15, 2024
 
     def create_mock_game(self, game_id, end_time, status=GameStatus.SCHEDULED):
         """Create a mock game object"""
@@ -40,12 +42,14 @@ class TestGameExpirationService:
 
         # Create mock games - some past, some future
         past_game_1 = self.create_mock_game(
-            1, datetime(2024, 1, 15, 10, 0)
+            1, datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
         )  # 2 hours ago
         past_game_2 = self.create_mock_game(
-            2, datetime(2024, 1, 15, 11, 30)
+            2, datetime(2024, 1, 15, 11, 30, tzinfo=timezone.utc)
         )  # 30 minutes ago
-        self.create_mock_game(3, datetime(2024, 1, 15, 14, 0))  # 2 hours from now
+        self.create_mock_game(
+            3, datetime(2024, 1, 15, 14, 0, tzinfo=timezone.utc)
+        )  # 2 hours from now
 
         past_games = [past_game_1, past_game_2]
 
@@ -120,10 +124,14 @@ class TestGameExpirationService:
 
         # Create games with different statuses (only SCHEDULED should be expired)
         scheduled_game = self.create_mock_game(
-            1, datetime(2024, 1, 15, 10, 0), GameStatus.SCHEDULED
+            1, datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc), GameStatus.SCHEDULED
         )
-        self.create_mock_game(2, datetime(2024, 1, 15, 10, 0), GameStatus.COMPLETED)
-        self.create_mock_game(3, datetime(2024, 1, 15, 10, 0), GameStatus.CANCELLED)
+        self.create_mock_game(
+            2, datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc), GameStatus.COMPLETED
+        )
+        self.create_mock_game(
+            3, datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc), GameStatus.CANCELLED
+        )
 
         # Mock should only return SCHEDULED games past end time
         past_scheduled_games = [scheduled_game]
@@ -161,7 +169,9 @@ class TestGameExpirationService:
         """Test single game expiration when game should be expired"""
         # Setup
         game_id = 1
-        mock_game = self.create_mock_game(game_id, datetime(2024, 1, 15, 10, 0))
+        mock_game = self.create_mock_game(
+            game_id, datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+        )
         mock_game.should_auto_expire.return_value = True
 
         with patch("app.services.game_expiration_service.game_crud") as mock_game_crud:
@@ -181,7 +191,7 @@ class TestGameExpirationService:
         # Setup
         game_id = 1
         mock_game = self.create_mock_game(
-            game_id, datetime(2024, 1, 15, 14, 0)
+            game_id, datetime(2024, 1, 15, 14, 0, tzinfo=timezone.utc)
         )  # Future time
         mock_game.should_auto_expire.return_value = False
 
@@ -202,7 +212,9 @@ class TestGameExpirationService:
         # Setup
         game_id = 1
         mock_game = self.create_mock_game(
-            game_id, datetime(2024, 1, 15, 10, 0), GameStatus.EXPIRED
+            game_id,
+            datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
+            GameStatus.EXPIRED,
         )
         mock_game.should_auto_expire.return_value = False  # Already expired
 
@@ -222,7 +234,9 @@ class TestGameExpirationService:
         # Setup
         game_id = 1
         mock_game = self.create_mock_game(
-            game_id, datetime(2024, 1, 15, 10, 0), GameStatus.COMPLETED
+            game_id,
+            datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc),
+            GameStatus.COMPLETED,
         )
         mock_game.should_auto_expire.return_value = (
             False  # Completed games don't auto-expire
@@ -272,7 +286,9 @@ class TestGameExpirationService:
         past_games = []
         expected_ids = []
         for i in range(100):
-            game = self.create_mock_game(i, datetime(2024, 1, 15, 10, 0))
+            game = self.create_mock_game(
+                i, datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+            )
             past_games.append(game)
             expected_ids.append(i)
 
@@ -294,15 +310,21 @@ class TestGameExpirationService:
     def test_expire_past_games_time_boundaries(self, mock_datetime):
         """Test expiration at exact time boundaries"""
         # Setup
-        current_time = datetime(2024, 1, 15, 12, 0, 0)  # Exact noon
+        current_time = datetime(
+            2024, 1, 15, 12, 0, 0, tzinfo=timezone.utc
+        )  # Exact noon
         mock_datetime.utcnow.return_value = current_time
 
         # Create games at exact boundary times
         exactly_expired = self.create_mock_game(
-            1, datetime(2024, 1, 15, 11, 59, 59)
+            1, datetime(2024, 1, 15, 11, 59, 59, tzinfo=timezone.utc)
         )  # 1 second ago
-        self.create_mock_game(2, datetime(2024, 1, 15, 12, 0, 0))  # Exactly now
-        self.create_mock_game(3, datetime(2024, 1, 15, 12, 0, 1))  # 1 second future
+        self.create_mock_game(
+            2, datetime(2024, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+        )  # Exactly now
+        self.create_mock_game(
+            3, datetime(2024, 1, 15, 12, 0, 1, tzinfo=timezone.utc)
+        )  # 1 second future
 
         # Only the expired game should be returned by the query
         past_games = [exactly_expired]
@@ -334,7 +356,7 @@ class TestGameExpirationService:
         for status in statuses_to_test:
             game_id = 1
             mock_game = self.create_mock_game(
-                game_id, datetime(2024, 1, 15, 10, 0), status
+                game_id, datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc), status
             )
 
             # Only SCHEDULED games should be eligible for auto-expiration
@@ -373,7 +395,9 @@ class TestGameExpirationService:
         mock_datetime.utcnow.return_value = self.current_time
 
         # Create a game that might be modified during processing
-        game = self.create_mock_game(1, datetime(2024, 1, 15, 10, 0))
+        game = self.create_mock_game(
+            1, datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+        )
 
         # Simulate the game being modified after query but before update
         def side_effect_modify_game(*args):
@@ -417,7 +441,7 @@ class TestGameExpirationService:
     def test_method_signatures(self):
         """Test that methods have correct signatures"""
         # Test expire_past_games signature
-        import inspect
+        import inspect  # noqa: PLC0415
 
         expire_sig = inspect.signature(self.service.expire_past_games)
         assert "db" in expire_sig.parameters
@@ -438,7 +462,7 @@ class TestGameExpirationService:
         assert callable(self.service.check_single_game_expiration)
 
         # Verify they are instance methods (have 'self' parameter)
-        import inspect
+        import inspect  # noqa: PLC0415
 
         expire_params = list(
             inspect.signature(self.service.expire_past_games).parameters.keys()

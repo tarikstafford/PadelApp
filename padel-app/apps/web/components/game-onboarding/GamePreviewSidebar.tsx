@@ -137,7 +137,7 @@ export function GamePreviewSidebar({ className = '' }: GamePreviewSidebarProps) 
         <div className="border-t pt-4">
           {isUserInGame ? (
             <Badge variant="default" className="w-full justify-center py-2">
-              You're in this game!
+              You&apos;re in this game!
             </Badge>
           ) : currentStep === 'success' ? (
             <Badge variant="default" className="w-full justify-center py-2">

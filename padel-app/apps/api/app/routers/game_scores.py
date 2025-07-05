@@ -34,17 +34,14 @@ async def submit_game_score(
     # Check if user can submit score
     can_submit, message = game_score_crud.can_submit_score(db, game_id, current_user.id)
     if not can_submit:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=message
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
 
     # Verify user is on the team they claim to be submitting for
     user_team = game_score_crud.get_user_team_for_game(db, game_id, current_user.id)
     if user_team != score_request.submitted_by_team:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"You are not a member of team {score_request.submitted_by_team}"
+            detail=f"You are not a member of team {score_request.submitted_by_team}",
         )
 
     # Create the score submission
@@ -56,9 +53,7 @@ async def submit_game_score(
     )
 
     game_score = game_score_crud.create_game_score(
-        db=db,
-        score_data=score_data,
-        submitted_by_user_id=current_user.id
+        db=db, score_data=score_data, submitted_by_user_id=current_user.id
     )
 
     # Send notifications to opposing team
@@ -66,21 +61,23 @@ async def submit_game_score(
         db=db,
         game_id=game_id,
         score_id=game_score.id,
-        submitting_team=score_request.submitted_by_team
+        submitting_team=score_request.submitted_by_team,
     )
 
     # Check if other team can now confirm
-    opposing_team = 2 if score_request.submitted_by_team == 1 else 1
 
     return ScoreSubmissionResponse(
         success=True,
         message="Score submitted successfully. Waiting for confirmation from opposing team.",
         score=game_score,
-        can_confirm=False  # Submitter cannot confirm their own score
+        can_confirm=False,  # Submitter cannot confirm their own score
     )
 
 
-@router.post("/games/{game_id}/scores/{score_id}/confirm", response_model=ScoreConfirmationResponse)
+@router.post(
+    "/games/{game_id}/scores/{score_id}/confirm",
+    response_model=ScoreConfirmationResponse,
+)
 async def confirm_game_score(
     game_id: int,
     score_id: int,
@@ -91,19 +88,18 @@ async def confirm_game_score(
     """Confirm a submitted score"""
 
     # Check if user can confirm this score
-    can_confirm, message = game_score_crud.can_confirm_score(db, score_id, current_user.id)
+    can_confirm, message = game_score_crud.can_confirm_score(
+        db, score_id, current_user.id
+    )
     if not can_confirm:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=message
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
 
     # Get user's team
     user_team = game_score_crud.get_user_team_for_game(db, game_id, current_user.id)
     if not user_team:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You are not a participant in this game"
+            detail="You are not a participant in this game",
         )
 
     # Confirm the score
@@ -111,13 +107,12 @@ async def confirm_game_score(
         db=db,
         score_id=score_id,
         confirming_team=user_team,
-        confirming_user_id=current_user.id
+        confirming_user_id=current_user.id,
     )
 
     if not game_score:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Score not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score not found"
         )
 
     is_final = game_score.status == ScoreStatus.CONFIRMED
@@ -131,17 +126,19 @@ async def confirm_game_score(
 
         message = "Score confirmed by both teams! ELO ratings have been updated."
     else:
-        message = "Score confirmation recorded. Waiting for confirmation from other team."
+        message = (
+            "Score confirmation recorded. Waiting for confirmation from other team."
+        )
 
     return ScoreConfirmationResponse(
-        success=True,
-        message=message,
-        score=game_score,
-        is_final=is_final
+        success=True, message=message, score=game_score, is_final=is_final
     )
 
 
-@router.post("/games/{game_id}/scores/{score_id}/counter", response_model=ScoreConfirmationResponse)
+@router.post(
+    "/games/{game_id}/scores/{score_id}/counter",
+    response_model=ScoreConfirmationResponse,
+)
 async def counter_game_score(
     game_id: int,
     score_id: int,
@@ -152,19 +149,18 @@ async def counter_game_score(
     """Dispute/counter a submitted score"""
 
     # Check if user can confirm this score (same permissions as confirming)
-    can_confirm, message = game_score_crud.can_confirm_score(db, score_id, current_user.id)
+    can_confirm, message = game_score_crud.can_confirm_score(
+        db, score_id, current_user.id
+    )
     if not can_confirm:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=message
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
 
     # Get user's team
     user_team = game_score_crud.get_user_team_for_game(db, game_id, current_user.id)
     if not user_team:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You are not a participant in this game"
+            detail="You are not a participant in this game",
         )
 
     # Counter the score
@@ -175,13 +171,12 @@ async def counter_game_score(
         confirming_user_id=current_user.id,
         counter_team1_score=counter_request.counter_team1_score,
         counter_team2_score=counter_request.counter_team2_score,
-        counter_notes=counter_request.counter_notes
+        counter_notes=counter_request.counter_notes,
     )
 
     if not game_score:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Score not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score not found"
         )
 
     # Send dispute notifications
@@ -189,14 +184,14 @@ async def counter_game_score(
         db=db,
         game_id=game_id,
         score_id=score_id,
-        submitting_team=user_team  # The disputing team becomes the "submitter" of the counter
+        submitting_team=user_team,  # The disputing team becomes the "submitter" of the counter
     )
 
     return ScoreConfirmationResponse(
         success=True,
         message="Score disputed. The original submitting team can now review your counter-proposal.",
         score=game_score,
-        is_final=False
+        is_final=False,
     )
 
 
@@ -213,16 +208,14 @@ async def get_game_scores(
     if not user_team:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only view scores for games you participated in"
+            detail="You can only view scores for games you participated in",
         )
 
     scores = game_score_crud.get_game_scores_by_game(db, game_id)
     latest_score = game_score_crud.get_latest_game_score(db, game_id)
 
     return GameScoreListResponse(
-        scores=scores,
-        total_count=len(scores),
-        latest_score=latest_score
+        scores=scores, total_count=len(scores), latest_score=latest_score
     )
 
 
@@ -238,15 +231,19 @@ async def get_score_status(
     if not user_team:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only check status for games you participated in"
+            detail="You can only check status for games you participated in",
         )
 
-    can_submit, submit_message = game_score_crud.can_submit_score(db, game_id, current_user.id)
+    can_submit, submit_message = game_score_crud.can_submit_score(
+        db, game_id, current_user.id
+    )
     latest_score = game_score_crud.get_latest_game_score(db, game_id)
 
     can_confirm = False
     if latest_score:
-        can_confirm, _ = game_score_crud.can_confirm_score(db, latest_score.id, current_user.id)
+        can_confirm, _ = game_score_crud.can_confirm_score(
+            db, latest_score.id, current_user.id
+        )
 
     message = submit_message
     if latest_score:
@@ -267,11 +264,13 @@ async def get_score_status(
         can_confirm=can_confirm,
         message=message,
         user_team=user_team,
-        latest_score=latest_score
+        latest_score=latest_score,
     )
 
 
-@router.post("/admin/scores/{score_id}/resolve", response_model=ScoreConfirmationResponse)
+@router.post(
+    "/admin/scores/{score_id}/resolve", response_model=ScoreConfirmationResponse
+)
 async def admin_resolve_disputed_score(
     score_id: int,
     resolution_request: AdminScoreResolutionRequest,
@@ -285,13 +284,12 @@ async def admin_resolve_disputed_score(
         score_id=score_id,
         final_team1_score=resolution_request.final_team1_score,
         final_team2_score=resolution_request.final_team2_score,
-        admin_notes=resolution_request.admin_notes
+        admin_notes=resolution_request.admin_notes,
     )
 
     if not game_score:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Score not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Score not found"
         )
 
     # Update ELO ratings with resolved score
@@ -304,7 +302,7 @@ async def admin_resolve_disputed_score(
         success=True,
         message="Score dispute resolved by admin. ELO ratings have been updated.",
         score=game_score,
-        is_final=True
+        is_final=True,
     )
 
 

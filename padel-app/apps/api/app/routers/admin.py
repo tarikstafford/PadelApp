@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional
 
 from fastapi import (
@@ -77,20 +77,20 @@ async def read_administered_clubs(
 ):
     """
     Retrieve all clubs that the current admin user administers.
-    
+
     This includes owned clubs and clubs where the user is assigned as an admin.
     For now, returns only the owned club as multi-club admin support needs to be implemented.
     """
     clubs = []
-    
+
     # Add owned club if exists
     if current_admin.owned_club:
         clubs.append(current_admin.owned_club)
-    
+
     # TODO: Add clubs where user is assigned as admin via ClubAdmin table
     # club_admin_entries = crud.club_admin_crud.get_clubs_by_admin(db=db, admin_id=current_admin.id)
     # clubs.extend(club_admin_entries)
-    
+
     return clubs
 
 
@@ -557,7 +557,7 @@ async def get_dashboard_summary(
     """
     Get a summary of dashboard metrics for a specific club.
     """
-    target_date = summary_date or datetime.utcnow().date()
+    target_date = summary_date or datetime.now(timezone.utc).date()
 
     # Get total bookings for the day
     bookings_count = crud.booking_crud.get_bookings_count_by_club_and_date(

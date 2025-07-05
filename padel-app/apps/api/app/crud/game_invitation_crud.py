@@ -101,7 +101,7 @@ class GameInvitationCRUD:
             return {"success": False, "message": "Game is full"}
 
         # Add user to game
-        from app.crud.game_player_crud import game_player_crud
+        from app.crud.game_player_crud import game_player_crud  # noqa: PLC0415
 
         game_player = game_player_crud.add_player_to_game(
             db=db,
@@ -148,9 +148,12 @@ class GameInvitationCRUD:
         return {
             "game_id": game.id,
             "game_name": (
-                "Game at " +
-                (game.booking.court.name if game.booking and
-                 game.booking.court else "Unknown Court")
+                "Game at "
+                + (
+                    game.booking.court.name
+                    if game.booking and game.booking.court
+                    else "Unknown Court"
+                )
             ),
             "creator_name": creator.full_name if creator else "Unknown",
             "start_time": game.start_time,

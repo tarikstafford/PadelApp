@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.database import get_db  # To get db session for get_current_user
 from app.models.user import User as UserModel  # Renamed to avoid conflict
+from app.models.user_role import UserRole
 from app.schemas.token_schemas import TokenData
 
 # OAuth2PasswordBearer scheme, points to the token URL (login endpoint)
@@ -126,13 +127,14 @@ async def get_current_user(
             detail="Could not validate credentials: subject missing in token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if token_payload.token_type != "access":
+    if token_payload.token_type != "access":  # noqa: S105
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token type, expected access token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    from app import crud  # Import here to avoid circular import
+    from app import crud  # Import here to avoid circular import  # noqa: PLC0415
+
     user = crud.user_crud.get_user_by_email(db, email=token_payload.sub)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -151,11 +153,9 @@ async def get_current_admin_user(
     current_user: UserModel = Depends(get_current_active_user),
 ) -> UserModel:
     """Dependency to ensure current user has admin privileges"""
-    from app.models.user_role import UserRole
-    
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions. Admin access required."
+            detail="Not enough permissions. Admin access required.",
         )
     return current_user

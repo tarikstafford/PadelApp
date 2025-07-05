@@ -102,7 +102,7 @@ export function GameOnboardingFlow() {
                 <CardContent className="p-6">
                   <div className="text-center space-y-4">
                     <h1 className="text-2xl font-bold">
-                      You're Invited to Join a Padel Game!
+                      You&apos;re Invited to Join a Padel Game!
                     </h1>
                     <p className="text-muted-foreground max-w-md mx-auto">
                       {gameData.creator.full_name || gameData.creator.email} has invited you to join their game at {gameData.game.booking.court.club?.name}.
@@ -110,7 +110,7 @@ export function GameOnboardingFlow() {
                     {currentStep === 'preview' && (
                       <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">
-                          Review the game details on the right and click "Join Game" to get started.
+                          Review the game details on the right and click &quot;Join Game&quot; to get started.
                         </p>
                         {!gameData.can_join && (
                           <p className="text-sm text-destructive">

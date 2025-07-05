@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from typing import Optional
 
 from sqlalchemy import func
@@ -110,10 +110,10 @@ class GameCRUD:
                 BookingModel.start_time >= start_datetime,
                 BookingModel.start_time <= end_datetime,
             )
-        
+
         # Filter for future games only (default behavior)
         if future_only:
-            query = query.filter(BookingModel.start_time > datetime.utcnow())
+            query = query.filter(BookingModel.start_time > datetime.now(timezone.utc))
 
         return (
             query.order_by(BookingModel.start_time)
