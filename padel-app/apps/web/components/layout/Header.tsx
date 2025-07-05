@@ -42,6 +42,9 @@ export default function Header() {
               <Link href="/tournaments" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 Tournaments
               </Link>
+              <Link href="/teams" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                Teams
+              </Link>
               <Link href="/leaderboard" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                 Leaderboard
               </Link>
@@ -67,6 +70,9 @@ export default function Header() {
                     <DropdownMenuSeparator />
                     <Link href="/profile" passHref>
                       <DropdownMenuItem>Profile</DropdownMenuItem>
+                    </Link>
+                    <Link href="/teams" passHref>
+                      <DropdownMenuItem>My Teams</DropdownMenuItem>
                     </Link>
                     <Link href="/profile/notifications" passHref>
                       <DropdownMenuItem>Notification Settings</DropdownMenuItem>
