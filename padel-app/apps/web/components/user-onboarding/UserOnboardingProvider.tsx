@@ -219,13 +219,21 @@ export function UserOnboardingProvider({
       setIsLoading(true);
       setError(null);
 
+      // Get the current access token
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      
+      if (!token) {
+        setError('Authentication token not found');
+        return;
+      }
+
       // Upload profile picture if provided
       if (state.userData.profilePictureFile) {
         const formData = new FormData();
         formData.append('file', state.userData.profilePictureFile);
         
         try {
-          await apiClient.post('/users/me/profile-picture', formData);
+          await apiClient.post('/users/me/profile-picture', formData, { token });
         } catch (error) {
           console.warn('Failed to upload profile picture:', error);
           // Don't fail the entire onboarding for profile picture upload
@@ -241,14 +249,21 @@ export function UserOnboardingProvider({
         }
       }
 
-      // Update ELO rating if estimated
+      // Request ELO rating adjustment if estimated rating is different from default
       if (state.userData.estimatedElo > 1.0) {
         try {
-          await apiClient.put('/users/me', {
-            elo_rating: state.userData.estimatedElo
-          });
+          console.log('Requesting ELO rating adjustment to:', state.userData.estimatedElo);
+          
+          // Create an ELO adjustment request for the estimated rating
+          await apiClient.post('/users/me/elo-adjustment-requests', {
+            requested_rating: state.userData.estimatedElo,
+            reason: `Initial skill assessment based on onboarding questionnaire. Estimated rating: ${state.userData.estimatedElo.toFixed(1)} based on ${state.userData.experienceData.yearsPlaying || 0} years of experience, self-assessed skill level, and playing frequency.`
+          }, { token });
+          
+          console.log('ELO adjustment request created successfully');
         } catch (error) {
-          console.warn('Failed to update ELO rating:', error);
+          console.error('Failed to create ELO adjustment request:', error);
+          // Don't fail the entire onboarding for ELO request
         }
       }
 

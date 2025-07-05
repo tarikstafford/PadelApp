@@ -136,7 +136,7 @@ export function CompleteStep() {
                   <Trophy className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="font-medium">ELO Rating</p>
+                  <p className="font-medium">Estimated ELO Rating</p>
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-bold text-primary">
                       {userData.estimatedElo.toFixed(1)}
@@ -145,6 +145,11 @@ export function CompleteStep() {
                       {skillLevel.title}
                     </Badge>
                   </div>
+                  {userData.estimatedElo > 1.0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Adjustment request submitted
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -268,11 +273,11 @@ export function CompleteStep() {
             <ul className="space-y-2 text-sm text-blue-700 dark:text-blue-200">
               <li className="flex items-start gap-2">
                 <div className="w-1 h-1 bg-current rounded-full mt-2" />
-                Start with games at or slightly below your estimated skill level
+                You&apos;ll start with a base rating of 1.0 that adjusts as you play
               </li>
               <li className="flex items-start gap-2">
                 <div className="w-1 h-1 bg-current rounded-full mt-2" />
-                Your ELO rating will adjust automatically as you play more games
+                Your ELO rating will adjust automatically based on game results
               </li>
               <li className="flex items-start gap-2">
                 <div className="w-1 h-1 bg-current rounded-full mt-2" />
