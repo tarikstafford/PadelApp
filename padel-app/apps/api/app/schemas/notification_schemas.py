@@ -13,8 +13,7 @@ class NotificationBase(BaseModel):
     title: str
     message: str
     data: Optional[dict[str, Any]] = None
-    action_url: Optional[str] = None
-    action_text: Optional[str] = None
+    # action_url and action_text temporarily removed until migration
 
 
 class NotificationPreferencesBase(BaseModel):
