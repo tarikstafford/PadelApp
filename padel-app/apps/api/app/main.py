@@ -30,6 +30,7 @@ app = FastAPI(
     version="0.1.0",
     description="API for the PadelGo application to manage bookings, players, games.",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",  # Standard practice
+    redirect_slashes=False,  # Disable automatic slash redirects
 )
 
 # Set all CORS enabled origins - MUST be added first
