@@ -1,6 +1,6 @@
-"""Add notification and score management models - SAFE VERSION
+"""Add notification and score management models - RAW SQL VERSION
 
-Revision ID: safe_abc123456789
+Revision ID: rawsql_abc123456789
 Revises: 00762c138e14
 Create Date: 2025-01-05 12:00:00.000000
 
@@ -19,216 +19,192 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Get connection and inspector to check existing objects
-    connection = op.get_bind()
-    inspector = sa.inspect(connection)
-    existing_tables = inspector.get_table_names()
+    # Use raw SQL to avoid SQLAlchemy automatic ENUM creation
     
-    # Create ENUMs only if they don't exist
-    try:
-        op.execute("CREATE TYPE IF NOT EXISTS notificationtype AS ENUM ('GAME_STARTING', 'GAME_ENDED', 'GAME_CANCELLED', 'SCORE_SUBMITTED', 'SCORE_CONFIRMED', 'SCORE_DISPUTED', 'TEAM_INVITATION', 'TOURNAMENT_REGISTRATION', 'TOURNAMENT_MATCH', 'SYSTEM_ANNOUNCEMENT')")
-    except Exception:
-        pass  # Type already exists
-        
-    try:
-        op.execute("CREATE TYPE IF NOT EXISTS notificationpriority AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT')")
-    except Exception:
-        pass  # Type already exists
-        
-    try:
-        op.execute("CREATE TYPE IF NOT EXISTS scorestatus AS ENUM ('PENDING', 'CONFIRMED', 'DISPUTED', 'RESOLVED')")
-    except Exception:
-        pass  # Type already exists
-        
-    try:
-        op.execute("CREATE TYPE IF NOT EXISTS confirmationaction AS ENUM ('CONFIRM', 'COUNTER')")
-    except Exception:
-        pass  # Type already exists
+    # Create ENUMs if they don't exist
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE notificationtype AS ENUM (
+                'GAME_STARTING', 'GAME_ENDED', 'GAME_CANCELLED', 
+                'SCORE_SUBMITTED', 'SCORE_CONFIRMED', 'SCORE_DISPUTED', 
+                'TEAM_INVITATION', 'TOURNAMENT_REGISTRATION', 
+                'TOURNAMENT_MATCH', 'SYSTEM_ANNOUNCEMENT'
+            );
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE notificationpriority AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE scorestatus AS ENUM ('PENDING', 'CONFIRMED', 'DISPUTED', 'RESOLVED');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE confirmationaction AS ENUM ('CONFIRM', 'COUNTER');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
 
-    # Create notifications table
-    if 'notifications' not in existing_tables:
-        op.create_table('notifications',
-            sa.Column('id', sa.Integer(), nullable=False),
-            sa.Column('user_id', sa.Integer(), nullable=False),
-            sa.Column('type', sa.Enum('GAME_STARTING', 'GAME_ENDED', 'GAME_CANCELLED', 'SCORE_SUBMITTED', 'SCORE_CONFIRMED', 'SCORE_DISPUTED', 'TEAM_INVITATION', 'TOURNAMENT_REGISTRATION', 'TOURNAMENT_MATCH', 'SYSTEM_ANNOUNCEMENT', name='notificationtype'), nullable=False),
-            sa.Column('title', sa.String(), nullable=False),
-            sa.Column('message', sa.Text(), nullable=False),
-            sa.Column('read', sa.Boolean(), nullable=False, server_default='false'),
-            sa.Column('priority', sa.Enum('LOW', 'MEDIUM', 'HIGH', 'URGENT', name='notificationpriority'), nullable=False, server_default='MEDIUM'),
-            sa.Column('metadata', sa.JSON(), nullable=True),
-            sa.Column('expires_at', sa.DateTime(), nullable=True),
-            sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-            sa.Column('read_at', sa.DateTime(), nullable=True),
-            sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-            sa.PrimaryKeyConstraint('id')
-        )
-        try:
-            op.create_index('ix_notifications_id', 'notifications', ['id'], unique=False)
-            op.create_index('ix_notifications_user_id', 'notifications', ['user_id'], unique=False)
-            op.create_index('ix_notifications_type', 'notifications', ['type'], unique=False)
-            op.create_index('ix_notifications_read', 'notifications', ['read'], unique=False)
-            op.create_index('ix_notifications_created_at', 'notifications', ['created_at'], unique=False)
-        except Exception:
-            pass  # Indexes might already exist
+    # Create notifications table if it doesn't exist
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS notifications (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            type notificationtype NOT NULL,
+            title VARCHAR NOT NULL,
+            message TEXT NOT NULL,
+            read BOOLEAN NOT NULL DEFAULT false,
+            priority notificationpriority NOT NULL DEFAULT 'MEDIUM',
+            metadata JSONB,
+            expires_at TIMESTAMP,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            read_at TIMESTAMP
+        );
+    """)
+    
+    # Create indexes if they don't exist
+    op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications(user_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_type ON notifications(type);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_read ON notifications(read);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_created_at ON notifications(created_at);")
 
-    # Create notification_preferences table
-    if 'notification_preferences' not in existing_tables:
-        op.create_table('notification_preferences',
-            sa.Column('id', sa.Integer(), nullable=False),
-            sa.Column('user_id', sa.Integer(), nullable=False),
-            sa.Column('game_starting_notifications', sa.Boolean(), nullable=False, server_default='true'),
-            sa.Column('game_ended_notifications', sa.Boolean(), nullable=False, server_default='true'),
-            sa.Column('score_notifications', sa.Boolean(), nullable=False, server_default='true'),
-            sa.Column('team_notifications', sa.Boolean(), nullable=False, server_default='true'),
-            sa.Column('tournament_notifications', sa.Boolean(), nullable=False, server_default='true'),
-            sa.Column('system_notifications', sa.Boolean(), nullable=False, server_default='true'),
-            sa.Column('email_notifications', sa.Boolean(), nullable=False, server_default='false'),
-            sa.Column('push_notifications', sa.Boolean(), nullable=False, server_default='true'),
-            sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-            sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-            sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-            sa.PrimaryKeyConstraint('id')
-        )
-        try:
-            op.create_index('ix_notification_preferences_user_id', 'notification_preferences', ['user_id'], unique=True)
-        except Exception:
-            pass
+    # Create notification_preferences table if it doesn't exist
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS notification_preferences (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            game_starting_notifications BOOLEAN NOT NULL DEFAULT true,
+            game_ended_notifications BOOLEAN NOT NULL DEFAULT true,
+            score_notifications BOOLEAN NOT NULL DEFAULT true,
+            team_notifications BOOLEAN NOT NULL DEFAULT true,
+            tournament_notifications BOOLEAN NOT NULL DEFAULT true,
+            system_notifications BOOLEAN NOT NULL DEFAULT true,
+            email_notifications BOOLEAN NOT NULL DEFAULT false,
+            push_notifications BOOLEAN NOT NULL DEFAULT true,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_notification_preferences_user_id ON notification_preferences(user_id);")
 
-    # Create game_scores table
-    if 'game_scores' not in existing_tables:
-        op.create_table('game_scores',
-            sa.Column('id', sa.Integer(), nullable=False),
-            sa.Column('game_id', sa.Integer(), nullable=False),
-            sa.Column('team1_score', sa.Integer(), nullable=False),
-            sa.Column('team2_score', sa.Integer(), nullable=False),
-            sa.Column('submitted_by_team', sa.Integer(), nullable=False),
-            sa.Column('submitted_by_user_id', sa.Integer(), nullable=False),
-            sa.Column('submitted_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-            sa.Column('status', sa.Enum('PENDING', 'CONFIRMED', 'DISPUTED', 'RESOLVED', name='scorestatus'), nullable=False, server_default='PENDING'),
-            sa.Column('final_team1_score', sa.Integer(), nullable=True),
-            sa.Column('final_team2_score', sa.Integer(), nullable=True),
-            sa.Column('confirmed_at', sa.DateTime(), nullable=True),
-            sa.Column('admin_resolved', sa.Boolean(), nullable=False, server_default='false'),
-            sa.Column('admin_notes', sa.Text(), nullable=True),
-            sa.ForeignKeyConstraint(['game_id'], ['games.id'], ),
-            sa.ForeignKeyConstraint(['submitted_by_user_id'], ['users.id'], ),
-            sa.PrimaryKeyConstraint('id')
-        )
-        try:
-            op.create_index('ix_game_scores_id', 'game_scores', ['id'], unique=False)
-            op.create_index('ix_game_scores_game_id', 'game_scores', ['game_id'], unique=False)
-            op.create_index('ix_game_scores_status', 'game_scores', ['status'], unique=False)
-        except Exception:
-            pass
+    # Create game_scores table if it doesn't exist
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS game_scores (
+            id SERIAL PRIMARY KEY,
+            game_id INTEGER NOT NULL REFERENCES games(id),
+            team1_score INTEGER NOT NULL,
+            team2_score INTEGER NOT NULL,
+            submitted_by_team INTEGER NOT NULL,
+            submitted_by_user_id INTEGER NOT NULL REFERENCES users(id),
+            submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            status scorestatus NOT NULL DEFAULT 'PENDING',
+            final_team1_score INTEGER,
+            final_team2_score INTEGER,
+            confirmed_at TIMESTAMP,
+            admin_resolved BOOLEAN NOT NULL DEFAULT false,
+            admin_notes TEXT
+        );
+    """)
+    
+    op.execute("CREATE INDEX IF NOT EXISTS ix_game_scores_game_id ON game_scores(game_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_game_scores_status ON game_scores(status);")
 
-    # Create score_confirmations table
-    if 'score_confirmations' not in existing_tables:
-        op.create_table('score_confirmations',
-            sa.Column('id', sa.Integer(), nullable=False),
-            sa.Column('game_score_id', sa.Integer(), nullable=False),
-            sa.Column('confirming_team', sa.Integer(), nullable=False),
-            sa.Column('confirming_user_id', sa.Integer(), nullable=False),
-            sa.Column('action', sa.Enum('CONFIRM', 'COUNTER', name='confirmationaction'), nullable=False),
-            sa.Column('confirmed_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-            sa.Column('counter_team1_score', sa.Integer(), nullable=True),
-            sa.Column('counter_team2_score', sa.Integer(), nullable=True),
-            sa.Column('counter_notes', sa.Text(), nullable=True),
-            sa.ForeignKeyConstraint(['confirming_user_id'], ['users.id'], ),
-            sa.ForeignKeyConstraint(['game_score_id'], ['game_scores.id'], ),
-            sa.PrimaryKeyConstraint('id')
-        )
-        try:
-            op.create_index('ix_score_confirmations_id', 'score_confirmations', ['id'], unique=False)
-            op.create_index('ix_score_confirmations_game_score_id', 'score_confirmations', ['game_score_id'], unique=False)
-        except Exception:
-            pass
+    # Create score_confirmations table if it doesn't exist
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS score_confirmations (
+            id SERIAL PRIMARY KEY,
+            game_score_id INTEGER NOT NULL REFERENCES game_scores(id),
+            confirming_team INTEGER NOT NULL,
+            confirming_user_id INTEGER NOT NULL REFERENCES users(id),
+            action confirmationaction NOT NULL,
+            confirmed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            counter_team1_score INTEGER,
+            counter_team2_score INTEGER,
+            counter_notes TEXT
+        );
+    """)
+    
+    op.execute("CREATE INDEX IF NOT EXISTS ix_score_confirmations_game_score_id ON score_confirmations(game_score_id);")
 
-    # Create team_stats table  
-    if 'team_stats' not in existing_tables:
-        op.create_table('team_stats',
-            sa.Column('id', sa.Integer(), nullable=False),
-            sa.Column('team_id', sa.Integer(), nullable=False),
-            sa.Column('games_played', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('games_won', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('games_lost', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('total_points_scored', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('total_points_conceded', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('current_average_elo', sa.Float(), nullable=True),
-            sa.Column('peak_average_elo', sa.Float(), nullable=True),
-            sa.Column('lowest_average_elo', sa.Float(), nullable=True),
-            sa.Column('tournaments_participated', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('tournaments_won', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('tournament_matches_won', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('tournament_matches_lost', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('current_win_streak', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('current_loss_streak', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('longest_win_streak', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('longest_loss_streak', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('last_game_date', sa.DateTime(), nullable=True),
-            sa.Column('last_updated', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-            sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-            sa.ForeignKeyConstraint(['team_id'], ['teams.id'], ),
-            sa.PrimaryKeyConstraint('id')
-        )
-        try:
-            op.create_index('ix_team_stats_team_id', 'team_stats', ['team_id'], unique=True)
-        except Exception:
-            pass
+    # Create team_stats table if it doesn't exist
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS team_stats (
+            id SERIAL PRIMARY KEY,
+            team_id INTEGER NOT NULL REFERENCES teams(id),
+            games_played INTEGER NOT NULL DEFAULT 0,
+            games_won INTEGER NOT NULL DEFAULT 0,
+            games_lost INTEGER NOT NULL DEFAULT 0,
+            total_points_scored INTEGER NOT NULL DEFAULT 0,
+            total_points_conceded INTEGER NOT NULL DEFAULT 0,
+            current_average_elo FLOAT,
+            peak_average_elo FLOAT,
+            lowest_average_elo FLOAT,
+            tournaments_participated INTEGER NOT NULL DEFAULT 0,
+            tournaments_won INTEGER NOT NULL DEFAULT 0,
+            tournament_matches_won INTEGER NOT NULL DEFAULT 0,
+            tournament_matches_lost INTEGER NOT NULL DEFAULT 0,
+            current_win_streak INTEGER NOT NULL DEFAULT 0,
+            current_loss_streak INTEGER NOT NULL DEFAULT 0,
+            longest_win_streak INTEGER NOT NULL DEFAULT 0,
+            longest_loss_streak INTEGER NOT NULL DEFAULT 0,
+            last_game_date TIMESTAMP,
+            last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_team_stats_team_id ON team_stats(team_id);")
 
-    # Create team_game_history table
-    if 'team_game_history' not in existing_tables:
-        op.create_table('team_game_history',
-            sa.Column('id', sa.Integer(), nullable=False),
-            sa.Column('team_id', sa.Integer(), nullable=False),
-            sa.Column('game_id', sa.Integer(), nullable=False),
-            sa.Column('won', sa.Integer(), nullable=False),
-            sa.Column('points_scored', sa.Integer(), nullable=False),
-            sa.Column('points_conceded', sa.Integer(), nullable=False),
-            sa.Column('opponent_team_id', sa.Integer(), nullable=True),
-            sa.Column('elo_before', sa.Float(), nullable=True),
-            sa.Column('elo_after', sa.Float(), nullable=True),
-            sa.Column('elo_change', sa.Float(), nullable=True),
-            sa.Column('game_date', sa.DateTime(), nullable=False),
-            sa.Column('is_tournament_game', sa.Integer(), nullable=False, server_default='0'),
-            sa.Column('tournament_id', sa.Integer(), nullable=True),
-            sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-            sa.ForeignKeyConstraint(['game_id'], ['games.id'], ),
-            sa.ForeignKeyConstraint(['opponent_team_id'], ['teams.id'], ),
-            sa.ForeignKeyConstraint(['team_id'], ['teams.id'], ),
-            sa.ForeignKeyConstraint(['tournament_id'], ['tournaments.id'], ),
-            sa.PrimaryKeyConstraint('id')
-        )
-        try:
-            op.create_index('ix_team_game_history_team_id', 'team_game_history', ['team_id'], unique=False)
-            op.create_index('ix_team_game_history_game_id', 'team_game_history', ['game_id'], unique=False)
-        except Exception:
-            pass
+    # Create team_game_history table if it doesn't exist
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS team_game_history (
+            id SERIAL PRIMARY KEY,
+            team_id INTEGER NOT NULL REFERENCES teams(id),
+            game_id INTEGER NOT NULL REFERENCES games(id),
+            won INTEGER NOT NULL,
+            points_scored INTEGER NOT NULL,
+            points_conceded INTEGER NOT NULL,
+            opponent_team_id INTEGER REFERENCES teams(id),
+            elo_before FLOAT,
+            elo_after FLOAT,
+            elo_change FLOAT,
+            game_date TIMESTAMP NOT NULL,
+            is_tournament_game INTEGER NOT NULL DEFAULT 0,
+            tournament_id INTEGER REFERENCES tournaments(id),
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    
+    op.execute("CREATE INDEX IF NOT EXISTS ix_team_game_history_team_id ON team_game_history(team_id);")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_team_game_history_game_id ON team_game_history(game_id);")
 
 
 def downgrade() -> None:
-    # Drop tables in reverse order of creation (only if they exist)
-    connection = op.get_bind()
-    inspector = sa.inspect(connection)
-    existing_tables = inspector.get_table_names()
+    # Drop tables if they exist
+    op.execute("DROP TABLE IF EXISTS team_game_history CASCADE;")
+    op.execute("DROP TABLE IF EXISTS team_stats CASCADE;")
+    op.execute("DROP TABLE IF EXISTS score_confirmations CASCADE;")
+    op.execute("DROP TABLE IF EXISTS game_scores CASCADE;")
+    op.execute("DROP TABLE IF EXISTS notification_preferences CASCADE;")
+    op.execute("DROP TABLE IF EXISTS notifications CASCADE;")
     
-    if 'team_game_history' in existing_tables:
-        op.drop_table('team_game_history')
-    if 'team_stats' in existing_tables:
-        op.drop_table('team_stats')
-    if 'score_confirmations' in existing_tables:
-        op.drop_table('score_confirmations')
-    if 'game_scores' in existing_tables:
-        op.drop_table('game_scores')
-    if 'notification_preferences' in existing_tables:
-        op.drop_table('notification_preferences')
-    if 'notifications' in existing_tables:
-        op.drop_table('notifications')
-    
-    # Drop enums (only if safe to do so)
-    try:
-        op.execute("DROP TYPE IF EXISTS confirmationaction")
-        op.execute("DROP TYPE IF EXISTS scorestatus")
-        op.execute("DROP TYPE IF EXISTS notificationpriority")
-        op.execute("DROP TYPE IF EXISTS notificationtype")
-    except Exception:
-        pass  # Types might be in use by other objects
+    # Drop enums if they exist and are not being used
+    op.execute("DROP TYPE IF EXISTS confirmationaction;")
+    op.execute("DROP TYPE IF EXISTS scorestatus;")
+    op.execute("DROP TYPE IF EXISTS notificationpriority;")
+    op.execute("DROP TYPE IF EXISTS notificationtype;")
