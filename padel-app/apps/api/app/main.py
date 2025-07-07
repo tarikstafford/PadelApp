@@ -20,6 +20,7 @@ from app.routers import (
     public_router,
     users_router,
 )
+from app.routers.teams import router as teams_router
 from app.routers.business import router as business_router
 from app.routers.game_scores import router as game_scores_router
 from app.routers.notifications import router as notifications_router
@@ -99,6 +100,9 @@ app.include_router(
     notifications_router,
     prefix=f"{settings.API_V1_STR}/notifications",
     tags=["Notifications"],
+)
+app.include_router(
+    teams_router, prefix=f"{settings.API_V1_STR}/teams", tags=["Teams"]
 )
 
 
