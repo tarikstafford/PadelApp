@@ -5,6 +5,7 @@ from app import crud, models, schemas
 from app.core import security
 from app.crud.team_crud import team_crud
 from app.database import get_db
+from app.schemas.team_schemas import AddPlayerRequest
 
 router = APIRouter()
 
@@ -31,7 +32,7 @@ async def get_team(
 @router.post("/{team_id}/players", response_model=schemas.Team)
 async def add_player_to_team(
     team_id: int,
-    player_request: schemas.AddPlayerRequest,
+    player_request: AddPlayerRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_active_user),
 ):

@@ -330,6 +330,18 @@ async def register_team(
     current_user: User = Depends(get_current_active_user),
 ):
     """Register team for tournament"""
+    # First check team eligibility to provide specific error messages
+    eligibility = tournament_crud.check_team_eligibility(
+        db=db, tournament_id=tournament_id, team_id=team_data.team_id
+    )
+    
+    if not eligibility.get("eligible", False):
+        reason = eligibility.get("reason", "Team is not eligible for this tournament")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=reason,
+        )
+    
     tournament_team = tournament_crud.register_team(
         db=db, tournament_id=tournament_id, team_data=team_data
     )
@@ -337,7 +349,7 @@ async def register_team(
     if not tournament_team:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to register team. Check eligibility and availability.",
+            detail="Failed to register team. Please try again.",
         )
 
     return TournamentTeamResponse(
