@@ -135,8 +135,8 @@ class NotificationService:
                         "club_name": club_name,
                         "end_time": game.end_time.isoformat(),
                     },
-                    action_url=f"/games/{game_id}",
-                    action_text="Submit Score",
+                    # action_url=f"/games/{game_id}",  # Temporarily disabled until migration
+                    # action_text="Submit Score",  # Temporarily disabled until migration
                     expires_in_hours=24,
                 )
                 if notification:
@@ -173,8 +173,8 @@ class NotificationService:
                     "score_id": score_id,
                     "submitting_team": submitting_team,
                 },
-                action_url=f"/games/{game_id}/scores/{score_id}",
-                action_text="Review Score",
+                # action_url=f"/games/{game_id}/scores/{score_id}",  # Temporarily disabled until migration
+                # action_text="Review Score",  # Temporarily disabled until migration
                 expires_in_hours=48,
             )
             if notification:
@@ -210,8 +210,8 @@ class NotificationService:
                 data={
                     "game_id": game_id,
                 },
-                action_url=f"/games/{game_id}",
-                action_text="View Game",
+                # action_url=f"/games/{game_id}",  # Temporarily disabled until migration
+                # action_text="View Game",  # Temporarily disabled until migration
                 expires_in_hours=48,
             )
             if notification:
@@ -241,8 +241,8 @@ class NotificationService:
                 "invited_by_id": invited_by_id,
                 "team_name": team.name,
             },
-            action_url=f"/teams/{team_id}/invitation",
-            action_text="View Invitation",
+            # action_url=f"/teams/{team_id}/invitation",  # Temporarily disabled until migration
+            # action_text="View Invitation",  # Temporarily disabled until migration
             expires_in_hours=72,
         )
 
