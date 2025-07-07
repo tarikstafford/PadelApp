@@ -23,3 +23,11 @@ class Team(TeamBase):
 
     class Config:
         from_attributes = True
+
+
+class AddPlayerRequest(BaseModel):
+    user_id: int
+
+
+class RemovePlayerRequest(BaseModel):
+    user_id: int
