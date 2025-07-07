@@ -69,11 +69,42 @@ def upgrade() -> None:
             message TEXT NOT NULL,
             read BOOLEAN NOT NULL DEFAULT false,
             priority notificationpriority NOT NULL DEFAULT 'MEDIUM',
-            metadata JSONB,
+            data JSONB,
+            action_url VARCHAR(500),
+            action_text VARCHAR(100),
             expires_at TIMESTAMP,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             read_at TIMESTAMP
         );
+    """)
+    
+    # Handle existing table: rename metadata column to data if it exists
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'notifications' AND column_name = 'metadata') THEN
+                ALTER TABLE notifications RENAME COLUMN metadata TO data;
+            END IF;
+        END $$;
+    """)
+    
+    # Add missing columns if they don't exist
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name = 'notifications' AND column_name = 'action_url') THEN
+                ALTER TABLE notifications ADD COLUMN action_url VARCHAR(500);
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name = 'notifications' AND column_name = 'action_text') THEN
+                ALTER TABLE notifications ADD COLUMN action_text VARCHAR(100);
+            END IF;
+        END $$;
     """)
     
     # Create indexes if they don't exist
@@ -87,20 +118,124 @@ def upgrade() -> None:
         CREATE TABLE IF NOT EXISTS notification_preferences (
             id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id),
-            game_starting_notifications BOOLEAN NOT NULL DEFAULT true,
-            game_ended_notifications BOOLEAN NOT NULL DEFAULT true,
-            score_notifications BOOLEAN NOT NULL DEFAULT true,
-            team_notifications BOOLEAN NOT NULL DEFAULT true,
-            tournament_notifications BOOLEAN NOT NULL DEFAULT true,
-            system_notifications BOOLEAN NOT NULL DEFAULT true,
-            email_notifications BOOLEAN NOT NULL DEFAULT false,
-            push_notifications BOOLEAN NOT NULL DEFAULT true,
+            game_starting_enabled BOOLEAN NOT NULL DEFAULT true,
+            game_ended_enabled BOOLEAN NOT NULL DEFAULT true,
+            score_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
+            team_invitations_enabled BOOLEAN NOT NULL DEFAULT true,
+            game_invitations_enabled BOOLEAN NOT NULL DEFAULT true,
+            tournament_reminders_enabled BOOLEAN NOT NULL DEFAULT true,
+            elo_updates_enabled BOOLEAN NOT NULL DEFAULT true,
+            general_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
+            game_reminder_minutes INTEGER NOT NULL DEFAULT 30,
+            email_notifications_enabled BOOLEAN NOT NULL DEFAULT false,
+            push_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
     """)
     
     op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_notification_preferences_user_id ON notification_preferences(user_id);")
+    
+    # Handle existing notification_preferences table: rename columns to match model
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'notification_preferences' AND column_name = 'game_starting_notifications') THEN
+                ALTER TABLE notification_preferences RENAME COLUMN game_starting_notifications TO game_starting_enabled;
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'notification_preferences' AND column_name = 'game_ended_notifications') THEN
+                ALTER TABLE notification_preferences RENAME COLUMN game_ended_notifications TO game_ended_enabled;
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'notification_preferences' AND column_name = 'score_notifications') THEN
+                ALTER TABLE notification_preferences RENAME COLUMN score_notifications TO score_notifications_enabled;
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'notification_preferences' AND column_name = 'team_notifications') THEN
+                ALTER TABLE notification_preferences RENAME COLUMN team_notifications TO team_invitations_enabled;
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'notification_preferences' AND column_name = 'tournament_notifications') THEN
+                ALTER TABLE notification_preferences RENAME COLUMN tournament_notifications TO tournament_reminders_enabled;
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'notification_preferences' AND column_name = 'system_notifications') THEN
+                ALTER TABLE notification_preferences RENAME COLUMN system_notifications TO general_notifications_enabled;
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'notification_preferences' AND column_name = 'email_notifications') THEN
+                ALTER TABLE notification_preferences RENAME COLUMN email_notifications TO email_notifications_enabled;
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns 
+                      WHERE table_name = 'notification_preferences' AND column_name = 'push_notifications') THEN
+                ALTER TABLE notification_preferences RENAME COLUMN push_notifications TO push_notifications_enabled;
+            END IF;
+        END $$;
+    """)
+    
+    # Add missing columns if they don't exist
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name = 'notification_preferences' AND column_name = 'game_invitations_enabled') THEN
+                ALTER TABLE notification_preferences ADD COLUMN game_invitations_enabled BOOLEAN NOT NULL DEFAULT true;
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name = 'notification_preferences' AND column_name = 'elo_updates_enabled') THEN
+                ALTER TABLE notification_preferences ADD COLUMN elo_updates_enabled BOOLEAN NOT NULL DEFAULT true;
+            END IF;
+        END $$;
+    """)
+    
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name = 'notification_preferences' AND column_name = 'game_reminder_minutes') THEN
+                ALTER TABLE notification_preferences ADD COLUMN game_reminder_minutes INTEGER NOT NULL DEFAULT 30;
+            END IF;
+        END $$;
+    """)
 
     # Create game_scores table if it doesn't exist
     op.execute("""
