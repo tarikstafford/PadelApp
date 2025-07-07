@@ -59,13 +59,13 @@ class Notification(Base):
     message = Column(Text, nullable=False)
 
     # Additional context data (game_id, team_id, etc.)
-    data = Column(JSON, nullable=True)
+    data = Column(JSON, nullable=True, name="metadata")
 
-    # Action link/route for frontend navigation
-    action_url = Column(String(500), nullable=True)
-    action_text = Column(
-        String(100), nullable=True
-    )  # "View Game", "Confirm Score", etc.
+    # Action link/route for frontend navigation (temporarily disabled until migration)
+    # action_url = Column(String(500), nullable=True)
+    # action_text = Column(
+    #     String(100), nullable=True
+    # )  # "View Game", "Confirm Score", etc.
 
     # Status tracking
     read = Column(Boolean, default=False, nullable=False)

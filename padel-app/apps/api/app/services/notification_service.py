@@ -52,8 +52,8 @@ class NotificationService:
             title=title,
             message=message,
             data=data or {},
-            action_url=action_url,
-            action_text=action_text,
+            # action_url=action_url,  # Temporarily disabled until migration
+            # action_text=action_text,  # Temporarily disabled until migration
             expires_at=expires_at,
         )
 
@@ -96,8 +96,8 @@ class NotificationService:
                         "club_name": club_name,
                         "start_time": game.start_time.isoformat(),
                     },
-                    action_url=f"/games/{game_id}",
-                    action_text="View Game",
+                    # action_url=f"/games/{game_id}",  # Temporarily disabled until migration
+                    # action_text="View Game",  # Temporarily disabled until migration
                     expires_in_hours=2,
                 )
                 if notification:
