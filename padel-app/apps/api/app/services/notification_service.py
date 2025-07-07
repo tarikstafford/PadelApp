@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -266,7 +267,7 @@ class NotificationService:
         """Mark all notifications as read for a user"""
         unread_notifications = (
             db.query(Notification)
-            .filter(Notification.user_id == user_id, not Notification.read)
+            .filter(Notification.user_id == user_id, Notification.read == False)
             .all()
         )
 
@@ -290,11 +291,11 @@ class NotificationService:
         query = db.query(Notification).filter(Notification.user_id == user_id)
 
         if not include_read:
-            query = query.filter(not Notification.read)
+            query = query.filter(Notification.read == False)
 
         # Filter out expired notifications
         query = query.filter(
-            db.or_(
+            or_(
                 Notification.expires_at.is_(None),
                 Notification.expires_at > datetime.now(timezone.utc),
             )
@@ -313,8 +314,8 @@ class NotificationService:
             db.query(Notification)
             .filter(
                 Notification.user_id == user_id,
-                not Notification.read,
-                db.or_(
+                Notification.read == False,
+                or_(
                     Notification.expires_at.is_(None),
                     Notification.expires_at > datetime.now(timezone.utc),
                 ),
