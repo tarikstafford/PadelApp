@@ -20,10 +20,10 @@ from app.routers import (
     public_router,
     users_router,
 )
-from app.routers.teams import router as teams_router
 from app.routers.business import router as business_router
 from app.routers.game_scores import router as game_scores_router
 from app.routers.notifications import router as notifications_router
+from app.routers.teams import router as teams_router
 from app.routers.tournaments import router as tournaments_router
 
 app = FastAPI(
@@ -101,9 +101,7 @@ app.include_router(
     prefix=f"{settings.API_V1_STR}/notifications",
     tags=["Notifications"],
 )
-app.include_router(
-    teams_router, prefix=f"{settings.API_V1_STR}/teams", tags=["Teams"]
-)
+app.include_router(teams_router, prefix=f"{settings.API_V1_STR}/teams", tags=["Teams"])
 
 
 @app.on_event("startup")

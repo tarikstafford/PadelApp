@@ -124,6 +124,33 @@ export const apiClient = {
     }
   },
 
+  patch: async <T>(path: string, body: any): Promise<T> => {
+    try {
+      const response = await fetch(`${getApiUrl()}${path}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        let errorBody;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          errorBody = { detail: `Request failed with status ${response.status}` };
+        }
+        throw errorBody;
+      }
+      return response.json() as Promise<T>;
+    } catch (error: any) {
+      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
+        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+      }
+      const formattedError = formatErrorMessage(error);
+      showErrorToast(formattedError);
+      throw formattedError;
+    }
+  },
+
   delete: async <T>(path: string): Promise<T> => {
     try {
       const response = await fetch(`${getApiUrl()}${path}`, {

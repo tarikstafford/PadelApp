@@ -29,6 +29,7 @@ export interface AuthContextType {
     logout: () => void;
     register: (name: string, email: string, password: string) => Promise<void>;
     isLoading: boolean;
+    isAuthenticated: boolean;
     fetchUser: () => Promise<void>;
     requestEloAdjustment: (requestedRating: number, reason: string) => Promise<void>;
     updatePreferredPosition: (position: "LEFT" | "RIGHT") => Promise<void>;
@@ -185,6 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshToken,
         setRefreshToken,
         isLoading,
+        isAuthenticated: !!user && !!accessToken,
         login,
         logout,
         register,

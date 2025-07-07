@@ -248,5 +248,289 @@ class CourtBookingService:
             court_booking.match_id = match_id
             db.commit()
 
+    def create_bulk_tournament_bookings(
+        self, db: Session, tournament_id: int, court_bookings: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """
+        Create multiple tournament court bookings at once.
+
+        Args:
+            db: Database session
+            tournament_id: Tournament ID
+            court_bookings: List of court booking data
+
+        Returns:
+            Dictionary containing created bookings and any failures
+        """
+        created_bookings = []
+        failed_bookings = []
+
+        for booking_data in court_bookings:
+            try:
+                # Validate court availability
+                court_id = booking_data["court_id"]
+                start_time = booking_data["start_time"]
+                end_time = booking_data["end_time"]
+
+                if not self.is_court_available(db, court_id, start_time, end_time):
+                    failed_bookings.append(
+                        {
+                            "booking_data": booking_data,
+                            "error": "Court is not available for the specified time slot",
+                        }
+                    )
+                    continue
+
+                # Create booking
+                booking = TournamentCourtBooking(
+                    tournament_id=tournament_id,
+                    court_id=court_id,
+                    start_time=start_time,
+                    end_time=end_time,
+                    is_occupied=False,
+                )
+                db.add(booking)
+                db.flush()  # Get the ID without committing
+                created_bookings.append(booking)
+
+            except Exception as e:
+                failed_bookings.append({"booking_data": booking_data, "error": str(e)})
+
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            return {
+                "created_bookings": [],
+                "failed_bookings": court_bookings,
+                "total_created": 0,
+                "total_failed": len(court_bookings),
+                "error": f"Database error: {e!s}",
+            }
+
+        return {
+            "created_bookings": created_bookings,
+            "failed_bookings": failed_bookings,
+            "total_created": len(created_bookings),
+            "total_failed": len(failed_bookings),
+        }
+
+    def block_courts_for_tournament(
+        self,
+        db: Session,
+        tournament_id: int,
+        time_slots: list[dict[str, Any]],
+        court_ids: list[int],
+    ) -> dict[str, Any]:
+        """
+        Block multiple courts for multiple time slots for a tournament.
+
+        Args:
+            db: Database session
+            tournament_id: Tournament ID
+            time_slots: List of time slot dictionaries
+            court_ids: List of court IDs to block
+
+        Returns:
+            Dictionary containing blocking results
+        """
+        court_bookings = []
+
+        # Generate booking data for each court and time slot combination
+        for time_slot in time_slots:
+            for court_id in court_ids:
+                court_bookings.append(
+                    {
+                        "court_id": court_id,
+                        "start_time": time_slot["start_time"],
+                        "end_time": time_slot["end_time"],
+                    }
+                )
+
+        return self.create_bulk_tournament_bookings(db, tournament_id, court_bookings)
+
+    def release_tournament_bookings(self, db: Session, tournament_id: int) -> bool:
+        """
+        Release all court bookings for a tournament (when tournament is cancelled).
+
+        Args:
+            db: Database session
+            tournament_id: Tournament ID
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get all court bookings for the tournament
+            bookings = (
+                db.query(TournamentCourtBooking)
+                .filter(TournamentCourtBooking.tournament_id == tournament_id)
+                .all()
+            )
+
+            # Delete all bookings
+            for booking in bookings:
+                db.delete(booking)
+
+            db.commit()
+            return True
+
+        except Exception:
+            db.rollback()
+            return False
+
+    def get_tournament_court_utilization(
+        self, db: Session, tournament_id: int
+    ) -> dict[str, Any]:
+        """
+        Get court utilization statistics for a tournament.
+
+        Args:
+            db: Database session
+            tournament_id: Tournament ID
+
+        Returns:
+            Dictionary containing utilization statistics
+        """
+        bookings = (
+            db.query(TournamentCourtBooking)
+            .filter(TournamentCourtBooking.tournament_id == tournament_id)
+            .all()
+        )
+
+        if not bookings:
+            return {
+                "tournament_id": tournament_id,
+                "total_bookings": 0,
+                "occupied_bookings": 0,
+                "available_bookings": 0,
+                "utilization_rate": 0.0,
+                "court_breakdown": {},
+            }
+
+        total_bookings = len(bookings)
+        occupied_bookings = len([b for b in bookings if b.is_occupied])
+        available_bookings = total_bookings - occupied_bookings
+        utilization_rate = (
+            (occupied_bookings / total_bookings) * 100 if total_bookings > 0 else 0.0
+        )
+
+        # Court breakdown
+        court_breakdown = {}
+        for booking in bookings:
+            court_id = booking.court_id
+            if court_id not in court_breakdown:
+                court_breakdown[court_id] = {
+                    "total_slots": 0,
+                    "occupied_slots": 0,
+                    "available_slots": 0,
+                }
+
+            court_breakdown[court_id]["total_slots"] += 1
+            if booking.is_occupied:
+                court_breakdown[court_id]["occupied_slots"] += 1
+            else:
+                court_breakdown[court_id]["available_slots"] += 1
+
+        return {
+            "tournament_id": tournament_id,
+            "total_bookings": total_bookings,
+            "occupied_bookings": occupied_bookings,
+            "available_bookings": available_bookings,
+            "utilization_rate": utilization_rate,
+            "court_breakdown": court_breakdown,
+        }
+
+    def check_courts_availability_for_tournament(
+        self,
+        db: Session,
+        time_slots: list[dict[str, Any]],
+        court_ids: list[int],
+        exclude_tournament_id: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """
+        Check court availability for multiple time slots.
+
+        Args:
+            db: Database session
+            time_slots: List of time slot dictionaries
+            court_ids: List of court IDs to check
+            exclude_tournament_id: Tournament ID to exclude from availability check
+
+        Returns:
+            Dictionary containing availability information
+        """
+        availability_results = {
+            "available_courts": [],
+            "unavailable_courts": [],
+            "availability_details": {},
+        }
+
+        for court_id in court_ids:
+            court_available = True
+            slot_details = []
+
+            for time_slot in time_slots:
+                start_time = time_slot["start_time"]
+                end_time = time_slot["end_time"]
+
+                # Check regular bookings
+                regular_booking = (
+                    db.query(Booking)
+                    .filter(
+                        Booking.court_id == court_id,
+                        Booking.status.in_(
+                            [BookingStatus.CONFIRMED, BookingStatus.PENDING]
+                        ),
+                        Booking.start_time < end_time,
+                        Booking.end_time > start_time,
+                    )
+                    .first()
+                )
+
+                # Check tournament bookings (excluding specified tournament)
+                tournament_booking_query = db.query(TournamentCourtBooking).filter(
+                    TournamentCourtBooking.court_id == court_id,
+                    TournamentCourtBooking.start_time < end_time,
+                    TournamentCourtBooking.end_time > start_time,
+                )
+
+                if exclude_tournament_id:
+                    tournament_booking_query = tournament_booking_query.filter(
+                        TournamentCourtBooking.tournament_id != exclude_tournament_id
+                    )
+
+                tournament_booking = tournament_booking_query.first()
+
+                slot_available = not (regular_booking or tournament_booking)
+                if not slot_available:
+                    court_available = False
+
+                slot_details.append(
+                    {
+                        "start_time": start_time.isoformat()
+                        if isinstance(start_time, datetime)
+                        else start_time,
+                        "end_time": end_time.isoformat()
+                        if isinstance(end_time, datetime)
+                        else end_time,
+                        "available": slot_available,
+                        "blocking_type": "regular"
+                        if regular_booking
+                        else "tournament"
+                        if tournament_booking
+                        else None,
+                    }
+                )
+
+            availability_results["availability_details"][court_id] = slot_details
+
+            if court_available:
+                availability_results["available_courts"].append(court_id)
+            else:
+                availability_results["unavailable_courts"].append(court_id)
+
+        return availability_results
+
 
 court_booking_service = CourtBookingService()

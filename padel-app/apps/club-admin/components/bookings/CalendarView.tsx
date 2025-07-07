@@ -6,14 +6,16 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { DateSelectArg, EventClickArg, DatesSetArg } from '@fullcalendar/core';
-import { transformBookingsToEvents, CalendarEvent } from '@/lib/calendarTransformers';
-import { fetchBookings } from '@/lib/api';
-import { Booking } from '@/lib/types';
+import { transformAllEventsToCalendar, CalendarEvent } from '@/lib/calendarTransformers';
+import { fetchBookings, apiClient } from '@/lib/api';
+import { Booking, Tournament, TournamentMatch } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import './CalendarView.css';
 import BookingDetailsDialog from './BookingDetailsDialog';
+import TournamentDetailsDialog from '@/components/tournaments/TournamentDetailsDialog';
+import TournamentMatchDialog from '@/components/tournaments/TournamentMatchDialog';
 
 interface CalendarViewProps {
   onEventClick?: (eventInfo: EventClickArg) => void;
@@ -25,17 +27,50 @@ export default function CalendarView({ onDateSelect }: CalendarViewProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [selectedMatch, setSelectedMatch] = useState<TournamentMatch | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  const fetchAndSetBookings = useCallback(async (start: Date, end: Date) => {
+  const fetchAndSetEvents = useCallback(async (start: Date, end: Date) => {
     if (!isAuthenticated || !user?.club_id) return;
     setLoading(true);
     try {
-      const data = await fetchBookings(user.club_id, {
-        start_date: start.toISOString().split("T")[0],
-        end_date: end.toISOString().split("T")[0],
+      const startDate = start.toISOString().split("T")[0];
+      const endDate = end.toISOString().split("T")[0];
+      
+      // Fetch bookings
+      const bookingsData = await fetchBookings(user.club_id, {
+        start_date: startDate,
+        end_date: endDate,
       });
-      const calendarEvents = transformBookingsToEvents(data.bookings);
+      
+      // Fetch tournaments
+      const tournamentsData = await apiClient.get<Tournament[]>('/tournaments/club', {
+        start_date: startDate,
+        end_date: endDate,
+      });
+      
+      // Fetch tournament matches (if any tournaments exist)
+      let matchesData: TournamentMatch[] = [];
+      if (tournamentsData.length > 0) {
+        try {
+          matchesData = await apiClient.get<TournamentMatch[]>('/tournaments/matches', {
+            start_date: startDate,
+            end_date: endDate,
+          });
+        } catch (error) {
+          // Matches endpoint might not exist yet, continue without matches
+          console.warn("Could not fetch tournament matches:", error);
+        }
+      }
+      
+      // Transform all events and combine them
+      const calendarEvents = transformAllEventsToCalendar({
+        bookings: bookingsData.bookings,
+        tournaments: tournamentsData,
+        tournamentMatches: matchesData,
+      });
+      
       setEvents(calendarEvents);
     } catch (error: any) {
       console.error("Failed to fetch schedule", error);
@@ -46,18 +81,38 @@ export default function CalendarView({ onDateSelect }: CalendarViewProps) {
   }, [isAuthenticated, user?.club_id]);
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
-    fetchAndSetBookings(arg.start, arg.end);
-  }, [fetchAndSetBookings]);
+    fetchAndSetEvents(arg.start, arg.end);
+  }, [fetchAndSetEvents]);
 
   const handleEventClick = (clickInfo: EventClickArg) => {
-    const booking = clickInfo.event.extendedProps.booking as Booking;
-    setSelectedBooking(booking);
+    const { extendedProps } = clickInfo.event;
+    
+    // Clear all selections first
+    setSelectedBooking(null);
+    setSelectedTournament(null);
+    setSelectedMatch(null);
+    
+    // Set the appropriate selection based on event type
+    switch (extendedProps.type) {
+      case 'booking':
+        setSelectedBooking(extendedProps.booking as Booking);
+        break;
+      case 'tournament':
+        setSelectedTournament(extendedProps.tournament as Tournament);
+        break;
+      case 'tournament-match':
+        setSelectedMatch(extendedProps.tournamentMatch as TournamentMatch);
+        break;
+    }
+    
     setIsDialogOpen(true);
   };
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setSelectedBooking(null);
+    setSelectedTournament(null);
+    setSelectedMatch(null);
   };
   
   return (
@@ -89,7 +144,17 @@ export default function CalendarView({ onDateSelect }: CalendarViewProps) {
       />
       <BookingDetailsDialog
         booking={selectedBooking}
-        isOpen={isDialogOpen}
+        isOpen={isDialogOpen && !!selectedBooking}
+        onClose={handleDialogClose}
+      />
+      <TournamentDetailsDialog
+        tournament={selectedTournament}
+        isOpen={isDialogOpen && !!selectedTournament}
+        onClose={handleDialogClose}
+      />
+      <TournamentMatchDialog
+        match={selectedMatch}
+        isOpen={isDialogOpen && !!selectedMatch}
         onClose={handleDialogClose}
       />
     </div>

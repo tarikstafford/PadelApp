@@ -49,9 +49,14 @@ class TeamStats(Base):
     # Last activity
     last_game_date = Column(DateTime, nullable=True)
     last_updated = Column(
-        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
 
     # Relationships
     team = relationship("Team", back_populates="stats")
@@ -155,7 +160,9 @@ class TeamGameHistory(Base):
     tournament_id = Column(Integer, ForeignKey("tournaments.id"), nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
 
     # Relationships
     team = relationship("Team", foreign_keys=[team_id])

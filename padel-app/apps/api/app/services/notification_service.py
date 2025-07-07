@@ -267,7 +267,7 @@ class NotificationService:
         """Mark all notifications as read for a user"""
         unread_notifications = (
             db.query(Notification)
-            .filter(Notification.user_id == user_id, Notification.read == False)
+            .filter(Notification.user_id == user_id, not Notification.read)
             .all()
         )
 
@@ -291,7 +291,7 @@ class NotificationService:
         query = db.query(Notification).filter(Notification.user_id == user_id)
 
         if not include_read:
-            query = query.filter(Notification.read == False)
+            query = query.filter(not Notification.read)
 
         # Filter out expired notifications
         query = query.filter(
@@ -314,7 +314,7 @@ class NotificationService:
             db.query(Notification)
             .filter(
                 Notification.user_id == user_id,
-                Notification.read == False,
+                not Notification.read,
                 or_(
                     Notification.expires_at.is_(None),
                     Notification.expires_at > datetime.now(timezone.utc),

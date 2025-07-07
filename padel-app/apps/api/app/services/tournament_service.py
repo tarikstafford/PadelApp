@@ -1,5 +1,5 @@
 import math
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any, Optional
 
 from sqlalchemy.orm import Session
@@ -14,6 +14,7 @@ from app.models.tournament import (
     TournamentType,
 )
 from app.schemas.tournament_schemas import BracketNode, TournamentBracket
+from app.services.court_booking_service import court_booking_service
 
 
 class TournamentService:
@@ -466,6 +467,167 @@ class TournamentService:
                         )
 
         return True
+
+    def cancel_tournament(self, db: Session, tournament_id: int) -> bool:
+        """
+        Cancel tournament and release all associated court bookings.
+
+        Args:
+            db: Database session
+            tournament_id: Tournament ID
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            tournament = tournament_crud.get_tournament(db, tournament_id)
+            if not tournament:
+                return False
+
+            # Update tournament status to cancelled
+            tournament_crud.update_tournament(
+                db,
+                tournament_id,
+                type("obj", (object,), {"status": TournamentStatus.CANCELLED})(),
+            )
+
+            # Release all court bookings for this tournament
+            success = court_booking_service.release_tournament_bookings(
+                db, tournament_id
+            )
+
+            if success:
+                # Reset schedule generation flag
+                tournament_crud.update_tournament(
+                    db,
+                    tournament_id,
+                    type("obj", (object,), {"schedule_generated": False})(),
+                )
+
+            return success
+
+        except Exception:
+            db.rollback()
+            return False
+
+    def reactivate_tournament(self, db: Session, tournament_id: int) -> bool:
+        """
+        Reactivate a cancelled tournament (if possible).
+
+        Args:
+            db: Database session
+            tournament_id: Tournament ID
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            tournament = tournament_crud.get_tournament(db, tournament_id)
+            if not tournament or tournament.status != TournamentStatus.CANCELLED:
+                return False
+
+            # Check if we can recreate court bookings
+            if tournament.hourly_time_slots and tournament.assigned_court_ids:
+                time_slots = [
+                    {
+                        "start_time": slot["start_time"],
+                        "end_time": slot["end_time"],
+                    }
+                    for slot in tournament.hourly_time_slots
+                ]
+
+                # Check court availability
+                availability = (
+                    court_booking_service.check_courts_availability_for_tournament(
+                        db, time_slots, tournament.assigned_court_ids
+                    )
+                )
+
+                # If not all courts are available, cannot reactivate
+                if set(availability["available_courts"]) != set(
+                    tournament.assigned_court_ids
+                ):
+                    return False
+
+                # Block courts again
+                blocking_result = court_booking_service.block_courts_for_tournament(
+                    db, tournament_id, time_slots, tournament.assigned_court_ids
+                )
+
+                if blocking_result["total_failed"] > 0:
+                    return False
+
+            # Update tournament status back to appropriate state
+            new_status = TournamentStatus.DRAFT
+            if (
+                tournament.registration_deadline
+                and tournament.registration_deadline < datetime.utcnow()
+            ):
+                new_status = TournamentStatus.REGISTRATION_CLOSED
+            else:
+                new_status = TournamentStatus.REGISTRATION_OPEN
+
+            tournament_crud.update_tournament(
+                db,
+                tournament_id,
+                type("obj", (object,), {"status": new_status})(),
+            )
+
+            return True
+
+        except Exception:
+            db.rollback()
+            return False
+
+    def get_tournament_cancellation_impact(
+        self, db: Session, tournament_id: int
+    ) -> dict[str, Any]:
+        """
+        Get the impact analysis of cancelling a tournament.
+
+        Args:
+            db: Database session
+            tournament_id: Tournament ID
+
+        Returns:
+            Dictionary containing cancellation impact details
+        """
+        tournament = tournament_crud.get_tournament(db, tournament_id)
+        if not tournament:
+            return {"error": "Tournament not found"}
+
+        # Get registered teams
+        total_teams = 0
+        for category_config in tournament.categories:
+            teams = tournament_crud.get_tournament_teams(
+                db, tournament_id, category_config.category
+            )
+            total_teams += len(teams)
+
+        # Get court bookings
+        court_bookings = tournament.court_bookings
+
+        # Get matches
+        matches = tournament_crud.get_tournament_matches(db, tournament_id)
+        completed_matches = [m for m in matches if m.status == MatchStatus.COMPLETED]
+
+        return {
+            "tournament_id": tournament_id,
+            "tournament_name": tournament.name,
+            "current_status": tournament.status,
+            "registered_teams": total_teams,
+            "court_bookings_to_release": len(court_bookings),
+            "total_matches": len(matches),
+            "completed_matches": len(completed_matches),
+            "matches_to_cancel": len(matches) - len(completed_matches),
+            "entry_fees_to_refund": total_teams * (tournament.entry_fee or 0),
+            "can_cancel": tournament.status
+            in [
+                TournamentStatus.DRAFT,
+                TournamentStatus.REGISTRATION_OPEN,
+                TournamentStatus.REGISTRATION_CLOSED,
+            ],
+        }
 
 
 tournament_service = TournamentService()

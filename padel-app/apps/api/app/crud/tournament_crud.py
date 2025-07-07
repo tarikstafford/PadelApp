@@ -13,9 +13,11 @@ from app.models.tournament import (
     TournamentCategoryConfig,
     TournamentCourtBooking,
     TournamentMatch,
+    TournamentParticipant,
     TournamentStatus,
     TournamentTeam,
     TournamentTrophy,
+    TournamentType,
 )
 from app.schemas.tournament_schemas import (
     TournamentCreate,
@@ -34,6 +36,11 @@ class TournamentCRUD:
         if not tournament_data.categories:
             raise ValueError("Tournament must have at least one category")
 
+        # Calculate total max participants as sum of category limits
+        total_max_participants = sum(
+            cat.max_participants for cat in tournament_data.categories
+        )
+
         # Create tournament
         tournament = Tournament(
             club_id=club_id,
@@ -43,7 +50,7 @@ class TournamentCRUD:
             start_date=tournament_data.start_date,
             end_date=tournament_data.end_date,
             registration_deadline=tournament_data.registration_deadline,
-            max_participants=tournament_data.max_participants,
+            max_participants=total_max_participants,  # Sum of category limits
             entry_fee=tournament_data.entry_fee or 0.0,
             status=TournamentStatus.DRAFT,
         )
@@ -76,12 +83,25 @@ class TournamentCRUD:
         db.refresh(tournament)
         return tournament
 
+    def create_tournament_from_dict(
+        self, db: Session, tournament_data: dict
+    ) -> Tournament:
+        """Create tournament from dictionary data (used by recurring tournament service)."""
+        tournament = Tournament(**tournament_data)
+        db.add(tournament)
+        db.commit()
+        db.refresh(tournament)
+        return tournament
+
     def get_tournament(self, db: Session, tournament_id: int) -> Optional[Tournament]:
         return (
             db.query(Tournament)
             .options(
                 joinedload(Tournament.categories),
                 joinedload(Tournament.teams).joinedload(TournamentTeam.team),
+                joinedload(Tournament.participants).joinedload(
+                    TournamentParticipant.user
+                ),
                 joinedload(Tournament.matches),
                 joinedload(Tournament.court_bookings),
             )
@@ -243,6 +263,129 @@ class TournamentCRUD:
         db.commit()
         return True
 
+    def register_participant(
+        self,
+        db: Session,
+        tournament_id: int,
+        user_id: int,
+        category: TournamentCategory,
+    ) -> Optional[TournamentParticipant]:
+        """Register an individual participant for Americano tournaments"""
+        # Check tournament exists and is open for registration
+        tournament = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+        if not tournament or tournament.status != TournamentStatus.REGISTRATION_OPEN:
+            return None
+
+        # Check if tournament type supports individual registration
+        if tournament.tournament_type not in [
+            TournamentType.AMERICANO,
+            TournamentType.FIXED_AMERICANO,
+        ]:
+            return None
+
+        # Get category config
+        category_config = (
+            db.query(TournamentCategoryConfig)
+            .filter(
+                and_(
+                    TournamentCategoryConfig.tournament_id == tournament_id,
+                    TournamentCategoryConfig.category == category,
+                )
+            )
+            .first()
+        )
+        if not category_config:
+            return None
+
+        # Check if participant is already registered
+        existing_registration = (
+            db.query(TournamentParticipant)
+            .filter(
+                and_(
+                    TournamentParticipant.tournament_id == tournament_id,
+                    TournamentParticipant.user_id == user_id,
+                )
+            )
+            .first()
+        )
+        if existing_registration:
+            return None
+
+        # Get user and check ELO eligibility
+        from app.models.user import User
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return None
+
+        if not (category_config.min_elo <= user.elo_rating < category_config.max_elo):
+            return None
+
+        # Check category capacity
+        current_participants = (
+            db.query(TournamentParticipant)
+            .filter(TournamentParticipant.category_config_id == category_config.id)
+            .count()
+        )
+        if current_participants >= category_config.max_participants:
+            return None
+
+        # Register participant
+        tournament_participant = TournamentParticipant(
+            tournament_id=tournament_id,
+            category_config_id=category_config.id,
+            user_id=user_id,
+            elo_rating=user.elo_rating,
+        )
+        db.add(tournament_participant)
+        db.commit()
+        db.refresh(tournament_participant)
+        return tournament_participant
+
+    def unregister_participant(
+        self, db: Session, tournament_id: int, user_id: int
+    ) -> bool:
+        """Unregister an individual participant from Americano tournament"""
+        tournament_participant = (
+            db.query(TournamentParticipant)
+            .filter(
+                and_(
+                    TournamentParticipant.tournament_id == tournament_id,
+                    TournamentParticipant.user_id == user_id,
+                )
+            )
+            .first()
+        )
+        if not tournament_participant:
+            return False
+
+        db.delete(tournament_participant)
+        db.commit()
+        return True
+
+    def get_tournament_participants(
+        self,
+        db: Session,
+        tournament_id: int,
+        category: Optional[TournamentCategory] = None,
+    ) -> list[TournamentParticipant]:
+        """Get individual participants for Americano tournaments"""
+        query = (
+            db.query(TournamentParticipant)
+            .options(
+                joinedload(TournamentParticipant.user),
+                joinedload(TournamentParticipant.category_config),
+            )
+            .filter(TournamentParticipant.tournament_id == tournament_id)
+        )
+
+        if category:
+            query = query.join(TournamentCategoryConfig).filter(
+                TournamentCategoryConfig.category == category
+            )
+
+        return query.all()
+
     def get_tournament_teams(
         self,
         db: Session,
@@ -371,6 +514,16 @@ class TournamentCRUD:
         if not tournament:
             return {"eligible": False, "reason": "Tournament not found"}
 
+        # Check if tournament requires teams
+        if tournament.tournament_type in [
+            TournamentType.AMERICANO,
+            TournamentType.FIXED_AMERICANO,
+        ]:
+            return {
+                "eligible": False,
+                "reason": "This tournament accepts individual registrations, not teams",
+            }
+
         team = (
             db.query(Team)
             .options(joinedload(Team.players))
@@ -387,6 +540,7 @@ class TournamentCRUD:
             team.players
         )
         eligible_categories = []
+        reasons = []
 
         for category_config in tournament.categories:
             if category_config.min_elo <= average_elo < category_config.max_elo:
@@ -398,6 +552,29 @@ class TournamentCRUD:
                 )
                 if current_teams < category_config.max_participants:
                     eligible_categories.append(category_config.category)
+                else:
+                    reasons.append(
+                        f"{category_config.category} category is full "
+                        f"({current_teams}/{category_config.max_participants})"
+                    )
+
+        # If no eligible categories, provide specific reasons
+        if not eligible_categories:
+            if not reasons:  # No categories matched ELO range
+                reasons.append(
+                    f"Team average ELO ({average_elo:.1f}) doesn't match any "
+                    f"tournament category ranges"
+                )
+
+            return {
+                "eligible": False,
+                "reason": "; ".join(reasons),
+                "average_elo": average_elo,
+                "team_players": [
+                    {"id": p.id, "name": p.full_name, "elo": p.elo_rating}
+                    for p in team.players
+                ],
+            }
 
         return {
             "eligible": len(eligible_categories) > 0,
@@ -407,6 +584,78 @@ class TournamentCRUD:
                 {"id": p.id, "name": p.full_name, "elo": p.elo_rating}
                 for p in team.players
             ],
+        }
+
+    def check_participant_eligibility(
+        self, db: Session, tournament_id: int, user_id: int
+    ) -> dict[str, Any]:
+        """Check if a user is eligible for individual registration in Americano tournaments"""
+        tournament = (
+            db.query(Tournament)
+            .options(joinedload(Tournament.categories))
+            .filter(Tournament.id == tournament_id)
+            .first()
+        )
+        if not tournament:
+            return {"eligible": False, "reason": "Tournament not found"}
+
+        # Check if tournament accepts individual registrations
+        if tournament.tournament_type not in [
+            TournamentType.AMERICANO,
+            TournamentType.FIXED_AMERICANO,
+        ]:
+            return {
+                "eligible": False,
+                "reason": "This tournament requires team registration",
+            }
+
+        from app.models.user import User
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return {"eligible": False, "reason": "User not found"}
+
+        eligible_categories = []
+        reasons = []
+
+        for category_config in tournament.categories:
+            if category_config.min_elo <= user.elo_rating < category_config.max_elo:
+                # Check capacity
+                current_participants = (
+                    db.query(TournamentParticipant)
+                    .filter(
+                        TournamentParticipant.category_config_id == category_config.id
+                    )
+                    .count()
+                )
+                if current_participants < category_config.max_participants:
+                    eligible_categories.append(category_config.category)
+                else:
+                    reasons.append(
+                        f"{category_config.category} category is full "
+                        f"({current_participants}/{category_config.max_participants})"
+                    )
+
+        # If no eligible categories, provide specific reasons
+        if not eligible_categories:
+            if not reasons:  # No categories matched ELO range
+                reasons.append(
+                    f"User ELO ({user.elo_rating:.1f}) doesn't match any "
+                    f"tournament category ranges"
+                )
+
+            return {
+                "eligible": False,
+                "reason": "; ".join(reasons),
+                "elo_rating": user.elo_rating,
+                "user": {"id": user.id, "name": user.full_name, "elo": user.elo_rating},
+            }
+
+        return {
+            "eligible": len(eligible_categories) > 0,
+            "eligible_categories": eligible_categories,
+            "elo_rating": user.elo_rating,
+            "user": {"id": user.id, "name": user.full_name, "elo": user.elo_rating},
         }
 
     def get_tournament_stats(
@@ -438,6 +687,12 @@ class TournamentCRUD:
             .count()
         )
 
+        total_participants = (
+            db.query(TournamentParticipant)
+            .filter(TournamentParticipant.tournament_id == tournament_id)
+            .count()
+        )
+
         categories_breakdown = {}
         for category_config in tournament.categories:
             team_count = (
@@ -445,14 +700,25 @@ class TournamentCRUD:
                 .filter(TournamentTeam.category_config_id == category_config.id)
                 .count()
             )
-            categories_breakdown[category_config.category.value] = team_count
+            participant_count = (
+                db.query(TournamentParticipant)
+                .filter(TournamentParticipant.category_config_id == category_config.id)
+                .count()
+            )
+            categories_breakdown[category_config.category.value] = {
+                "teams": team_count,
+                "participants": participant_count,
+                "max_allowed": category_config.max_participants,
+            }
 
         return {
             "tournament_id": tournament_id,
+            "tournament_type": tournament.tournament_type.value,
             "total_matches": total_matches,
             "completed_matches": completed_matches,
             "pending_matches": total_matches - completed_matches,
             "total_teams": total_teams,
+            "total_participants": total_participants,
             "categories_breakdown": categories_breakdown,
             "completion_percentage": (completed_matches / total_matches * 100)
             if total_matches > 0

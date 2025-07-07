@@ -2,48 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@workspace/ui/components/card';
-import { Button } from '@workspace/ui/components/button';
-import { Badge } from '@workspace/ui/components/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Trophy, Calendar, Users, DollarSign, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Trophy, Calendar, Users, DollarSign, AlertCircle, User } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
-
-interface Tournament {
-  id: number;
-  name: string;
-  description: string;
-  tournament_type: string;
-  start_date: string;
-  end_date: string;
-  registration_deadline: string;
-  status: string;
-  max_participants: number;
-  entry_fee: number;
-  total_registered_teams: number;
-  categories: Category[];
-}
-
-interface Category {
-  id: number;
-  category: string;
-  max_participants: number;
-  min_elo: number;
-  max_elo: number;
-  current_participants: number;
-}
-
-interface Team {
-  id: number;
-  name: string;
-  players: Array<{
-    id: number;
-    name: string;
-    elo: number;
-  }>;
-}
+import { Tournament, TournamentStatus, TournamentType, TournamentCategory, Team, TeamEligibility, TournamentRegistrationRequest } from '@/lib/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Match {
   id: number;
@@ -60,30 +28,31 @@ interface Match {
 }
 
 const statusColors = {
-  DRAFT: 'bg-gray-500',
-  REGISTRATION_OPEN: 'bg-green-500',
-  REGISTRATION_CLOSED: 'bg-yellow-500',
-  IN_PROGRESS: 'bg-blue-500',
-  COMPLETED: 'bg-purple-500',
-  CANCELLED: 'bg-red-500'
+  [TournamentStatus.DRAFT]: 'bg-gray-500',
+  [TournamentStatus.REGISTRATION_OPEN]: 'bg-green-500',
+  [TournamentStatus.REGISTRATION_CLOSED]: 'bg-yellow-500',
+  [TournamentStatus.IN_PROGRESS]: 'bg-blue-500',
+  [TournamentStatus.COMPLETED]: 'bg-purple-500',
+  [TournamentStatus.CANCELLED]: 'bg-red-500'
 };
 
 const CATEGORY_LABELS = {
-  BRONZE: 'Bronze',
-  SILVER: 'Silver',
-  GOLD: 'Gold',
-  PLATINUM: 'Platinum'
+  [TournamentCategory.BRONZE]: 'Bronze (1.0-2.0)',
+  [TournamentCategory.SILVER]: 'Silver (2.0-3.0)',
+  [TournamentCategory.GOLD]: 'Gold (3.0-4.0)',
+  [TournamentCategory.PLATINUM]: 'Platinum (4.0+)'
 };
 
 export default function TournamentDetailsPage() {
   const params = useParams();
   const tournamentId = params.id as string;
+  const { user, isAuthenticated } = useAuth();
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [userTeams, setUserTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [eligibility, setEligibility] = useState<{ eligible: boolean; average_elo: number; eligible_categories: string[] } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<TournamentCategory | ''>('');
+  const [eligibility, setEligibility] = useState<TeamEligibility | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
@@ -112,24 +81,27 @@ export default function TournamentDetailsPage() {
   }, [tournamentId]);
 
   const fetchUserTeams = useCallback(async () => {
+    if (!isAuthenticated) return;
     try {
       const data = await apiClient.get<Team[]>('/users/me/teams');
       setUserTeams(data);
     } catch (error) {
       console.error('Failed to fetch user teams:', error);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (tournamentId) {
       fetchTournamentData();
-      fetchUserTeams();
+      if (isAuthenticated) {
+        fetchUserTeams();
+      }
     }
-  }, [tournamentId, fetchTournamentData, fetchUserTeams]);
+  }, [tournamentId, fetchTournamentData, fetchUserTeams, isAuthenticated]);
 
   const checkEligibility = async (teamId: string) => {
     try {
-      const data = await apiClient.get<{ eligible: boolean; average_elo: number; eligible_categories: string[] }>(`/tournaments/${tournamentId}/eligibility/${teamId}`, {}, null, false);
+      const data = await apiClient.get<TeamEligibility>(`/tournaments/${tournamentId}/eligibility/${teamId}`);
       setEligibility(data);
     } catch (error) {
       console.error('Failed to check eligibility:', error);
@@ -146,14 +118,35 @@ export default function TournamentDetailsPage() {
   };
 
   const registerForTournament = async () => {
-    if (!selectedTeam || !selectedCategory) return;
+    if (!selectedCategory) return;
+    if (tournament?.requires_teams && !selectedTeam) return;
 
     setRegistering(true);
     try {
-      await apiClient.post(`/tournaments/${tournamentId}/register`, {
-        team_id: parseInt(selectedTeam),
-        category: selectedCategory,
-      });
+      const registrationData: TournamentRegistrationRequest = {
+        category: selectedCategory as TournamentCategory,
+        ...(tournament?.requires_teams && { team_id: parseInt(selectedTeam) }),
+      };
+      
+      await apiClient.post(`/tournaments/${tournamentId}/register`, registrationData);
+      
+      alert('Successfully registered for tournament!');
+      fetchTournamentData(); // Refresh data
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to register');
+    } finally {
+      setRegistering(false);
+    }
+  };
+  
+  const registerIndividually = async (category: TournamentCategory) => {
+    setRegistering(true);
+    try {
+      const registrationData: TournamentRegistrationRequest = {
+        category,
+      };
+      
+      await apiClient.post(`/tournaments/${tournamentId}/register`, registrationData);
       
       alert('Successfully registered for tournament!');
       fetchTournamentData(); // Refresh data
@@ -182,8 +175,11 @@ export default function TournamentDetailsPage() {
     return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const isRegistrationOpen = tournament?.status === 'REGISTRATION_OPEN';
+  const isRegistrationOpen = tournament?.status === TournamentStatus.REGISTRATION_OPEN;
   const isRegistrationDeadlinePassed = tournament && new Date() > new Date(tournament.registration_deadline);
+  
+  const isAmericano = tournament?.tournament_type === TournamentType.AMERICANO || tournament?.tournament_type === TournamentType.FIXED_AMERICANO;
+  const requiresTeams = tournament?.requires_teams;
 
   if (loading) {
     return (
@@ -288,9 +284,9 @@ export default function TournamentDetailsPage() {
                       <div className="flex items-center">
                         <Users className="h-5 w-5 text-muted-foreground mr-3" />
                         <div>
-                          <p className="font-medium">Teams</p>
+                          <p className="font-medium">{requiresTeams ? 'Teams' : 'Players'}</p>
                           <p className="text-muted-foreground">
-                            {tournament.total_registered_teams} / {tournament.max_participants}
+                            {requiresTeams ? tournament.total_registered_teams : tournament.total_registered_participants} / {tournament.max_participants}
                           </p>
                         </div>
                       </div>
@@ -334,7 +330,7 @@ export default function TournamentDetailsPage() {
                               </p>
                             </div>
                             <Badge variant="outline">
-                              {category.current_participants} / {category.max_participants} teams
+                              {requiresTeams ? category.current_teams : category.current_individuals} / {category.max_participants} {requiresTeams ? 'teams' : 'players'}
                             </Badge>
                           </div>
                         </div>
@@ -396,90 +392,172 @@ export default function TournamentDetailsPage() {
 
           {/* Registration Sidebar */}
           <div className="space-y-6">
-            {isRegistrationOpen && !isRegistrationDeadlinePassed && (
+            {isRegistrationOpen && !isRegistrationDeadlinePassed && isAuthenticated && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Register Your Team</CardTitle>
-                  <CardDescription>Join this tournament with one of your teams</CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    {requiresTeams ? <Users className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                    {requiresTeams ? 'Register Your Team' : 'Individual Registration'}
+                  </CardTitle>
+                  <CardDescription>
+                    {requiresTeams 
+                      ? 'Join this tournament with one of your teams'
+                      : 'Register as an individual player for this Americano tournament'
+                    }
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {userTeams.length === 0 ? (
-                    <div className="text-center py-4">
-                      <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        You need to create a team first to register for tournaments.
-                      </p>
-                      <Link href="/teams/create" className="mt-2 inline-block">
-                        <Button size="sm">Create Team</Button>
-                      </Link>
-                    </div>
-                  ) : (
-                    <>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">Select Team</label>
-                        <Select value={selectedTeam} onValueChange={handleTeamSelection}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose your team" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {userTeams.map((team) => (
-                              <SelectItem key={team.id} value={team.id.toString()}>
-                                {team.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                  {requiresTeams ? (
+                    /* Team Registration */
+                    userTeams.length === 0 ? (
+                      <div className="text-center py-4">
+                        <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          You need to create a team first to register for tournaments.
+                        </p>
+                        <Link href="/teams/create" className="mt-2 inline-block">
+                          <Button size="sm">Create Team</Button>
+                        </Link>
                       </div>
-
-                      {eligibility && (
+                    ) : (
+                      <>
                         <div>
-                          {eligibility.eligible ? (
-                            <>
-                              <label className="block text-sm font-medium mb-2">Select Category</label>
-                              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Choose category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {eligibility.eligible_categories.map((category: string) => (
-                                    <SelectItem key={category} value={category}>
-                                      {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS]}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              
-                              <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                                <p className="text-sm text-green-800">
+                          <label className="block text-sm font-medium mb-2">Select Team</label>
+                          <Select value={selectedTeam} onValueChange={handleTeamSelection}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose your team" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {userTeams.map((team) => (
+                                <SelectItem key={team.id} value={team.id.toString()}>
+                                  {team.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {eligibility && (
+                          <div>
+                            {eligibility.eligible_categories.length > 0 ? (
+                              <>
+                                <label className="block text-sm font-medium mb-2">Select Category</label>
+                                <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as TournamentCategory)}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Choose category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {eligibility.eligible_categories.map((category) => (
+                                      <SelectItem key={category} value={category}>
+                                        {CATEGORY_LABELS[category]}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                
+                                <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                                  <p className="text-sm text-green-800">
+                                    Team Average ELO: {eligibility.average_elo.toFixed(2)}
+                                  </p>
+                                  <p className="text-xs text-green-600 mt-1">
+                                    Your team is eligible for {eligibility.eligible_categories.length} category(s)
+                                  </p>
+                                </div>
+
+                                <Button 
+                                  className="w-full"
+                                  onClick={registerForTournament}
+                                  disabled={!selectedCategory || registering}
+                                >
+                                  {registering ? 'Registering...' : 'Register Team'}
+                                </Button>
+                              </>
+                            ) : (
+                              <div className="p-3 bg-red-50 rounded-lg">
+                                <p className="text-sm text-red-800">
+                                  This team is not eligible for this tournament.
+                                </p>
+                                <p className="text-xs text-red-600 mt-1">
                                   Team Average ELO: {eligibility.average_elo.toFixed(2)}
                                 </p>
-                                <p className="text-xs text-green-600 mt-1">
-                                  Your team is eligible for {eligibility.eligible_categories.length} category(s)
+                                <p className="text-xs text-red-600 mt-1">
+                                  {Object.entries(eligibility.reasons).map(([cat, reason]) => (
+                                    `${cat}: ${reason}`
+                                  )).join(', ')}
                                 </p>
                               </div>
-
-                              <Button 
-                                className="w-full"
-                                onClick={registerForTournament}
-                                disabled={!selectedCategory || registering}
-                              >
-                                {registering ? 'Registering...' : 'Register Team'}
-                              </Button>
-                            </>
-                          ) : (
-                            <div className="p-3 bg-red-50 rounded-lg">
-                              <p className="text-sm text-red-800">
-                                This team is not eligible for this tournament.
-                              </p>
-                              <p className="text-xs text-red-600 mt-1">
-                                Team Average ELO: {eligibility.average_elo.toFixed(2)}
-                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )
+                  ) : (
+                    /* Individual Registration */
+                    <div className="space-y-4">
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                          Your ELO Rating: {user?.elo_rating?.toFixed(2) || 'N/A'}
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Register for categories that match your skill level
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium">Available Categories</label>
+                        {tournament?.categories
+                          .filter(cat => {
+                            const userElo = user?.elo_rating || 0;
+                            return userElo >= cat.min_elo && userElo <= cat.max_elo;
+                          })
+                          .map((category) => (
+                            <div key={category.id} className="border rounded-lg p-3">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <p className="font-medium">{CATEGORY_LABELS[category.category]}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {category.current_individuals}/{category.max_participants} registered
+                                  </p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  onClick={() => registerIndividually(category.category)}
+                                  disabled={registering || category.current_individuals >= category.max_participants}
+                                >
+                                  {registering ? 'Registering...' : category.current_individuals >= category.max_participants ? 'Full' : 'Register'}
+                                </Button>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      )}
-                    </>
+                          ))}
+                        
+                        {tournament?.categories.filter(cat => {
+                          const userElo = user?.elo_rating || 0;
+                          return userElo >= cat.min_elo && userElo <= cat.max_elo;
+                        }).length === 0 && (
+                          <div className="text-center py-4">
+                            <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                            <p className="text-sm text-muted-foreground">
+                              No categories available for your ELO rating ({user?.elo_rating?.toFixed(2) || 'N/A'})
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
+                </CardContent>
+              </Card>
+            )}
+            
+            {isRegistrationOpen && !isRegistrationDeadlinePassed && !isAuthenticated && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registration Required</CardTitle>
+                  <CardDescription>Sign in to register for this tournament</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Link href="/auth/login">
+                    <Button className="w-full">Sign In to Register</Button>
+                  </Link>
                 </CardContent>
               </Card>
             )}
@@ -491,12 +569,18 @@ export default function TournamentDetailsPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Registered Teams</span>
-                  <span className="font-medium">{tournament.total_registered_teams}</span>
+                  <span className="text-muted-foreground">
+                    {requiresTeams ? 'Registered Teams' : 'Registered Players'}
+                  </span>
+                  <span className="font-medium">
+                    {requiresTeams ? tournament.total_registered_teams : tournament.total_registered_participants}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Available Spots</span>
-                  <span className="font-medium">{tournament.max_participants - tournament.total_registered_teams}</span>
+                  <span className="font-medium">
+                    {tournament.max_participants - (requiresTeams ? tournament.total_registered_teams : tournament.total_registered_participants)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Entry Fee</span>

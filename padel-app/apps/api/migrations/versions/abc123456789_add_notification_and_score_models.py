@@ -5,36 +5,35 @@ Revises: 00762c138e14
 Create Date: 2025-01-05 12:00:00.000000
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
 from alembic import op
-import sqlalchemy as sa
-
 
 # revision identifiers, used by Alembic.
-revision: str = 'abc123456789'
-down_revision: Union[str, None] = '00762c138e14'
+revision: str = "abc123456789"
+down_revision: Union[str, None] = "00762c138e14"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
     # Use raw SQL to avoid SQLAlchemy automatic ENUM creation
-    
+
     # Create ENUMs if they don't exist
     op.execute("""
         DO $$ BEGIN
             CREATE TYPE notificationtype AS ENUM (
-                'GAME_STARTING', 'GAME_ENDED', 'GAME_CANCELLED', 
-                'SCORE_SUBMITTED', 'SCORE_CONFIRMED', 'SCORE_DISPUTED', 
-                'TEAM_INVITATION', 'TOURNAMENT_REGISTRATION', 
+                'GAME_STARTING', 'GAME_ENDED', 'GAME_CANCELLED',
+                'SCORE_SUBMITTED', 'SCORE_CONFIRMED', 'SCORE_DISPUTED',
+                'TEAM_INVITATION', 'TOURNAMENT_REGISTRATION',
                 'TOURNAMENT_MATCH', 'SYSTEM_ANNOUNCEMENT'
             );
         EXCEPTION
             WHEN duplicate_object THEN null;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
             CREATE TYPE notificationpriority AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
@@ -42,7 +41,7 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
             CREATE TYPE scorestatus AS ENUM ('PENDING', 'CONFIRMED', 'DISPUTED', 'RESOLVED');
@@ -50,7 +49,7 @@ def upgrade() -> None:
             WHEN duplicate_object THEN null;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
             CREATE TYPE confirmationaction AS ENUM ('CONFIRM', 'COUNTER');
@@ -77,36 +76,36 @@ def upgrade() -> None:
             read_at TIMESTAMP
         );
     """)
-    
+
     # Handle existing table: rename metadata column to data if it exists
     op.execute("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
+            IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'notifications' AND column_name = 'metadata') THEN
                 ALTER TABLE notifications RENAME COLUMN metadata TO data;
             END IF;
         END $$;
     """)
-    
+
     # Add missing columns if they don't exist
     op.execute("""
         DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                           WHERE table_name = 'notifications' AND column_name = 'action_url') THEN
                 ALTER TABLE notifications ADD COLUMN action_url VARCHAR(500);
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                           WHERE table_name = 'notifications' AND column_name = 'action_text') THEN
                 ALTER TABLE notifications ADD COLUMN action_text VARCHAR(100);
             END IF;
         END $$;
     """)
-    
+
     # Create indexes if they don't exist
     op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications(user_id);")
     op.execute("CREATE INDEX IF NOT EXISTS ix_notifications_type ON notifications(type);")
@@ -133,104 +132,104 @@ def upgrade() -> None:
             updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
     """)
-    
+
     op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_notification_preferences_user_id ON notification_preferences(user_id);")
-    
+
     # Handle existing notification_preferences table: rename columns to match model
     op.execute("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
+            IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'notification_preferences' AND column_name = 'game_starting_notifications') THEN
                 ALTER TABLE notification_preferences RENAME COLUMN game_starting_notifications TO game_starting_enabled;
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
+            IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'notification_preferences' AND column_name = 'game_ended_notifications') THEN
                 ALTER TABLE notification_preferences RENAME COLUMN game_ended_notifications TO game_ended_enabled;
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
+            IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'notification_preferences' AND column_name = 'score_notifications') THEN
                 ALTER TABLE notification_preferences RENAME COLUMN score_notifications TO score_notifications_enabled;
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
+            IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'notification_preferences' AND column_name = 'team_notifications') THEN
                 ALTER TABLE notification_preferences RENAME COLUMN team_notifications TO team_invitations_enabled;
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
+            IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'notification_preferences' AND column_name = 'tournament_notifications') THEN
                 ALTER TABLE notification_preferences RENAME COLUMN tournament_notifications TO tournament_reminders_enabled;
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
+            IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'notification_preferences' AND column_name = 'system_notifications') THEN
                 ALTER TABLE notification_preferences RENAME COLUMN system_notifications TO general_notifications_enabled;
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
+            IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'notification_preferences' AND column_name = 'email_notifications') THEN
                 ALTER TABLE notification_preferences RENAME COLUMN email_notifications TO email_notifications_enabled;
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF EXISTS (SELECT 1 FROM information_schema.columns 
+            IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'notification_preferences' AND column_name = 'push_notifications') THEN
                 ALTER TABLE notification_preferences RENAME COLUMN push_notifications TO push_notifications_enabled;
             END IF;
         END $$;
     """)
-    
+
     # Add missing columns if they don't exist
     op.execute("""
         DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                           WHERE table_name = 'notification_preferences' AND column_name = 'game_invitations_enabled') THEN
                 ALTER TABLE notification_preferences ADD COLUMN game_invitations_enabled BOOLEAN NOT NULL DEFAULT true;
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                           WHERE table_name = 'notification_preferences' AND column_name = 'elo_updates_enabled') THEN
                 ALTER TABLE notification_preferences ADD COLUMN elo_updates_enabled BOOLEAN NOT NULL DEFAULT true;
             END IF;
         END $$;
     """)
-    
+
     op.execute("""
         DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                           WHERE table_name = 'notification_preferences' AND column_name = 'game_reminder_minutes') THEN
                 ALTER TABLE notification_preferences ADD COLUMN game_reminder_minutes INTEGER NOT NULL DEFAULT 30;
             END IF;
@@ -255,7 +254,7 @@ def upgrade() -> None:
             admin_notes TEXT
         );
     """)
-    
+
     op.execute("CREATE INDEX IF NOT EXISTS ix_game_scores_game_id ON game_scores(game_id);")
     op.execute("CREATE INDEX IF NOT EXISTS ix_game_scores_status ON game_scores(status);")
 
@@ -273,7 +272,7 @@ def upgrade() -> None:
             counter_notes TEXT
         );
     """)
-    
+
     op.execute("CREATE INDEX IF NOT EXISTS ix_score_confirmations_game_score_id ON score_confirmations(game_score_id);")
 
     # Create team_stats table if it doesn't exist
@@ -302,7 +301,7 @@ def upgrade() -> None:
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
     """)
-    
+
     op.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_team_stats_team_id ON team_stats(team_id);")
 
     # Create team_game_history table if it doesn't exist
@@ -324,7 +323,7 @@ def upgrade() -> None:
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
     """)
-    
+
     op.execute("CREATE INDEX IF NOT EXISTS ix_team_game_history_team_id ON team_game_history(team_id);")
     op.execute("CREATE INDEX IF NOT EXISTS ix_team_game_history_game_id ON team_game_history(game_id);")
 
@@ -337,7 +336,7 @@ def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS game_scores CASCADE;")
     op.execute("DROP TABLE IF EXISTS notification_preferences CASCADE;")
     op.execute("DROP TABLE IF EXISTS notifications CASCADE;")
-    
+
     # Drop enums if they exist and are not being used
     op.execute("DROP TYPE IF EXISTS confirmationaction;")
     op.execute("DROP TYPE IF EXISTS scorestatus;")

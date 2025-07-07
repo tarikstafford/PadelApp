@@ -2,6 +2,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
@@ -42,13 +43,119 @@ class TournamentCategory(str, enum.Enum):
     PLATINUM = "PLATINUM"
 
 
+class RecurrencePattern(str, enum.Enum):
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
+    CUSTOM = "CUSTOM"
+
+
 # Map categories to ELO ranges
 CATEGORY_ELO_RANGES = {
     TournamentCategory.BRONZE: (1.0, 2.0),
     TournamentCategory.SILVER: (2.0, 3.0),
-    TournamentCategory.GOLD: (4.0, 5.0),
+    TournamentCategory.GOLD: (3.0, 5.0),
     TournamentCategory.PLATINUM: (5.0, float("inf")),
 }
+
+
+class RecurringTournament(Base):
+    __tablename__ = "recurring_tournaments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False, index=True)
+
+    # Series information
+    series_name = Column(String, nullable=False, index=True)
+    description = Column(Text, nullable=True)
+
+    # Recurrence pattern
+    recurrence_pattern = Column(
+        SAEnum(RecurrencePattern, name="recurrencepattern", create_enum=False),
+        nullable=False,
+    )
+
+    # Recurrence configuration
+    interval_value = Column(Integer, nullable=False, default=1)  # Every X weeks/months
+    days_of_week = Column(JSON, nullable=True)  # For weekly: [1,3,5] for Mon, Wed, Fri
+    day_of_month = Column(Integer, nullable=True)  # For monthly: 15 for 15th of month
+
+    # Series dates
+    series_start_date = Column(DateTime, nullable=False)
+    series_end_date = Column(DateTime, nullable=True)  # Optional end date
+
+    # Tournament template settings
+    tournament_type = Column(
+        SAEnum(TournamentType, name="tournamenttype", create_enum=False), nullable=False
+    )
+    duration_hours = Column(Integer, nullable=False, default=3)  # Default 3 hours
+    registration_deadline_hours = Column(
+        Integer, nullable=False, default=24
+    )  # 24h before start
+
+    # Tournament settings
+    max_participants = Column(Integer, nullable=False)
+    entry_fee = Column(Float, nullable=True, default=0.0)
+
+    # Generation settings
+    advance_generation_days = Column(
+        Integer, nullable=False, default=30
+    )  # Generate 30 days ahead
+    auto_generation_enabled = Column(Boolean, default=True, nullable=False)
+
+    # Series status
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+    # Relationships
+    club = relationship("Club")
+    tournaments = relationship(
+        "Tournament",
+        back_populates="recurring_tournament",
+        cascade="all, delete-orphan",
+    )
+    category_templates = relationship(
+        "RecurringTournamentCategoryTemplate",
+        back_populates="recurring_tournament",
+        cascade="all, delete-orphan",
+    )
+
+    def __repr__(self):
+        return (
+            f"<RecurringTournament(id={self.id}, series_name='{self.series_name}', "
+            f"pattern='{self.recurrence_pattern}')>"
+        )
+
+
+class RecurringTournamentCategoryTemplate(Base):
+    __tablename__ = "recurring_tournament_category_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recurring_tournament_id = Column(
+        Integer, ForeignKey("recurring_tournaments.id"), nullable=False
+    )
+    category = Column(
+        SAEnum(TournamentCategory, name="tournamentcategory", create_enum=False),
+        nullable=False,
+    )
+    max_participants = Column(Integer, nullable=False)
+    min_elo = Column(Float, nullable=False)
+    max_elo = Column(Float, nullable=False)
+
+    # Relationships
+    recurring_tournament = relationship(
+        "RecurringTournament", back_populates="category_templates"
+    )
+
+    def __repr__(self):
+        return (
+            f"<RecurringTournamentCategoryTemplate(id={self.id}, category='{self.category}', "
+            f"elo_range={self.min_elo}-{self.max_elo})>"
+        )
 
 
 class Tournament(Base):
@@ -56,6 +163,9 @@ class Tournament(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False, index=True)
+    recurring_tournament_id = Column(
+        Integer, ForeignKey("recurring_tournaments.id"), nullable=True, index=True
+    )
     name = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=True)
     tournament_type = Column(
@@ -78,6 +188,12 @@ class Tournament(Base):
     max_participants = Column(Integer, nullable=False)
     entry_fee = Column(Float, nullable=True, default=0.0)
 
+    # Scheduling configuration
+    auto_schedule_enabled = Column(Boolean, default=True, nullable=False)
+    hourly_time_slots = Column(JSON, nullable=True)  # Store selected hourly time slots
+    assigned_court_ids = Column(JSON, nullable=True)  # Store assigned court IDs
+    schedule_generated = Column(Boolean, default=False, nullable=False)
+
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
@@ -86,6 +202,9 @@ class Tournament(Base):
 
     # Relationships
     club = relationship("Club")
+    recurring_tournament = relationship(
+        "RecurringTournament", back_populates="tournaments"
+    )
     categories = relationship(
         "TournamentCategoryConfig",
         back_populates="tournament",
@@ -93,6 +212,11 @@ class Tournament(Base):
     )
     teams = relationship(
         "TournamentTeam", back_populates="tournament", cascade="all, delete-orphan"
+    )
+    participants = relationship(
+        "TournamentParticipant",
+        back_populates="tournament",
+        cascade="all, delete-orphan",
     )
     matches = relationship(
         "TournamentMatch", back_populates="tournament", cascade="all, delete-orphan"
@@ -107,7 +231,10 @@ class Tournament(Base):
     )
 
     def __repr__(self):
-        return f"<Tournament(id={self.id}, name='{self.name}', type='{self.tournament_type}')>"
+        return (
+            f"<Tournament(id={self.id}, name='{self.name}', "
+            f"type='{self.tournament_type}')>"
+        )
 
 
 class TournamentCategoryConfig(Base):
@@ -128,9 +255,52 @@ class TournamentCategoryConfig(Base):
     teams = relationship(
         "TournamentTeam", back_populates="category_config", cascade="all, delete-orphan"
     )
+    participants = relationship(
+        "TournamentParticipant",
+        back_populates="category_config",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
-        return f"<TournamentCategoryConfig(id={self.id}, category='{self.category}', elo_range={self.min_elo}-{self.max_elo})>"
+        return (
+            f"<TournamentCategoryConfig(id={self.id}, category='{self.category}', "
+            f"elo_range={self.min_elo}-{self.max_elo})>"
+        )
+
+
+class TournamentParticipant(Base):
+    __tablename__ = "tournament_participants"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tournament_id = Column(Integer, ForeignKey("tournaments.id"), nullable=False)
+    category_config_id = Column(
+        Integer, ForeignKey("tournament_category_configs.id"), nullable=False
+    )
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    # Participant-specific data
+    seed = Column(Integer, nullable=True)  # Seeding position for Americano
+    elo_rating = Column(Float, nullable=False)  # User's ELO at registration
+    registration_date = Column(DateTime, default=datetime.utcnow, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    # For Americano tournaments - track which temporary teams they're part of
+    match_teams = Column(
+        JSON, nullable=True
+    )  # Store temporary team assignments per round
+
+    # Relationships
+    tournament = relationship("Tournament", back_populates="participants")
+    category_config = relationship(
+        "TournamentCategoryConfig", back_populates="participants"
+    )
+    user = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self):
+        return (
+            f"<TournamentParticipant(id={self.id}, tournament_id={self.tournament_id}, "
+            f"user_id={self.user_id}, seed={self.seed})>"
+        )
 
 
 class TournamentTeam(Base):
@@ -167,7 +337,10 @@ class TournamentTeam(Base):
     )
 
     def __repr__(self):
-        return f"<TournamentTeam(id={self.id}, tournament_id={self.tournament_id}, team_id={self.team_id}, seed={self.seed})>"
+        return (
+            f"<TournamentTeam(id={self.id}, tournament_id={self.tournament_id}, "
+            f"team_id={self.team_id}, seed={self.seed})>"
+        )
 
 
 class MatchStatus(str, enum.Enum):
@@ -250,7 +423,10 @@ class TournamentMatch(Base):
     )
 
     def __repr__(self):
-        return f"<TournamentMatch(id={self.id}, tournament_id={self.tournament_id}, round={self.round_number}, match={self.match_number})>"
+        return (
+            f"<TournamentMatch(id={self.id}, tournament_id={self.tournament_id}, "
+            f"round={self.round_number}, match={self.match_number})>"
+        )
 
 
 class TournamentCourtBooking(Base):
@@ -277,7 +453,10 @@ class TournamentCourtBooking(Base):
     match = relationship("TournamentMatch")
 
     def __repr__(self):
-        return f"<TournamentCourtBooking(id={self.id}, tournament_id={self.tournament_id}, court_id={self.court_id})>"
+        return (
+            f"<TournamentCourtBooking(id={self.id}, "
+            f"tournament_id={self.tournament_id}, court_id={self.court_id})>"
+        )
 
 
 class TournamentTrophy(Base):
@@ -307,4 +486,7 @@ class TournamentTrophy(Base):
     team = relationship("Team")
 
     def __repr__(self):
-        return f"<TournamentTrophy(id={self.id}, tournament_id={self.tournament_id}, user_id={self.user_id}, position={self.position})>"
+        return (
+            f"<TournamentTrophy(id={self.id}, tournament_id={self.tournament_id}, "
+            f"user_id={self.user_id}, position={self.position})>"
+        )

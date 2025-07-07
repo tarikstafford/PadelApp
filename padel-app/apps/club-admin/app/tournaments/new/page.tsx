@@ -7,52 +7,55 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { TournamentType, TournamentCategory, RecurrencePattern, TournamentCreateData, RecurringTournamentCreateData, HourlyTimeSlot } from '@/lib/types';
+import CategorySelector, { CategoryConfig } from '@/components/tournaments/CategorySelector';
+import TournamentTypeSelector from '@/components/tournaments/TournamentTypeSelector';
+import TimeSlotPicker from '@/components/tournaments/TimeSlotPicker';
+import RecurringConfig from '@/components/tournaments/RecurringConfig';
+import { format, addDays } from 'date-fns';
 
 interface Court {
   id: number;
   name: string;
 }
 
-interface TournamentCategory {
-  category: string;
-  max_participants: number;
-}
-
-const TOURNAMENT_TYPES = [
-  { value: 'SINGLE_ELIMINATION', label: 'Single Elimination' },
-  { value: 'DOUBLE_ELIMINATION', label: 'Double Elimination' },
-  { value: 'AMERICANO', label: 'Americano' },
-  { value: 'FIXED_AMERICANO', label: 'Fixed Americano' },
-];
-
-const CATEGORIES = [
-  { value: 'BRONZE', label: 'Bronze (ELO 1.0-2.0)' },
-  { value: 'SILVER', label: 'Silver (ELO 2.0-3.0)' },
-  { value: 'GOLD', label: 'Gold (ELO 4.0-5.0)' },
-  { value: 'PLATINUM', label: 'Platinum (ELO 5.0+)' },
-];
-
 export default function NewTournamentPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [courts, setCourts] = useState<Court[]>([]);
+  const [isRecurring, setIsRecurring] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    tournament_type: '',
+    tournament_type: '' as TournamentType | '',
     start_date: '',
     end_date: '',
     registration_deadline: '',
     max_participants: 32,
     entry_fee: 0,
-    categories: [] as TournamentCategory[],
+    categories: [] as CategoryConfig[],
     court_ids: [] as number[],
   });
+  
+  const [recurringConfig, setRecurringConfig] = useState({
+    series_name: '',
+    recurrence_pattern: RecurrencePattern.WEEKLY,
+    interval_value: 1,
+    days_of_week: [] as number[],
+    day_of_month: undefined as number | undefined,
+    series_start_date: format(new Date(), 'yyyy-MM-dd'),
+    series_end_date: undefined as string | undefined,
+    duration_hours: 3,
+    registration_deadline_hours: 24,
+    advance_generation_days: 30,
+    auto_generation_enabled: true,
+  });
+  
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<HourlyTimeSlot[]>([]);
 
   useEffect(() => {
     fetchCourts();
@@ -74,27 +77,8 @@ export default function NewTournamentPage() {
     }));
   };
 
-  const addCategory = () => {
-    setFormData(prev => ({
-      ...prev,
-      categories: [...prev.categories, { category: '', max_participants: 16 }]
-    }));
-  };
-
-  const updateCategory = (index: number, field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      categories: prev.categories.map((cat, i) => 
-        i === index ? { ...cat, [field]: value } : cat
-      )
-    }));
-  };
-
-  const removeCategory = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      categories: prev.categories.filter((_, i) => i !== index)
-    }));
+  const updateCategories = (categories: CategoryConfig[]) => {
+    setFormData(prev => ({ ...prev, categories }));
   };
 
   const toggleCourt = (courtId: number) => {
@@ -111,7 +95,48 @@ export default function NewTournamentPage() {
     setLoading(true);
 
     try {
-      await apiClient.post('/tournaments', formData);
+      if (isRecurring) {
+        const recurringData: RecurringTournamentCreateData = {
+          series_name: recurringConfig.series_name || formData.name,
+          description: formData.description,
+          recurrence_pattern: recurringConfig.recurrence_pattern,
+          interval_value: recurringConfig.interval_value,
+          days_of_week: recurringConfig.days_of_week,
+          day_of_month: recurringConfig.day_of_month,
+          series_start_date: recurringConfig.series_start_date,
+          series_end_date: recurringConfig.series_end_date,
+          tournament_type: formData.tournament_type as TournamentType,
+          duration_hours: recurringConfig.duration_hours,
+          registration_deadline_hours: recurringConfig.registration_deadline_hours,
+          max_participants: formData.max_participants,
+          entry_fee: formData.entry_fee,
+          advance_generation_days: recurringConfig.advance_generation_days,
+          auto_generation_enabled: recurringConfig.auto_generation_enabled,
+          category_templates: formData.categories.map(cat => ({
+            category: cat.category,
+            max_participants: cat.max_participants,
+            min_elo: cat.min_elo || 1.0,
+            max_elo: cat.max_elo || 5.0,
+          })),
+        };
+        await apiClient.post('/recurring-tournaments', recurringData);
+      } else {
+        const tournamentData: TournamentCreateData = {
+          name: formData.name,
+          description: formData.description,
+          tournament_type: formData.tournament_type as TournamentType,
+          start_date: formData.start_date,
+          end_date: formData.end_date,
+          registration_deadline: formData.registration_deadline,
+          entry_fee: formData.entry_fee,
+          categories: formData.categories.map(cat => ({
+            category: cat.category,
+            max_participants: cat.max_participants,
+          })),
+          court_ids: formData.court_ids,
+        };
+        await apiClient.post('/tournaments', tournamentData);
+      }
       router.push('/tournaments');
     } catch (error) {
       console.error('Error creating tournament:', error);
@@ -122,15 +147,29 @@ export default function NewTournamentPage() {
   };
 
   const isFormValid = () => {
-    return formData.name && 
-           formData.tournament_type && 
+    const baseValid = formData.name && 
+                     formData.tournament_type && 
+                     formData.categories.length > 0 &&
+                     formData.categories.every(cat => cat.category && cat.max_participants > 0);
+    
+    if (isRecurring) {
+      return baseValid && 
+             (recurringConfig.series_name || formData.name) &&
+             recurringConfig.recurrence_pattern &&
+             recurringConfig.series_start_date;
+    }
+    
+    return baseValid &&
            formData.start_date && 
            formData.end_date && 
            formData.registration_deadline &&
-           formData.categories.length > 0 &&
-           formData.categories.every(cat => cat.category && cat.max_participants > 0) &&
            formData.court_ids.length > 0;
   };
+  
+  // Calculate default dates
+  const defaultStartDate = format(addDays(new Date(), 7), "yyyy-MM-dd'T'HH:mm");
+  const defaultEndDate = format(addDays(new Date(), 8), "yyyy-MM-dd'T'HH:mm");
+  const defaultRegistrationDeadline = format(addDays(new Date(), 6), "yyyy-MM-dd'T'HH:mm");
 
   return (
     <div className="space-y-6">
@@ -145,94 +184,31 @@ export default function NewTournamentPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Recurring Tournament Toggle */}
+        <RecurringConfig
+          enabled={isRecurring}
+          onEnabledChange={setIsRecurring}
+          config={recurringConfig}
+          onConfigChange={setRecurringConfig}
+        />
+        
         <Card>
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Set up the basic details for your tournament</CardDescription>
+            <CardDescription>
+              {isRecurring ? 'Set up the basic details for your tournament series' : 'Set up the basic details for your tournament'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Tournament Name *</Label>
+                <Label htmlFor="name">{isRecurring ? 'Series Name' : 'Tournament Name'} *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="e.g., Spring Championship 2024"
+                  placeholder={isRecurring ? "e.g., Weekly Americano Series" : "e.g., Spring Championship 2024"}
                   required
-                />
-              </div>
-              <div>
-                <Label htmlFor="tournament_type">Tournament Type *</Label>
-                <Select onValueChange={(value) => handleInputChange('tournament_type', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select tournament type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TOURNAMENT_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Describe your tournament..."
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="start_date">Start Date *</Label>
-                <Input
-                  id="start_date"
-                  type="datetime-local"
-                  value={formData.start_date}
-                  onChange={(e) => handleInputChange('start_date', e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="end_date">End Date *</Label>
-                <Input
-                  id="end_date"
-                  type="datetime-local"
-                  value={formData.end_date}
-                  onChange={(e) => handleInputChange('end_date', e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="registration_deadline">Registration Deadline *</Label>
-                <Input
-                  id="registration_deadline"
-                  type="datetime-local"
-                  value={formData.registration_deadline}
-                  onChange={(e) => handleInputChange('registration_deadline', e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="max_participants">Max Participants</Label>
-                <Input
-                  id="max_participants"
-                  type="number"
-                  value={formData.max_participants}
-                  onChange={(e) => handleInputChange('max_participants', parseInt(e.target.value))}
-                  min="4"
-                  max="128"
                 />
               </div>
               <div>
@@ -247,85 +223,120 @@ export default function NewTournamentPage() {
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Categories</CardTitle>
-            <CardDescription>Define ELO categories for your tournament</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {formData.categories.map((category, index) => (
-              <div key={index} className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <Label>Category</Label>
-                  <Select 
-                    value={category.category}
-                    onValueChange={(value) => updateCategory(index, 'category', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="w-32">
-                  <Label>Max Teams</Label>
-                  <Input
-                    type="number"
-                    value={category.max_participants}
-                    onChange={(e) => updateCategory(index, 'max_participants', parseInt(e.target.value))}
-                    min="2"
-                    max="64"
-                  />
-                </div>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => removeCategory(index)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            
-            <Button type="button" variant="outline" onClick={addCategory}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Category
-            </Button>
-          </CardContent>
-        </Card>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder={isRecurring ? "Describe your tournament series..." : "Describe your tournament..."}
+                rows={3}
+              />
+            </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Court Selection</CardTitle>
-            <CardDescription>Select which courts will be used for this tournament</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {courts.map((court) => (
-                <div key={court.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`court-${court.id}`}
-                    checked={formData.court_ids.includes(court.id)}
-                    onCheckedChange={() => toggleCourt(court.id)}
-                  />
-                  <Label htmlFor={`court-${court.id}`} className="text-sm">
-                    {court.name}
-                  </Label>
+            {!isRecurring && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="start_date">Start Date *</Label>
+                    <Input
+                      id="start_date"
+                      type="datetime-local"
+                      value={formData.start_date || defaultStartDate}
+                      onChange={(e) => handleInputChange('start_date', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="end_date">End Date *</Label>
+                    <Input
+                      id="end_date"
+                      type="datetime-local"
+                      value={formData.end_date || defaultEndDate}
+                      onChange={(e) => handleInputChange('end_date', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="registration_deadline">Registration Deadline *</Label>
+                    <Input
+                      id="registration_deadline"
+                      type="datetime-local"
+                      value={formData.registration_deadline || defaultRegistrationDeadline}
+                      onChange={(e) => handleInputChange('registration_deadline', e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-              ))}
+              </>
+            )}
+
+            <div>
+              <Label htmlFor="max_participants">Max Participants</Label>
+              <Input
+                id="max_participants"
+                type="number"
+                value={formData.max_participants}
+                onChange={(e) => handleInputChange('max_participants', parseInt(e.target.value))}
+                min="4"
+                max="128"
+              />
             </div>
           </CardContent>
         </Card>
+
+        {/* Tournament Type Selection */}
+        <TournamentTypeSelector
+          value={formData.tournament_type}
+          onChange={(type) => handleInputChange('tournament_type', type)}
+        />
+
+        {/* Category Configuration */}
+        <CategorySelector
+          categories={formData.categories}
+          onChange={updateCategories}
+          showEloRanges={isRecurring}
+          requireEloRanges={isRecurring}
+        />
+
+        {/* Court Selection - Only for single tournaments */}
+        {!isRecurring && (
+          <>
+            {/* Time Slot Selection */}
+            {formData.start_date && formData.end_date && (
+              <TimeSlotPicker
+                selectedSlots={selectedTimeSlots}
+                onChange={setSelectedTimeSlots}
+                startDate={new Date(formData.start_date)}
+                endDate={new Date(formData.end_date)}
+              />
+            )}
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Court Selection</CardTitle>
+                <CardDescription>Select which courts will be used for this tournament</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {courts.map((court) => (
+                    <div key={court.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`court-${court.id}`}
+                        checked={formData.court_ids.includes(court.id)}
+                        onCheckedChange={() => toggleCourt(court.id)}
+                      />
+                      <Label htmlFor={`court-${court.id}`} className="text-sm">
+                        {court.name}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         <div className="flex justify-end gap-4">
           <Link href="/tournaments">
