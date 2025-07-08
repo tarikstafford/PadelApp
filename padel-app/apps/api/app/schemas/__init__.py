@@ -80,6 +80,8 @@ from app.schemas.tournament_schemas import (
 )
 from app.schemas.user_schemas import EloAdjustmentRequest as EloAdjustmentRequestSchema
 from app.schemas.user_schemas import (
+    SkillAssessmentRequest,
+    SkillAssessmentResponse,
     User,
     UserCreate,
     UserInDB,
@@ -141,6 +143,9 @@ __all__ = [
     "LeaderboardUserResponse",
     "RefreshTokenRequest",
     "ScheduleResponse",
+    # Skill Assessment
+    "SkillAssessmentRequest",
+    "SkillAssessmentResponse",
     # Team
     "Team",
     "TeamCreate",
