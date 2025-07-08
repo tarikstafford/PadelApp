@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Calendar, Users, Trophy, Settings } from 'lucide-react';
+import { Plus, Calendar, Users, Trophy, Settings, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
+import { CategoryBadgeGrid } from '@/components/tournaments/CategoryBadge';
 
 interface Tournament {
   id: number;
@@ -18,6 +19,16 @@ interface Tournament {
   status: string;
   total_registered_teams: number;
   max_participants: number;
+  categories?: {
+    id: number;
+    category: string;
+    max_participants: number;
+    min_elo: number;
+    max_elo: number;
+    current_participants: number;
+    current_teams: number;
+    current_individuals: number;
+  }[];
 }
 
 const statusColors = {
@@ -177,6 +188,21 @@ export default function TournamentsPage() {
                     <Users className="mr-2 h-4 w-4" />
                     {tournament.total_registered_teams} / {tournament.max_participants} teams
                   </div>
+                  
+                  {tournament.categories && tournament.categories.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Tag className="mr-2 h-4 w-4" />
+                        Categories
+                      </div>
+                      <CategoryBadgeGrid
+                        categories={tournament.categories}
+                        size="sm"
+                        showParticipantCount={true}
+                      />
+                    </div>
+                  )}
+                  
                   <div className="flex gap-2 pt-2">
                     <Link href={`/tournaments/${tournament.id}`} className="flex-1">
                       <Button variant="outline" size="sm" className="w-full">

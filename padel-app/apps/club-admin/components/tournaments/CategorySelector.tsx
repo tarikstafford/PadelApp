@@ -26,8 +26,8 @@ interface CategorySelectorProps {
 const CATEGORY_INFO = {
   [TournamentCategory.BRONZE]: { label: 'Bronze', defaultMinElo: 1.0, defaultMaxElo: 2.0 },
   [TournamentCategory.SILVER]: { label: 'Silver', defaultMinElo: 2.0, defaultMaxElo: 3.0 },
-  [TournamentCategory.GOLD]: { label: 'Gold', defaultMinElo: 3.0, defaultMaxElo: 4.0 },
-  [TournamentCategory.PLATINUM]: { label: 'Platinum', defaultMinElo: 4.0, defaultMaxElo: 5.0 },
+  [TournamentCategory.GOLD]: { label: 'Gold', defaultMinElo: 3.0, defaultMaxElo: 5.0 },
+  [TournamentCategory.PLATINUM]: { label: 'Platinum', defaultMinElo: 5.0, defaultMaxElo: 10.0 },
 };
 
 export default function CategorySelector({ 

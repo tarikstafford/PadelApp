@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Calendar, Users, DollarSign, MapPin } from 'lucide-react';
+import { Trophy, Calendar, Users, DollarSign, MapPin, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
+import { CategoryBadgeGrid, CategoryEligibilityLegend } from '@/components/tournaments/CategoryBadge';
+import { AuthContext } from '@/contexts/AuthContext';
 
 interface Tournament {
   id: number;
@@ -19,6 +21,16 @@ interface Tournament {
   max_participants: number;
   entry_fee?: number;
   club_name?: string;
+  categories?: {
+    id: number;
+    category: string;
+    max_participants: number;
+    min_elo: number;
+    max_elo: number;
+    current_participants: number;
+    current_teams: number;
+    current_individuals: number;
+  }[];
 }
 
 const statusColors = {
@@ -43,6 +55,7 @@ export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     fetchTournaments();
@@ -133,6 +146,12 @@ export default function TournamentsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Tournaments</h1>
           <p className="text-muted-foreground">Discover and join upcoming padel tournaments</p>
+          {user && (
+            <div className="mt-4">
+              <h3 className="text-sm font-medium text-foreground mb-2">Category Eligibility Legend:</h3>
+              <CategoryEligibilityLegend />
+            </div>
+          )}
         </div>
 
         {tournaments.length === 0 ? (
@@ -163,6 +182,7 @@ export default function TournamentsPage() {
                       formatTournamentType={formatTournamentType}
                       getAvailableSpots={getAvailableSpots}
                       featured={true}
+                      userEloRating={user?.elo_rating}
                     />
                   ))}
               </div>
@@ -179,6 +199,7 @@ export default function TournamentsPage() {
                     formatDate={formatDate}
                     formatTournamentType={formatTournamentType}
                     getAvailableSpots={getAvailableSpots}
+                    userEloRating={user?.elo_rating}
                   />
                 ))}
               </div>
@@ -195,13 +216,15 @@ function TournamentCard({
   formatDate, 
   formatTournamentType, 
   getAvailableSpots,
-  featured = false 
+  featured = false,
+  userEloRating
 }: {
   tournament: Tournament;
   formatDate: (date: string) => string;
   formatTournamentType: (type: string) => string;
   getAvailableSpots: (tournament: Tournament) => number;
   featured?: boolean;
+  userEloRating?: number;
 }) {
   const availableSpots = getAvailableSpots(tournament);
   const isRegistrationOpen = tournament.status === 'REGISTRATION_OPEN';
@@ -254,6 +277,22 @@ function TournamentCard({
             <div className="flex items-center text-sm text-muted-foreground">
               <MapPin className="mr-2 h-4 w-4" />
               {tournament.club_name}
+            </div>
+          )}
+
+          {tournament.categories && tournament.categories.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Tag className="mr-2 h-4 w-4" />
+                Available Categories
+              </div>
+              <CategoryBadgeGrid
+                categories={tournament.categories}
+                userEloRating={userEloRating}
+                size="sm"
+                showEligibilityIndicator={!!userEloRating}
+                showParticipantCount={true}
+              />
             </div>
           )}
 

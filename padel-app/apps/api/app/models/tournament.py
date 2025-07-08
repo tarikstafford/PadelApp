@@ -54,7 +54,7 @@ CATEGORY_ELO_RANGES = {
     TournamentCategory.BRONZE: (1.0, 2.0),
     TournamentCategory.SILVER: (2.0, 3.0),
     TournamentCategory.GOLD: (3.0, 5.0),
-    TournamentCategory.PLATINUM: (5.0, float("inf")),
+    TournamentCategory.PLATINUM: (5.0, 10.0),  # Using 10.0 instead of infinity for database compatibility
 }
 
 

@@ -110,6 +110,7 @@ class TournamentListResponse(BaseModel):
     max_participants: int
     entry_fee: Optional[float] = None
     club_name: Optional[str] = None
+    categories: list[TournamentCategoryResponse] = []
 
     class Config:
         from_attributes = True

@@ -4,6 +4,7 @@ from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.tournament import (
+    CATEGORY_ELO_RANGES,
     RecurringTournament,
     RecurringTournamentCategoryTemplate,
     Tournament,
@@ -12,6 +13,16 @@ from app.models.tournament import (
 
 
 class RecurringTournamentCRUD:
+    def _ensure_correct_elo_ranges(self, category_template_data: dict) -> dict:
+        """Ensure category template uses correct ELO ranges from CATEGORY_ELO_RANGES."""
+        if "category" in category_template_data:
+            from app.models.tournament import TournamentCategory
+            category = TournamentCategory(category_template_data["category"])
+            if category in CATEGORY_ELO_RANGES:
+                min_elo, max_elo = CATEGORY_ELO_RANGES[category]
+                category_template_data["min_elo"] = min_elo
+                category_template_data["max_elo"] = max_elo
+        return category_template_data
     def create_recurring_tournament(
         self, db: Session, recurring_tournament_data: dict
     ) -> RecurringTournament:
@@ -106,6 +117,8 @@ class RecurringTournamentCRUD:
         self, db: Session, category_template_data: dict
     ) -> RecurringTournamentCategoryTemplate:
         """Create a category template for a recurring tournament."""
+        # Ensure correct ELO ranges
+        category_template_data = self._ensure_correct_elo_ranges(category_template_data)
         category_template = RecurringTournamentCategoryTemplate(
             **category_template_data
         )
@@ -265,6 +278,8 @@ class RecurringTournamentCRUD:
         new_templates = []
         for template_data in category_templates_data:
             template_data["recurring_tournament_id"] = recurring_tournament_id
+            # Ensure correct ELO ranges
+            template_data = self._ensure_correct_elo_ranges(template_data)
             template = RecurringTournamentCategoryTemplate(**template_data)
             db.add(template)
             new_templates.append(template)

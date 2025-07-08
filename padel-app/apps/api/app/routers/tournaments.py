@@ -178,21 +178,46 @@ async def get_club_tournaments(
     if not tournaments:
         return []
 
-    return [
-        TournamentListResponse(
-            id=t.id,
-            name=t.name,
-            tournament_type=t.tournament_type,
-            start_date=t.start_date,
-            end_date=t.end_date,
-            status=t.status,
-            total_registered_teams=len(t.teams),
-            max_participants=t.max_participants,
-            entry_fee=t.entry_fee if t.entry_fee is not None else 0.0,
-            club_name=t.club.name if t.club else None,
+    tournament_list = []
+    for t in tournaments:
+        # Build category data with current participant counts
+        categories_data = []
+        for category in t.categories:
+            # Count current participants/teams for this category
+            current_teams = len([team for team in t.teams if team.category_config_id == category.id])
+            current_individuals = len([participant for participant in t.participants if participant.category_config_id == category.id])
+            current_participants = current_teams + current_individuals
+            
+            categories_data.append(
+                TournamentCategoryResponse(
+                    id=category.id,
+                    category=category.category,
+                    max_participants=category.max_participants,
+                    min_elo=category.min_elo,
+                    max_elo=category.max_elo,
+                    current_participants=current_participants,
+                    current_teams=current_teams,
+                    current_individuals=current_individuals,
+                )
+            )
+        
+        tournament_list.append(
+            TournamentListResponse(
+                id=t.id,
+                name=t.name,
+                tournament_type=t.tournament_type,
+                start_date=t.start_date,
+                end_date=t.end_date,
+                status=t.status,
+                total_registered_teams=len(t.teams),
+                max_participants=t.max_participants,
+                entry_fee=t.entry_fee if t.entry_fee is not None else 0.0,
+                club_name=t.club.name if t.club else None,
+                categories=categories_data,
+            )
         )
-        for t in tournaments
-    ]
+    
+    return tournament_list
 
 
 @router.get("/", response_model=list[TournamentListResponse])
@@ -211,21 +236,46 @@ async def get_public_tournaments(
         # Get all tournaments
         tournaments = tournament_crud.get_tournaments(db=db, skip=skip, limit=limit)
 
-    return [
-        TournamentListResponse(
-            id=t.id,
-            name=t.name,
-            tournament_type=t.tournament_type,
-            start_date=t.start_date,
-            end_date=t.end_date,
-            status=t.status,
-            total_registered_teams=len(t.teams),
-            max_participants=t.max_participants,
-            entry_fee=t.entry_fee if t.entry_fee is not None else 0.0,
-            club_name=t.club.name if t.club else None,
+    tournament_list = []
+    for t in tournaments:
+        # Build category data with current participant counts
+        categories_data = []
+        for category in t.categories:
+            # Count current participants/teams for this category
+            current_teams = len([team for team in t.teams if team.category_config_id == category.id])
+            current_individuals = len([participant for participant in t.participants if participant.category_config_id == category.id])
+            current_participants = current_teams + current_individuals
+            
+            categories_data.append(
+                TournamentCategoryResponse(
+                    id=category.id,
+                    category=category.category,
+                    max_participants=category.max_participants,
+                    min_elo=category.min_elo,
+                    max_elo=category.max_elo,
+                    current_participants=current_participants,
+                    current_teams=current_teams,
+                    current_individuals=current_individuals,
+                )
+            )
+        
+        tournament_list.append(
+            TournamentListResponse(
+                id=t.id,
+                name=t.name,
+                tournament_type=t.tournament_type,
+                start_date=t.start_date,
+                end_date=t.end_date,
+                status=t.status,
+                total_registered_teams=len(t.teams),
+                max_participants=t.max_participants,
+                entry_fee=t.entry_fee if t.entry_fee is not None else 0.0,
+                club_name=t.club.name if t.club else None,
+                categories=categories_data,
+            )
         )
-        for t in tournaments
-    ]
+    
+    return tournament_list
 
 
 @router.get("/{tournament_id}", response_model=TournamentResponse)
@@ -833,6 +883,22 @@ async def finalize_tournament(
         )
 
     return {"message": "Tournament finalized successfully"}
+
+
+@router.get("/debug/elo-eligibility")
+async def debug_elo_eligibility(
+    user_elo: float,
+    category: TournamentCategory,
+    db: Session = Depends(get_db),
+):
+    """Debug endpoint to check ELO eligibility for a specific category.
+    
+    Example: GET /tournaments/debug/elo-eligibility?user_elo=3.4&category=GOLD
+    """
+    result = tournament_crud.debug_elo_eligibility(
+        db=db, user_elo=user_elo, category=category
+    )
+    return result
 
 
 # New tournament scheduling endpoints

@@ -30,6 +30,17 @@ from app.schemas.tournament_schemas import (
 
 
 class TournamentCRUD:
+    def _is_elo_eligible_for_category(self, elo_rating: float, category_config: TournamentCategoryConfig) -> bool:
+        """Check if an ELO rating is eligible for a tournament category.
+        
+        Handles PLATINUM category specially since it should accept any ELO >= 5.0
+        """
+        if category_config.category == TournamentCategory.PLATINUM:
+            # For PLATINUM, accept any ELO >= min_elo (no upper bound)
+            return elo_rating >= category_config.min_elo
+        else:
+            # For other categories, use standard range check
+            return category_config.min_elo <= elo_rating < category_config.max_elo
     def create_tournament(
         self, db: Session, tournament_data: TournamentCreate, club_id: int
     ) -> Tournament:
@@ -234,7 +245,7 @@ class TournamentCRUD:
         )
 
         # Check ELO eligibility
-        if not (category_config.min_elo <= average_elo < category_config.max_elo):
+        if not self._is_elo_eligible_for_category(average_elo, category_config):
             return None
 
         # Check category capacity
@@ -331,7 +342,7 @@ class TournamentCRUD:
         if not user:
             return None
 
-        if not (category_config.min_elo <= user.elo_rating < category_config.max_elo):
+        if not self._is_elo_eligible_for_category(user.elo_rating, category_config):
             return None
 
         # Check category capacity
@@ -576,7 +587,7 @@ class TournamentCRUD:
         reasons = []
 
         for category_config in tournament.categories:
-            if category_config.min_elo <= average_elo < category_config.max_elo:
+            if self._is_elo_eligible_for_category(average_elo, category_config):
                 # Check capacity
                 current_teams = (
                     db.query(TournamentTeam)
@@ -652,7 +663,7 @@ class TournamentCRUD:
         reasons = []
 
         for category_config in tournament.categories:
-            if category_config.min_elo <= user.elo_rating < category_config.max_elo:
+            if self._is_elo_eligible_for_category(user.elo_rating, category_config):
                 # Check capacity
                 current_participants = (
                     db.query(TournamentParticipant)
@@ -792,6 +803,68 @@ class TournamentCRUD:
             .order_by(desc(TournamentTrophy.awarded_at))
             .all()
         )
+
+    def debug_elo_eligibility(
+        self, db: Session, user_elo: float, category: TournamentCategory
+    ) -> dict[str, Any]:
+        """Debug helper to check ELO eligibility for a specific category.
+        
+        Returns detailed information about why a user might not be eligible.
+        """
+        expected_range = CATEGORY_ELO_RANGES.get(category)
+        if not expected_range:
+            return {
+                "eligible": False,
+                "reason": f"Unknown category: {category}",
+                "user_elo": user_elo,
+                "category": category.value,
+            }
+        
+        expected_min, expected_max = expected_range
+        
+        # Check all tournaments with this category
+        tournaments_with_category = (
+            db.query(Tournament)
+            .join(TournamentCategoryConfig)
+            .filter(TournamentCategoryConfig.category == category)
+            .filter(Tournament.status == TournamentStatus.REGISTRATION_OPEN)
+            .all()
+        )
+        
+        eligible_tournaments = []
+        ineligible_tournaments = []
+        
+        for tournament in tournaments_with_category:
+            for category_config in tournament.categories:
+                if category_config.category == category:
+                    is_eligible = self._is_elo_eligible_for_category(user_elo, category_config)
+                    
+                    tournament_info = {
+                        "tournament_id": tournament.id,
+                        "tournament_name": tournament.name,
+                        "config_min_elo": category_config.min_elo,
+                        "config_max_elo": category_config.max_elo,
+                        "eligible": is_eligible,
+                    }
+                    
+                    if is_eligible:
+                        eligible_tournaments.append(tournament_info)
+                    else:
+                        ineligible_tournaments.append(tournament_info)
+        
+        return {
+            "user_elo": user_elo,
+            "category": category.value,
+            "expected_range": f"{expected_min}-{expected_max}",
+            "total_open_tournaments": len(tournaments_with_category),
+            "eligible_tournaments": eligible_tournaments,
+            "ineligible_tournaments": ineligible_tournaments,
+            "summary": {
+                "can_join_any": len(eligible_tournaments) > 0,
+                "total_eligible": len(eligible_tournaments),
+                "total_ineligible": len(ineligible_tournaments),
+            }
+        }
 
 
 tournament_crud = TournamentCRUD()
