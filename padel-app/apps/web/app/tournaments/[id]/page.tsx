@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import { Tournament, TournamentStatus, TournamentType, TournamentCategory, Team, TeamEligibility, TournamentRegistrationRequest } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { CategoryBadgeGrid, CategoryEligibilityLegend } from '@/components/tournaments/CategoryBadge';
 
 interface Match {
   id: number;
@@ -39,8 +40,8 @@ const statusColors = {
 const CATEGORY_LABELS = {
   [TournamentCategory.BRONZE]: 'Bronze (1.0-2.0)',
   [TournamentCategory.SILVER]: 'Silver (2.0-3.0)',
-  [TournamentCategory.GOLD]: 'Gold (3.0-4.0)',
-  [TournamentCategory.PLATINUM]: 'Platinum (4.0+)'
+  [TournamentCategory.GOLD]: 'Gold (3.0-5.0)',
+  [TournamentCategory.PLATINUM]: 'Platinum (5.0+)'
 };
 
 export default function TournamentDetailsPage() {
@@ -229,9 +230,27 @@ export default function TournamentDetailsPage() {
           </Link>
           
           <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">{tournament.name}</h1>
-              <p className="text-muted-foreground text-lg">{formatTournamentType(tournament.tournament_type)}</p>
+            <div className="space-y-3">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">{tournament.name}</h1>
+                <p className="text-muted-foreground text-lg">{formatTournamentType(tournament.tournament_type)}</p>
+              </div>
+              
+              {tournament.categories && tournament.categories.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Available Categories:</p>
+                  <CategoryBadgeGrid
+                    categories={tournament.categories}
+                    userEloRating={user?.elo_rating}
+                    size="md"
+                    showEligibilityIndicator={!!user}
+                    showParticipantCount={true}
+                  />
+                  {user && (
+                    <CategoryEligibilityLegend className="text-xs" />
+                  )}
+                </div>
+              )}
             </div>
             <Badge className={`${statusColors[tournament.status as keyof typeof statusColors]} text-white`}>
               {getStatusLabel(tournament.status)}
@@ -317,24 +336,44 @@ export default function TournamentDetailsPage() {
                     <CardDescription>Teams are divided into categories based on average ELO rating</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {tournament.categories.map((category) => (
-                        <div key={category.id} className="p-4 border rounded-lg">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-medium text-lg">
-                                {CATEGORY_LABELS[category.category as keyof typeof CATEGORY_LABELS]} Category
-                              </h4>
-                              <p className="text-muted-foreground">
-                                ELO Range: {category.min_elo} - {category.max_elo === Infinity ? '∞' : category.max_elo}
-                              </p>
-                            </div>
-                            <Badge variant="outline">
-                              {requiresTeams ? category.current_teams : category.current_individuals} / {category.max_participants} {requiresTeams ? 'teams' : 'players'}
-                            </Badge>
-                          </div>
+                    <div className="space-y-6">
+                      {user && (
+                        <div>
+                          <h4 className="font-medium mb-2">Your Eligibility</h4>
+                          <CategoryEligibilityLegend />
                         </div>
-                      ))}
+                      )}
+                      
+                      <div>
+                        <h4 className="font-medium mb-3">Available Categories</h4>
+                        <CategoryBadgeGrid
+                          categories={tournament.categories}
+                          userEloRating={user?.elo_rating}
+                          size="lg"
+                          showEligibilityIndicator={!!user}
+                          showParticipantCount={true}
+                        />
+                      </div>
+                      
+                      <div className="grid gap-4">
+                        {tournament.categories.map((category) => (
+                          <div key={category.id} className="p-4 border rounded-lg">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-medium text-lg">
+                                  {CATEGORY_LABELS[category.category as keyof typeof CATEGORY_LABELS]} Category
+                                </h4>
+                                <p className="text-muted-foreground">
+                                  ELO Range: {category.min_elo} - {category.max_elo === Infinity ? '∞' : category.max_elo}
+                                </p>
+                              </div>
+                              <Badge variant="outline">
+                                {requiresTeams ? category.current_teams : category.current_individuals} / {category.max_participants} {requiresTeams ? 'teams' : 'players'}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
