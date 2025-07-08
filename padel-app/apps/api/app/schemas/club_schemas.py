@@ -1,7 +1,11 @@
 from datetime import time
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel, EmailStr, HttpUrl, field_validator
+
+if TYPE_CHECKING:
+    from app.schemas.booking_schemas import Booking
+    from app.schemas.court_schemas import Court
 
 from app.schemas.user_schemas import (
     User as UserSchema,  # Import for nesting owner details
@@ -110,6 +114,7 @@ class ClubBasicInfo(BaseModel):
 
 
 # Forward reference resolution
+# Import after model definitions to avoid circular imports
 from app.schemas.booking_schemas import Booking
 from app.schemas.court_schemas import Court
 

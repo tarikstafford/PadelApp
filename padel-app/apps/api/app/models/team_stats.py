@@ -129,7 +129,11 @@ class TeamStats(Base):
             self.lowest_average_elo = new_average_elo
 
     def __repr__(self):
-        return f"<TeamStats(id={self.id}, team_id={self.team_id}, games_played={self.games_played}, win_rate={self.win_rate:.1f}%)>"
+        return (
+            f"<TeamStats(id={self.id}, team_id={self.team_id}, "
+            f"games_played={self.games_played}, "
+            f"win_rate={self.win_rate:.1f}%)>"
+        )
 
 
 class TeamGameHistory(Base):
@@ -171,4 +175,7 @@ class TeamGameHistory(Base):
     tournament = relationship("Tournament")
 
     def __repr__(self):
-        return f"<TeamGameHistory(id={self.id}, team_id={self.team_id}, game_id={self.game_id}, won={bool(self.won)})>"
+        return (
+            f"<TeamGameHistory(id={self.id}, team_id={self.team_id}, "
+            f"game_id={self.game_id}, won={bool(self.won)})>"
+        )

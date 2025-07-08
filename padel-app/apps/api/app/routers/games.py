@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from typing import Optional
 
@@ -142,10 +143,10 @@ async def read_game_details(
         raise
     except Exception as e:
         # Log the error and return a generic 500 error
-        print(f"Error retrieving game {game_id}: {str(e)}")
+        logging.exception(f"Error retrieving game {game_id}: {e!s}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while retrieving game details"
+            detail="An error occurred while retrieving game details",
         )
 
 

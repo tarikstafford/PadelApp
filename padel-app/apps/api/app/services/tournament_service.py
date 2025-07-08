@@ -503,12 +503,11 @@ class TournamentService:
                     tournament_id,
                     type("obj", (object,), {"schedule_generated": False})(),
                 )
-
-            return success
-
         except Exception:
             db.rollback()
             return False
+        else:
+            return success
 
     def reactivate_tournament(self, db: Session, tournament_id: int) -> bool:
         """
@@ -572,12 +571,11 @@ class TournamentService:
                 tournament_id,
                 type("obj", (object,), {"status": new_status})(),
             )
-
-            return True
-
         except Exception:
             db.rollback()
             return False
+        else:
+            return True
 
     def get_tournament_cancellation_impact(
         self, db: Session, tournament_id: int

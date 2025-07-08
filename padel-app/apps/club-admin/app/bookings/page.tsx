@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
+import { Card, CardContent, CardHeader } from "@workspace/ui/components/card";
 import { useAuth } from '@/contexts/AuthContext';
 import CalendarView from '@/components/bookings/CalendarView';
 import { Skeleton } from '@workspace/ui/components/skeleton';

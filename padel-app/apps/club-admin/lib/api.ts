@@ -13,7 +13,6 @@ import {
   User,
   CourtData
 } from './types';
-import { format } from 'date-fns';
 
 const getApiUrl = () => {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -32,11 +31,11 @@ const getAuthHeaders = (): HeadersInit => {
 };
 
 export const apiClient = {
-  get: async <T>(path: string, params?: Record<string, any>): Promise<T> => {
+  get: async <T>(path: string, params?: Record<string, unknown>): Promise<T> => {
     try {
       const url = new URL(`${getApiUrl()}${path}`);
       if (params) {
-        Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+        Object.keys(params).forEach(key => url.searchParams.append(key, String(params[key])));
       }
       const response = await fetch(url.toString(), {
         headers: getAuthHeaders(),
@@ -45,15 +44,15 @@ export const apiClient = {
         let errorBody;
         try {
           errorBody = await response.json();
-        } catch (e) {
+        } catch {
           errorBody = { detail: `Request failed with status ${response.status}` };
         }
         throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error: any) {
-      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
-        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && !('detail' in error) && !('message' in error)) {
+        (error as { detail?: string }).detail = 'An unexpected error occurred. The server returned an empty error response.';
       }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
@@ -61,7 +60,7 @@ export const apiClient = {
     }
   },
 
-  post: async <T>(path: string, body: any, options?: { headers?: Record<string, string>; silenceError?: boolean }): Promise<T> => {
+  post: async <T>(path: string, body: unknown, options?: { headers?: Record<string, string>; silenceError?: boolean }): Promise<T> => {
     try {
       const isFormData = body instanceof FormData;
       const headers = options?.headers || getAuthHeaders();
@@ -84,7 +83,7 @@ export const apiClient = {
         throw errorBody; // Throw the original error body from the API
       }
       return response.json() as Promise<T>;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If we are explicitly silencing errors, just rethrow without logging/toasting
       if (options?.silenceError) {
         throw error;
@@ -97,7 +96,7 @@ export const apiClient = {
     }
   },
 
-  put: async <T>(path: string, body: any): Promise<T> => {
+  put: async <T>(path: string, body: unknown): Promise<T> => {
     try {
       const response = await fetch(`${getApiUrl()}${path}`, {
         method: 'PUT',
@@ -108,15 +107,15 @@ export const apiClient = {
         let errorBody;
         try {
           errorBody = await response.json();
-        } catch (e) {
+        } catch {
           errorBody = { detail: `Request failed with status ${response.status}` };
         }
         throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error: any) {
-      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
-        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && !('detail' in error) && !('message' in error)) {
+        (error as { detail?: string }).detail = 'An unexpected error occurred. The server returned an empty error response.';
       }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
@@ -124,7 +123,7 @@ export const apiClient = {
     }
   },
 
-  patch: async <T>(path: string, body: any): Promise<T> => {
+  patch: async <T>(path: string, body: unknown): Promise<T> => {
     try {
       const response = await fetch(`${getApiUrl()}${path}`, {
         method: 'PATCH',
@@ -135,15 +134,15 @@ export const apiClient = {
         let errorBody;
         try {
           errorBody = await response.json();
-        } catch (e) {
+        } catch {
           errorBody = { detail: `Request failed with status ${response.status}` };
         }
         throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error: any) {
-      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
-        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && !('detail' in error) && !('message' in error)) {
+        (error as { detail?: string }).detail = 'An unexpected error occurred. The server returned an empty error response.';
       }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);
@@ -161,15 +160,15 @@ export const apiClient = {
         let errorBody;
         try {
           errorBody = await response.json();
-        } catch (e) {
+        } catch {
           errorBody = { detail: `Request failed with status ${response.status}` };
         }
         throw errorBody;
       }
       return response.json() as Promise<T>;
-    } catch (error: any) {
-      if (typeof error === 'object' && error !== null && !error.detail && !error.message) {
-        error.detail = 'An unexpected error occurred. The server returned an empty error response.';
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && !('detail' in error) && !('message' in error)) {
+        (error as { detail?: string }).detail = 'An unexpected error occurred. The server returned an empty error response.';
       }
       const formattedError = formatErrorMessage(error);
       showErrorToast(formattedError);

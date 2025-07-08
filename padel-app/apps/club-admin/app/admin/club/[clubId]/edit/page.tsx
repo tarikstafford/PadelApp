@@ -25,16 +25,17 @@ export default function ClubEditPage() {
   const onSubmit = async (values: ClubFormValues) => {
     setIsSubmitting(true);
     try {
-      const clubData: any = { ...values };
+      const clubData: ClubFormValues & { image_file?: File } = { ...values };
       let dataToSend: ClubFormValues | FormData = clubData;
 
       if (clubData.image_file) {
         const formData = new FormData();
         Object.keys(clubData).forEach(key => {
-          if (key === 'image_file' && clubData[key]) {
-            formData.append(key, clubData[key]);
-          } else if (clubData[key] !== null && clubData[key] !== undefined) {
-            formData.append(key, clubData[key]);
+          const value = clubData[key as keyof typeof clubData];
+          if (key === 'image_file' && value) {
+            formData.append(key, value as File);
+          } else if (value !== null && value !== undefined) {
+            formData.append(key, String(value));
           }
         });
         dataToSend = formData;
@@ -49,7 +50,7 @@ export default function ClubEditPage() {
         await updateClub(clubId, dataToSend);
         router.push(`/dashboard`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to save club. Server response:", JSON.stringify(err, null, 2));
     } finally {
       setIsSubmitting(false);

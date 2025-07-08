@@ -106,7 +106,8 @@ async def login_for_access_token(
         )
 
     access_token = security.create_access_token(
-        subject=user.email,  # Using email as subject for simplicity, user.id is also common
+        subject=user.email,  # Using email as subject for simplicity, user.id is
+                        # also common
         role=user.role.value,
     )
     refresh_token = security.create_refresh_token(
@@ -133,7 +134,6 @@ async def read_users_me(
 @router.post("/refresh-token", response_model=token_schemas.Token)
 async def refresh_access_token(
     token_request: token_schemas.RefreshTokenRequest,
-    # db: Session = Depends(get_db) # Not strictly needed if refresh token is self-contained and not stored/revoked in DB
 ):
     """
     Refresh an access token using a valid refresh token.
@@ -147,7 +147,8 @@ async def refresh_access_token(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Subject should be present if decode_token_payload was successful and checked for sub
+        # Subject should be present if decode_token_payload was successful and
+        # checked for sub
         if payload.sub is None or payload.role is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -158,12 +159,6 @@ async def refresh_access_token(
         new_access_token = security.create_access_token(
             subject=payload.sub, role=payload.role
         )
-        return {
-            "access_token": new_access_token,
-            "token_type": "bearer",
-            "refresh_token": token_request.refresh_token,
-            "role": payload.role,
-        }
     except HTTPException:  # Re-raise HTTPExceptions from decode_token_payload
         raise
     except Exception as e:
@@ -172,3 +167,10 @@ async def refresh_access_token(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing refresh token: {e!s}",
         )
+    else:
+        return {
+            "access_token": new_access_token,
+            "token_type": "bearer",
+            "refresh_token": token_request.refresh_token,
+            "role": payload.role,
+        }

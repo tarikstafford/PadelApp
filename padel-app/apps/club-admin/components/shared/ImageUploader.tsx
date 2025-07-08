@@ -55,6 +55,7 @@ export function ImageUploader({
       
       {preview ? (
         <div className="relative w-full h-48 bg-muted rounded-md overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src={preview} 
             alt="Uploaded image preview" 

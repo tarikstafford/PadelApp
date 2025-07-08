@@ -1,6 +1,4 @@
 import { Geist, Geist_Mono } from "next/font/google"
-import { Inter } from "next/font/google"
-import { ThemeProvider } from "next-themes"
 import "@workspace/ui/globals.css"
 import { Providers } from "@/components/providers"
 import { AuthProvider } from "@/contexts/AuthContext"
@@ -21,10 +19,9 @@ const fontMono = Geist_Mono({
 
 // Polyfill for crypto.randomUUID for environments that don't support it
 if (typeof window !== 'undefined' && !window.crypto.randomUUID) {
-  window.crypto.randomUUID = uuidv4 as any
+  window.crypto.randomUUID = uuidv4 as typeof crypto.randomUUID
 }
 
-const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
   children,

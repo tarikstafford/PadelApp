@@ -1,8 +1,11 @@
+import logging
 from decimal import Decimal  # For price_per_hour
 
 from sqlalchemy.orm import Session
 
 from app.models import Club, Court
+
+logger = logging.getLogger(__name__)
 
 
 def seed_clubs(db: Session) -> None:
@@ -74,9 +77,9 @@ def seed_clubs(db: Session) -> None:
         if not db_club:
             new_club = Club(**club_info)
             db.add(new_club)
-            print(f"Club '{new_club.name}' seeded.")
+            logger.info(f"Club '{new_club.name}' seeded.")
         else:
-            print(f"Club '{club_info['name']}' already exists, skipping.")
+            logger.info(f"Club '{club_info['name']}' already exists, skipping.")
     db.commit()
 
 
@@ -261,23 +264,23 @@ def seed_courts(db: Session) -> None:
                     ],
                 )
                 db.add(new_court)
-                print(f"Court '{new_court.name}' for club '{club.name}' seeded.")
+                logger.info(f"Court '{new_court.name}' for club '{club.name}' seeded.")
             else:
-                print(
+                logger.info(
                     f"Court '{court_info['name']}' for club '{club.name}' already exists, skipping."
                 )
         else:
-            print(
+            logger.warning(
                 f"Club '{court_info['club_name']}' not found for court '{court_info['name']}', skipping."
             )
     db.commit()
 
 
 def seed_all_data(db: Session) -> None:
-    print("Starting database seeding...")
+    logger.info("Starting database seeding...")
     seed_clubs(db)
     seed_courts(db)
-    print("Database seeding completed.")
+    logger.info("Database seeding completed.")
 
 
 # Example of how this might be run (will be called from run_seeds.py)

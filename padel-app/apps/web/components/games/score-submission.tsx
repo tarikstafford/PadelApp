@@ -158,7 +158,11 @@ export function ScoreSubmission({
       onScoreSubmitted?.();
     } catch (error: unknown) {
       console.error('Error submitting score:', error);
-      const message = (error as any).response?.data?.detail || 'Failed to submit score';
+      let message = 'Failed to submit score';
+      if (error instanceof Error) {
+        const apiError = error as { response?: { data?: { detail?: string } } };
+        message = apiError.response?.data?.detail || 'Failed to submit score';
+      }
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -181,7 +185,11 @@ export function ScoreSubmission({
       onScoreSubmitted?.();
     } catch (error: unknown) {
       console.error('Error confirming score:', error);
-      const message = (error as any).response?.data?.detail || 'Failed to confirm score';
+      let message = 'Failed to confirm score';
+      if (error instanceof Error) {
+        const apiError = error as { response?: { data?: { detail?: string } } };
+        message = apiError.response?.data?.detail || 'Failed to confirm score';
+      }
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -226,7 +234,11 @@ export function ScoreSubmission({
       onScoreSubmitted?.();
     } catch (error: unknown) {
       console.error('Error countering score:', error);
-      const message = (error as any).response?.data?.detail || 'Failed to dispute score';
+      let message = 'Failed to dispute score';
+      if (error instanceof Error) {
+        const apiError = error as { response?: { data?: { detail?: string } } };
+        message = apiError.response?.data?.detail || 'Failed to dispute score';
+      }
       toast.error(message);
     } finally {
       setIsSubmitting(false);

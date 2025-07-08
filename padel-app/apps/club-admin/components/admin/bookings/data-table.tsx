@@ -9,10 +9,6 @@ import {
   getPaginationRowModel,
   PaginationState,
   Updater,
-  HeaderGroup,
-  Row,
-  Header,
-  Cell,
 } from "@tanstack/react-table";
 import {
   Table,
@@ -31,7 +27,7 @@ interface DataTableProps<TData> {
   pagination: PaginationState;
   setPagination: (updater: Updater<PaginationState>) => void;
   isLoading: boolean;
-  error: any;
+  error: unknown;
 }
 
 export function DataTable<TData>({

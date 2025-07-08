@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -19,13 +19,7 @@ export default function TournamentManagePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (tournamentId) {
-      fetchTournament();
-    }
-  }, [tournamentId]);
-
-  const fetchTournament = async () => {
+  const fetchTournament = useCallback(async () => {
     try {
       const tournamentData = await apiClient.get<Tournament>(`/tournaments/${tournamentId}`);
       setTournament(tournamentData);
@@ -34,7 +28,13 @@ export default function TournamentManagePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tournamentId]);
+
+  useEffect(() => {
+    if (tournamentId) {
+      fetchTournament();
+    }
+  }, [tournamentId, fetchTournament]);
   
   const handleTournamentUpdate = (updatedTournament: Tournament) => {
     setTournament(updatedTournament);

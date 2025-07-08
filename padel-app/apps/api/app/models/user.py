@@ -49,9 +49,6 @@ class User(Base):
         "ClubAdmin", back_populates="user", cascade="all, delete-orphan"
     )
 
-    # Optional: If we want a direct list of games created by the user,
-    # (assuming a creator_id is added to the Game model or derived differently)
-    # created_games = relationship("Game", foreign_keys="[Game.creator_id]", back_populates="creator")
 
     is_superuser = Column(Boolean(), default=False)
 

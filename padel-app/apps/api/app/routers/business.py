@@ -72,12 +72,12 @@ async def get_upcoming_bookings(
                     has_game=booking.game is not None,
                 )
             )
-
-        return upcoming_bookings
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to get upcoming bookings: {e!s}"
         )
+    else:
+        return upcoming_bookings
 
 
 @router.get(
@@ -113,12 +113,12 @@ async def get_active_tournaments(
                     entry_fee=tournament.entry_fee or 0.0,
                 )
             )
-
-        return tournament_summaries
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to get active tournaments: {e!s}"
         )
+    else:
+        return tournament_summaries
 
 
 @router.get("/my-clubs", response_model=list[dict])
@@ -141,10 +141,10 @@ async def get_my_clubs(
                     "image_url": club.image_url,
                 }
             )
-
-        return club_list
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get clubs: {e!s}")
+    else:
+        return club_list
 
 
 @router.get("/multi-club/overview", response_model=MultiClubMetrics)

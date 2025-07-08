@@ -11,7 +11,6 @@ import {
 import { useCourtSchedule } from "@/hooks/useCourtSchedule";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { Booking } from "@/lib/types";
-import { BookingDetailsDialog } from "@/components/admin/bookings/booking-details-dialog";
 
 // Helper functions
 function generateTimeSlots(start: string, end: string, intervalMinutes: number): string[] {
@@ -67,8 +66,6 @@ function getBookingColorClass(status: string): string {
 
 export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const timeSlots = generateTimeSlots('08:00', '22:00', 30);
   const clubId = 1; // Hardcoded for now
   const { data, isLoading, error } = useCourtSchedule(clubId, selectedDate);
@@ -76,10 +73,6 @@ export default function SchedulePage() {
   const courts = data?.courts || [];
   const bookings = data?.bookings || [];
 
-  const handleBookingClick = (booking: Booking) => {
-    setSelectedBooking(booking);
-    setIsDialogOpen(true);
-  };
 
   return (
     <div className="space-y-6">

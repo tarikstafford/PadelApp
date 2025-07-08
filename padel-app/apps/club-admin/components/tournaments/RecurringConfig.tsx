@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Info } from 'lucide-react';
+import { Clock, Info } from 'lucide-react';
 import { RecurrencePattern } from '@/lib/types';
 import { format } from 'date-fns';
 
@@ -25,7 +24,17 @@ interface RecurringConfigProps {
     advance_generation_days: number;
     auto_generation_enabled: boolean;
   };
-  onConfigChange: (config: any) => void;
+  onConfigChange: (config: Partial<{
+    recurrence_pattern: RecurrencePattern;
+    interval_value: number;
+    days_of_week?: number[];
+    day_of_month?: number;
+    series_end_date?: string;
+    duration_hours: number;
+    registration_deadline_hours: number;
+    advance_generation_days: number;
+    auto_generation_enabled: boolean;
+  }>) => void;
 }
 
 const DAYS_OF_WEEK = [
@@ -44,7 +53,7 @@ export default function RecurringConfig({
   config, 
   onConfigChange 
 }: RecurringConfigProps) {
-  const updateConfig = (field: string, value: any) => {
+  const updateConfig = (field: string, value: unknown) => {
     onConfigChange({ ...config, [field]: value });
   };
 
@@ -240,7 +249,7 @@ export default function RecurringConfig({
               <div className="text-sm text-muted-foreground">
                 <p>This will create a series of tournaments that repeat according to your schedule.</p>
                 <p className="mt-1">
-                  Example: "Weekly Americano every Wednesday at 7pm"
+                  Example: &quot;Weekly Americano every Wednesday at 7pm&quot;
                 </p>
               </div>
             </div>

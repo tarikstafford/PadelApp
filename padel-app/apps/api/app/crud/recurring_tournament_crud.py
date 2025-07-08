@@ -8,6 +8,7 @@ from app.models.tournament import (
     RecurringTournament,
     RecurringTournamentCategoryTemplate,
     Tournament,
+    TournamentCategory,
     TournamentStatus,
 )
 
@@ -16,13 +17,13 @@ class RecurringTournamentCRUD:
     def _ensure_correct_elo_ranges(self, category_template_data: dict) -> dict:
         """Ensure category template uses correct ELO ranges from CATEGORY_ELO_RANGES."""
         if "category" in category_template_data:
-            from app.models.tournament import TournamentCategory
             category = TournamentCategory(category_template_data["category"])
             if category in CATEGORY_ELO_RANGES:
                 min_elo, max_elo = CATEGORY_ELO_RANGES[category]
                 category_template_data["min_elo"] = min_elo
                 category_template_data["max_elo"] = max_elo
         return category_template_data
+
     def create_recurring_tournament(
         self, db: Session, recurring_tournament_data: dict
     ) -> RecurringTournament:

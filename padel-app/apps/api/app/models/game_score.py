@@ -83,7 +83,11 @@ class GameScore(Base):
         return self.status == ScoreStatus.CONFIRMED
 
     def __repr__(self):
-        return f"<GameScore(id={self.id}, game_id={self.game_id}, score={self.team1_score}-{self.team2_score}, status='{self.status}')>"
+        return (
+            f"<GameScore(id={self.id}, game_id={self.game_id}, "
+            f"score={self.team1_score}-{self.team2_score}, "
+            f"status='{self.status}')>"
+        )
 
 
 class ScoreConfirmation(Base):
@@ -113,4 +117,8 @@ class ScoreConfirmation(Base):
     confirming_user = relationship("User", foreign_keys=[confirming_user_id])
 
     def __repr__(self):
-        return f"<ScoreConfirmation(id={self.id}, game_score_id={self.game_score_id}, action='{self.action}', team={self.confirming_team})>"
+        return (
+            f"<ScoreConfirmation(id={self.id}, "
+            f"game_score_id={self.game_score_id}, "
+            f"action='{self.action}', team={self.confirming_team})>"
+        )

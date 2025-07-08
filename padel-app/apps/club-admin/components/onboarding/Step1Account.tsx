@@ -25,8 +25,8 @@ const formSchema = z.object({
 
 interface Step1Props {
   nextStep: () => void;
-  updateFormData: (data: any) => void;
-  formData: any;
+  updateFormData: (data: Record<string, unknown>) => void;
+  formData: Record<string, unknown>;
 }
 
 export default function Step1Account({ nextStep, updateFormData, formData }: Step1Props) {
@@ -35,9 +35,9 @@ export default function Step1Account({ nextStep, updateFormData, formData }: Ste
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      full_name: formData.full_name || "",
-      email: formData.email || "",
-      password: formData.password || "",
+      full_name: String(formData.full_name || ""),
+      email: String(formData.email || ""),
+      password: String(formData.password || ""),
     },
   });
 
@@ -55,7 +55,7 @@ export default function Step1Account({ nextStep, updateFormData, formData }: Ste
       
       updateFormData({ ...values, role, access_token, refresh_token });
       nextStep();
-    } catch (error) {
+    } catch {
       // Error is already handled by apiClient, which shows a toast
     } finally {
       setIsLoading(false);

@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Trophy, Calendar, Users, DollarSign, AlertCircle, User } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
-import { Tournament, TournamentStatus, TournamentType, TournamentCategory, Team, TeamEligibility, TournamentRegistrationRequest } from '@/lib/types';
+import { Tournament, TournamentStatus, TournamentCategory, Team, TeamEligibility, TournamentRegistrationRequest } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { CategoryBadgeGrid, CategoryEligibilityLegend } from '@/components/tournaments/CategoryBadge';
 
@@ -179,7 +179,6 @@ export default function TournamentDetailsPage() {
   const isRegistrationOpen = tournament?.status === TournamentStatus.REGISTRATION_OPEN;
   const isRegistrationDeadlinePassed = tournament && new Date() > new Date(tournament.registration_deadline);
   
-  const isAmericano = tournament?.tournament_type === TournamentType.AMERICANO || tournament?.tournament_type === TournamentType.FIXED_AMERICANO;
   const requiresTeams = tournament?.requires_teams;
 
   if (loading) {

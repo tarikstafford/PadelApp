@@ -1,6 +1,6 @@
 "use client";
 
-import React,  { useState, useEffect, useCallback } from 'react';
+import React,  { useState, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -72,9 +72,9 @@ export default function CalendarView({ onDateSelect }: CalendarViewProps) {
       });
       
       setEvents(calendarEvents);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to fetch schedule", error);
-      toast.error(error.message || "Could not load the schedule. Please try again later.");
+      toast.error((error instanceof Error ? error.message : String(error)) || "Could not load the schedule. Please try again later.");
     } finally {
       setLoading(false);
     }

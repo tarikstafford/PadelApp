@@ -60,6 +60,7 @@ class BookingWithCourt(BookingBase):
 
 
 # --- Fix for Pydantic forward reference ---
+# Import Game schema here to avoid circular imports
 from app.schemas.game_schemas import Game as GameSchema
 
 Booking.model_rebuild()

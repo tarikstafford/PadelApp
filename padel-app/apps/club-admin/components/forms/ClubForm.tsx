@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useForm, UseFormReturn } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Button } from "@workspace/ui/components/button";
 import {
   Form,
   FormControl,
@@ -35,20 +34,20 @@ export const clubFormSchema = z.object({
 });
 
 // Use refine on the client-side to ensure it's a file
-if (typeof window !== "undefined") {
-  (clubFormSchema as any) = clubFormSchema.refine(
-    (data) => {
-      if (data.image_file && !(data.image_file instanceof File)) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Image must be a valid file.",
-      path: ["image_file"],
-    }
-  );
-}
+// if (typeof window !== "undefined") {
+//   clubFormSchema = clubFormSchema.refine(
+//     (data) => {
+//       if (data.image_file && !(data.image_file instanceof File)) {
+//         return false;
+//       }
+//       return true;
+//     },
+//     {
+//       message: "Image must be a valid file.",
+//       path: ["image_file"],
+//     }
+//   );
+// }
 
 export type ClubFormValues = z.infer<typeof clubFormSchema>;
 

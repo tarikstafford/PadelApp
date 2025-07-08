@@ -73,8 +73,8 @@ export function EditClubForm({ club }: { club: Club }) {
       toast.success("Image updated successfully!");
       router.refresh();
 
-    } catch (error: any) {
-      toast.error(error.message || "Failed to upload image.");
+    } catch (error: unknown) {
+      toast.error((error instanceof Error ? error.message : String(error)) || "Failed to upload image.");
       console.error(error);
     }
   };
@@ -102,6 +102,7 @@ export function EditClubForm({ club }: { club: Club }) {
             <FormLabel>Club Image</FormLabel>
             {club.image_url && (
               <div className="w-full h-48 rounded-md overflow-hidden bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={`${process.env.NEXT_PUBLIC_API_URL}${club.image_url}`}
                     alt="Current club image" 

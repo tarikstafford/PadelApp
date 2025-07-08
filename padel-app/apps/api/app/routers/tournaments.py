@@ -1,4 +1,3 @@
-import contextlib
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -184,10 +183,18 @@ async def get_club_tournaments(
         categories_data = []
         for category in t.categories:
             # Count current participants/teams for this category
-            current_teams = len([team for team in t.teams if team.category_config_id == category.id])
-            current_individuals = len([participant for participant in t.participants if participant.category_config_id == category.id])
+            current_teams = len(
+                [team for team in t.teams if team.category_config_id == category.id]
+            )
+            current_individuals = len(
+                [
+                    participant
+                    for participant in t.participants
+                    if participant.category_config_id == category.id
+                ]
+            )
             current_participants = current_teams + current_individuals
-            
+
             categories_data.append(
                 TournamentCategoryResponse(
                     id=category.id,
@@ -200,7 +207,7 @@ async def get_club_tournaments(
                     current_individuals=current_individuals,
                 )
             )
-        
+
         tournament_list.append(
             TournamentListResponse(
                 id=t.id,
@@ -216,7 +223,7 @@ async def get_club_tournaments(
                 categories=categories_data,
             )
         )
-    
+
     return tournament_list
 
 
@@ -242,10 +249,18 @@ async def get_public_tournaments(
         categories_data = []
         for category in t.categories:
             # Count current participants/teams for this category
-            current_teams = len([team for team in t.teams if team.category_config_id == category.id])
-            current_individuals = len([participant for participant in t.participants if participant.category_config_id == category.id])
+            current_teams = len(
+                [team for team in t.teams if team.category_config_id == category.id]
+            )
+            current_individuals = len(
+                [
+                    participant
+                    for participant in t.participants
+                    if participant.category_config_id == category.id
+                ]
+            )
             current_participants = current_teams + current_individuals
-            
+
             categories_data.append(
                 TournamentCategoryResponse(
                     id=category.id,
@@ -258,7 +273,7 @@ async def get_public_tournaments(
                     current_individuals=current_individuals,
                 )
             )
-        
+
         tournament_list.append(
             TournamentListResponse(
                 id=t.id,
@@ -274,7 +289,7 @@ async def get_public_tournaments(
                 categories=categories_data,
             )
         )
-    
+
     return tournament_list
 
 
@@ -892,13 +907,12 @@ async def debug_elo_eligibility(
     db: Session = Depends(get_db),
 ):
     """Debug endpoint to check ELO eligibility for a specific category.
-    
+
     Example: GET /tournaments/debug/elo-eligibility?user_elo=3.4&category=GOLD
     """
-    result = tournament_crud.debug_elo_eligibility(
+    return tournament_crud.debug_elo_eligibility(
         db=db, user_elo=user_elo, category=category
     )
-    return result
 
 
 # New tournament scheduling endpoints

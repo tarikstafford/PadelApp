@@ -44,6 +44,7 @@ export default function ImageUploader({ onFileChange, defaultImageUrl }: ImageUp
         <div className="relative h-24 w-24 rounded-md bg-muted flex items-center justify-center">
           {preview ? (
             <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={preview} alt="Club image preview" className="h-full w-full rounded-md object-cover" />
               <Button
                 type="button"

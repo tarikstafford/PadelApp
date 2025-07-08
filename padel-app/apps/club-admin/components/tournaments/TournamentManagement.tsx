@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,11 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Users, 
   Trophy, 
-  Calendar, 
   Settings, 
   Play, 
-  Pause, 
-  RotateCcw,
+  Pause,
   UserCheck,
   Clock,
   MapPin
@@ -44,11 +42,7 @@ export default function TournamentManagement({
   const [matches, setMatches] = useState<TournamentMatch[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchTournamentData();
-  }, [tournament.id]);
-
-  const fetchTournamentData = async () => {
+  const fetchTournamentData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch teams or participants based on tournament type
@@ -73,7 +67,11 @@ export default function TournamentManagement({
     } finally {
       setLoading(false);
     }
-  };
+  }, [tournament.id, tournament.requires_teams]);
+
+  useEffect(() => {
+    fetchTournamentData();
+  }, [fetchTournamentData]);
 
   const updateTournamentStatus = async (status: TournamentStatus) => {
     try {

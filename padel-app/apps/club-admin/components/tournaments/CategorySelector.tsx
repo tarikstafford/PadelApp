@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,7 +47,7 @@ export default function CategorySelector({
     onChange([...categories, newCategory]);
   };
 
-  const updateCategory = (index: number, field: keyof CategoryConfig, value: any) => {
+  const updateCategory = (index: number, field: keyof CategoryConfig, value: unknown) => {
     const updated = categories.map((cat, i) => {
       if (i === index) {
         const updatedCat = { ...cat, [field]: value };

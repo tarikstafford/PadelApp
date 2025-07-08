@@ -128,7 +128,10 @@ class NotificationService:
                     user_id=game_player.user_id,
                     notification_type=NotificationType.GAME_ENDED,
                     title="Game Time Complete",
-                    message=f"Your game at {club_name} has ended. Don't forget to submit the score!",
+                    message=(
+                        f"Your game at {club_name} has ended. "
+                        "Don't forget to submit the score!"
+                    ),
                     priority=NotificationPriority.MEDIUM,
                     data={
                         "game_id": game_id,
@@ -166,7 +169,10 @@ class NotificationService:
                 user_id=player.id,
                 notification_type=NotificationType.SCORE_SUBMITTED,
                 title="Score Submitted",
-                message="The opposing team has submitted a score for your game. Please confirm or dispute it.",
+                message=(
+                    "The opposing team has submitted a score for your game. "
+                    "Please confirm or dispute it."
+                ),
                 priority=NotificationPriority.HIGH,
                 data={
                     "game_id": game_id,
@@ -205,7 +211,10 @@ class NotificationService:
                 user_id=player.id,
                 notification_type=NotificationType.SCORE_CONFIRMED,
                 title="Score Confirmed",
-                message="The game score has been confirmed by both teams. ELO ratings have been updated.",
+                message=(
+                    "The game score has been confirmed by both teams. "
+                    "ELO ratings have been updated."
+                ),
                 priority=NotificationPriority.MEDIUM,
                 data={
                     "game_id": game_id,
@@ -234,7 +243,9 @@ class NotificationService:
             user_id=user_id,
             notification_type=NotificationType.TEAM_INVITATION,
             title="Team Invitation",
-            message=f"{invited_by.full_name} has invited you to join team '{team.name}'",
+            message=(
+                f"{invited_by.full_name} has invited you to join " f"team '{team.name}'"
+            ),
             priority=NotificationPriority.MEDIUM,
             data={
                 "team_id": team_id,
@@ -354,7 +365,9 @@ class NotificationService:
             NotificationType.SCORE_DISPUTED: preferences.score_notifications_enabled,
             NotificationType.TEAM_INVITATION: preferences.team_invitations_enabled,
             NotificationType.GAME_INVITATION: preferences.game_invitations_enabled,
-            NotificationType.TOURNAMENT_REMINDER: preferences.tournament_reminders_enabled,
+            NotificationType.TOURNAMENT_REMINDER: (
+                preferences.tournament_reminders_enabled
+            ),
             NotificationType.ELO_UPDATE: preferences.elo_updates_enabled,
             NotificationType.GENERAL: preferences.general_notifications_enabled,
         }

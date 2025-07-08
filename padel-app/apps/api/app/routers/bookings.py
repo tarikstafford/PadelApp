@@ -21,9 +21,6 @@ from app.services.court_booking_service import (
     court_booking_service,
 )  # For tournament conflict checking
 
-# from app.services.availability_service import SLOT_INTERVAL_MINUTES
-# For end_time calculation if not done in CRUD
-
 router = APIRouter()
 
 
@@ -54,9 +51,9 @@ async def create_new_booking(
             target_date=target_date_val,
             duration=booking_in.duration,
         )
-    except Exception as e:
+    except Exception:
         # Log e for debugging
-        logging.exception(f"Error checking availability: {e}")
+        logging.exception("Error checking availability")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to check court availability.",
@@ -91,10 +88,10 @@ async def create_new_booking(
         return crud.booking_crud.create_booking(
             db=db, booking_in=booking_in, user_id=current_user.id
         )
-    except Exception as e:
+    except Exception:
         # Catch any other unexpected errors during booking creation
         # Log e for debugging
-        logging.exception(f"Error creating booking: {e}")
+        logging.exception("Error creating booking")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while creating the booking.",
@@ -134,7 +131,7 @@ async def read_user_bookings(
             sort_desc=sort_desc,
         )
     except Exception as e:
-        logging.exception("ERROR in /api/v1/bookings: %s", e)
+        logging.exception("ERROR in /api/v1/bookings")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 

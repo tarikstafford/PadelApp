@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Trophy, Users, Calendar, DollarSign, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useClub } from '@/contexts/ClubContext';
@@ -27,7 +27,7 @@ export function TournamentStatusWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchActiveTournaments = async () => {
+  const fetchActiveTournaments = useCallback(async () => {
     if (!selectedClub) return;
 
     setIsLoading(true);
@@ -42,11 +42,11 @@ export function TournamentStatusWidget() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedClub]);
 
   useEffect(() => {
     fetchActiveTournaments();
-  }, [selectedClub]);
+  }, [fetchActiveTournaments]);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {

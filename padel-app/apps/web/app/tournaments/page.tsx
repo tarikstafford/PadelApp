@@ -35,13 +35,14 @@ interface Tournament {
 }
 
 // Helper function to convert API response to typed Tournament
-function convertApiTournament(apiTournament: any): Tournament {
+function convertApiTournament(apiTournament: unknown): Tournament {
+  const tournament = apiTournament as Tournament & { categories?: Array<{ category: string; [key: string]: unknown }> };
   return {
-    ...apiTournament,
-    categories: apiTournament.categories?.map((cat: any) => ({
+    ...tournament,
+    categories: tournament.categories?.map((cat: { category: string; [key: string]: unknown }) => ({
       ...cat,
       category: cat.category as TournamentCategory
-    }))
+    })) as Tournament['categories']
   };
 }
 
@@ -76,7 +77,7 @@ export default function TournamentsPage() {
   const fetchTournaments = async () => {
     try {
       // Use public tournaments endpoint (no authentication required)
-      const data = await apiClient.get<any[]>('/tournaments/', {}, null, false);
+      const data = await apiClient.get<unknown[]>('/tournaments/', {}, null, false);
       const convertedTournaments = data.map(convertApiTournament);
       setTournaments(convertedTournaments);
     } catch (err) {

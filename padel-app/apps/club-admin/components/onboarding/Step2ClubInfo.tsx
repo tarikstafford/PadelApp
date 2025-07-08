@@ -1,22 +1,20 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { createClub } from "@/lib/api";
 import { setCookie } from "cookies-next";
 import { ClubForm, ClubFormValues } from "@/components/forms/ClubForm";
 import { Button } from "@workspace/ui/components/button";
-import { UseFormReturn } from "react-hook-form";
 
 interface Step2Props {
   nextStep: () => void;
   prevStep: () => void;
-  updateFormData: (data: any) => void;
-  formData: any;
+  updateFormData: (data: Record<string, unknown>) => void;
+  formData: Record<string, unknown>;
 }
 
 export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, formData }: Step2Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const formRef = useRef<UseFormReturn<ClubFormValues>>(null);
 
   // We need a way to check validity for the button state
   const [isFormValid, setIsFormValid] = useState(false);
@@ -39,22 +37,23 @@ export default function Step2ClubInfo({ nextStep, prevStep, updateFormData, form
         return;
       }
 
-      const clubData: any = { ...values };
+      const clubData: ClubFormValues & { image_file?: File } = { ...values };
       let dataToSend: ClubFormValues | FormData = clubData;
 
       if (clubData.image_file) {
         const formData = new FormData();
         Object.keys(clubData).forEach(key => {
-          if (key === 'image_file' && clubData[key]) {
-            formData.append(key, clubData[key]);
-          } else if (clubData[key] !== null && clubData[key] !== undefined) {
-            formData.append(key, clubData[key]);
+          const value = clubData[key as keyof typeof clubData];
+          if (key === 'image_file' && value) {
+            formData.append(key, value as File);
+          } else if (value !== null && value !== undefined) {
+            formData.append(key, String(value));
           }
         });
         dataToSend = formData;
       }
 
-      const newClub = await createClub(dataToSend, token);
+      const newClub = await createClub(dataToSend, String(token));
       updateFormData({ ...values, clubId: newClub.id });
       setCookie("clubId", String(newClub.id)); 
       nextStep();

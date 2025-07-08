@@ -1,4 +1,5 @@
 import contextlib
+import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -20,6 +21,7 @@ from app.models.tournament import (
     TournamentTrophy,
     TournamentType,
 )
+from app.models.user import User
 from app.schemas.tournament_schemas import (
     TournamentCreate,
     TournamentMatchCreate,
@@ -30,17 +32,19 @@ from app.schemas.tournament_schemas import (
 
 
 class TournamentCRUD:
-    def _is_elo_eligible_for_category(self, elo_rating: float, category_config: TournamentCategoryConfig) -> bool:
+    def _is_elo_eligible_for_category(
+        self, elo_rating: float, category_config: TournamentCategoryConfig
+    ) -> bool:
         """Check if an ELO rating is eligible for a tournament category.
-        
+
         Handles PLATINUM category specially since it should accept any ELO >= 5.0
         """
         if category_config.category == TournamentCategory.PLATINUM:
             # For PLATINUM, accept any ELO >= min_elo (no upper bound)
             return elo_rating >= category_config.min_elo
-        else:
-            # For other categories, use standard range check
-            return category_config.min_elo <= elo_rating < category_config.max_elo
+        # For other categories, use standard range check
+        return category_config.min_elo <= elo_rating < category_config.max_elo
+
     def create_tournament(
         self, db: Session, tournament_data: TournamentCreate, club_id: int
     ) -> Tournament:
@@ -98,7 +102,10 @@ class TournamentCRUD:
     def create_tournament_from_dict(
         self, db: Session, tournament_data: dict
     ) -> Tournament:
-        """Create tournament from dictionary data (used by recurring tournament service)."""
+        """Create tournament from dictionary data.
+
+        Used by recurring tournament service.
+        """
         tournament = Tournament(**tournament_data)
         db.add(tournament)
         db.commit()
@@ -107,7 +114,7 @@ class TournamentCRUD:
 
     def get_tournament(self, db: Session, tournament_id: int) -> Optional[Tournament]:
         try:
-            tournament = (
+            return (
                 db.query(Tournament)
                 .options(
                     joinedload(Tournament.categories),
@@ -118,20 +125,22 @@ class TournamentCRUD:
                 .filter(Tournament.id == tournament_id)
                 .first()
             )
-            return tournament
         except Exception:
             # Fallback without eager loading if relationships fail
             try:
-                tournament = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+                tournament = (
+                    db.query(Tournament).filter(Tournament.id == tournament_id).first()
+                )
                 if tournament:
                     # Try to load essential relationships separately
                     with contextlib.suppress(Exception):
-                        tournament.categories
+                        _ = tournament.categories
                     with contextlib.suppress(Exception):
-                        tournament.teams
-                return tournament
+                        _ = tournament.teams
             except Exception:
                 return None
+            else:
+                return tournament
 
     def get_tournaments_by_club(
         self, db: Session, club_id: int, skip: int = 0, limit: int = 100
@@ -336,8 +345,6 @@ class TournamentCRUD:
             return None
 
         # Get user and check ELO eligibility
-        from app.models.user import User
-
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             return None
@@ -356,7 +363,7 @@ class TournamentCRUD:
                 return None
         except Exception:
             # Table might not exist yet, allow registration
-            pass
+            logging.debug("TournamentParticipant table might not exist yet")
 
         # Register participant
         try:
@@ -374,10 +381,11 @@ class TournamentCRUD:
             db.add(tournament_participant)
             db.commit()
             db.refresh(tournament_participant)
-            return tournament_participant
         except Exception:
             db.rollback()
             return None
+        else:
+            return tournament_participant
 
     def unregister_participant(
         self, db: Session, tournament_id: int, user_id: int
@@ -633,7 +641,10 @@ class TournamentCRUD:
     def check_participant_eligibility(
         self, db: Session, tournament_id: int, user_id: int
     ) -> dict[str, Any]:
-        """Check if a user is eligible for individual registration in Americano tournaments"""
+        """Check if a user is eligible for individual registration.
+
+        Applies to Americano tournaments.
+        """
         tournament = (
             db.query(Tournament)
             .options(joinedload(Tournament.categories))
@@ -652,8 +663,6 @@ class TournamentCRUD:
                 "eligible": False,
                 "reason": "This tournament requires team registration",
             }
-
-        from app.models.user import User
 
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
@@ -808,7 +817,7 @@ class TournamentCRUD:
         self, db: Session, user_elo: float, category: TournamentCategory
     ) -> dict[str, Any]:
         """Debug helper to check ELO eligibility for a specific category.
-        
+
         Returns detailed information about why a user might not be eligible.
         """
         expected_range = CATEGORY_ELO_RANGES.get(category)
@@ -819,9 +828,9 @@ class TournamentCRUD:
                 "user_elo": user_elo,
                 "category": category.value,
             }
-        
+
         expected_min, expected_max = expected_range
-        
+
         # Check all tournaments with this category
         tournaments_with_category = (
             db.query(Tournament)
@@ -830,15 +839,17 @@ class TournamentCRUD:
             .filter(Tournament.status == TournamentStatus.REGISTRATION_OPEN)
             .all()
         )
-        
+
         eligible_tournaments = []
         ineligible_tournaments = []
-        
+
         for tournament in tournaments_with_category:
             for category_config in tournament.categories:
                 if category_config.category == category:
-                    is_eligible = self._is_elo_eligible_for_category(user_elo, category_config)
-                    
+                    is_eligible = self._is_elo_eligible_for_category(
+                        user_elo, category_config
+                    )
+
                     tournament_info = {
                         "tournament_id": tournament.id,
                         "tournament_name": tournament.name,
@@ -846,12 +857,12 @@ class TournamentCRUD:
                         "config_max_elo": category_config.max_elo,
                         "eligible": is_eligible,
                     }
-                    
+
                     if is_eligible:
                         eligible_tournaments.append(tournament_info)
                     else:
                         ineligible_tournaments.append(tournament_info)
-        
+
         return {
             "user_elo": user_elo,
             "category": category.value,
@@ -863,7 +874,7 @@ class TournamentCRUD:
                 "can_join_any": len(eligible_tournaments) > 0,
                 "total_eligible": len(eligible_tournaments),
                 "total_ineligible": len(ineligible_tournaments),
-            }
+            },
         }
 
 

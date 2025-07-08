@@ -1,9 +1,6 @@
 "use client";
 
-import React, { Component, ErrorInfo, ReactNode } from "react";
-import { ErrorMessage } from "./ui/ErrorMessage";
-import { formatErrorMessage } from "@/lib/errorHandler";
-import { Button } from "@workspace/ui/components/button";
+import { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
   fallback: ReactNode;
@@ -19,7 +16,7 @@ class ErrorBoundary extends Component<Props, State> {
     hasError: false,
   };
 
-  public static getDerivedStateFromError(_: Error): State {
+  public static getDerivedStateFromError(): State {
     return { hasError: true };
   }
 

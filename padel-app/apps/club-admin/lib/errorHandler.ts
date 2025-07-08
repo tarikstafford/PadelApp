@@ -7,9 +7,9 @@ export interface ErrorDetails {
   code?: string; // Optional error code for reference
 }
 
-export const formatErrorMessage = (error: any): ErrorDetails => {
+export const formatErrorMessage = (error: unknown): ErrorDetails => {
   // Handle FastAPI validation errors
-  if (error.detail) {
+  if (error && typeof error === 'object' && 'detail' in error) {
     const detail = Array.isArray(error.detail) ? error.detail[0].msg : error.detail;
     if (typeof detail === 'string' && detail.includes("Email already registered")) {
       return {
@@ -21,14 +21,15 @@ export const formatErrorMessage = (error: any): ErrorDetails => {
     }
     return {
       type: 'server',
-      message: detail,
+      message: String(detail),
       actionable: 'Please check the details and try again.',
       code: 'SRV-DETAIL'
     };
   }
 
-  if (error.response) {
-    const status = error.response.status;
+  if (error && typeof error === 'object' && 'response' in error) {
+    const response = error.response as { status?: number };
+    const status = response.status;
     if (status === 401 || status === 403) {
       return {
         type: 'auth',
@@ -37,7 +38,7 @@ export const formatErrorMessage = (error: any): ErrorDetails => {
         code: `AUTH-${status}`
       };
     }
-  } else if (error.request) {
+  } else if (error && typeof error === 'object' && 'request' in error) {
     return {
       type: 'network',
       message: 'Unable to connect to the server',
@@ -48,7 +49,7 @@ export const formatErrorMessage = (error: any): ErrorDetails => {
   
   return {
     type: 'unknown',
-    message: error.message || 'An unexpected error occurred',
+    message: (error instanceof Error ? error.message : null) || 'An unexpected error occurred',
     actionable: 'Please try again later or contact support',
     code: 'UNK-001'
   };

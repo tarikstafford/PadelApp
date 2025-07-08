@@ -386,9 +386,8 @@ class RecurringTournamentCreate(BaseModel):
         if (
             v is not None
             and info.data.get("recurrence_pattern") == RecurrencePattern.MONTHLY
-        ):
-            if not 1 <= v <= 31:
-                raise ValueError("Day of month must be between 1 and 31")
+        ) and not 1 <= v <= 31:
+            raise ValueError("Day of month must be between 1 and 31")
         return v
 
 

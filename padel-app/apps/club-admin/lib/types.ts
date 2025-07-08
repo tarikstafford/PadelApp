@@ -350,5 +350,5 @@ export type TournamentParticipant = {
   elo_rating: number;
   registration_date: string;
   is_active: boolean;
-  match_teams?: any; // Temporary team assignments for Americano
+  match_teams?: { team_id: number; team_name: string }[]; // Temporary team assignments for Americano
 }; 

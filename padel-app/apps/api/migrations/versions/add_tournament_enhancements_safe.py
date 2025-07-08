@@ -5,13 +5,12 @@ Revises: 627120000tsafe
 Create Date: 2025-01-07 12:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = 'add_tournament_enhancements_safe'
-down_revision = '627120000tsafe'
+revision = "add_tournament_enhancements_safe"
+down_revision = "627120000tsafe"
 branch_labels = None
 depends_on = None
 
@@ -19,7 +18,7 @@ depends_on = None
 def upgrade() -> None:
     # Get connection for safe DDL operations
     connection = op.get_bind()
-    
+
     # Create recurrence pattern enum only if it doesn't exist
     connection.execute(sa.text("""
         DO $$ BEGIN
@@ -73,7 +72,7 @@ def upgrade() -> None:
 
     # Create index for category templates
     connection.execute(sa.text("""
-        CREATE INDEX IF NOT EXISTS ix_recurring_tournament_category_templates_recurring_tournament_id 
+        CREATE INDEX IF NOT EXISTS ix_recurring_tournament_category_templates_recurring_tournament_id
         ON recurring_tournament_category_templates(recurring_tournament_id);
     """))
 
@@ -97,12 +96,12 @@ def upgrade() -> None:
         CREATE INDEX IF NOT EXISTS ix_tournament_participants_tournament_id ON tournament_participants(tournament_id);
         CREATE INDEX IF NOT EXISTS ix_tournament_participants_user_id ON tournament_participants(user_id);
     """))
-    
+
     # Add unique constraint safely
     connection.execute(sa.text("""
         DO $$ BEGIN
-            ALTER TABLE tournament_participants 
-            ADD CONSTRAINT unique_participant_per_tournament 
+            ALTER TABLE tournament_participants
+            ADD CONSTRAINT unique_participant_per_tournament
             UNIQUE (tournament_id, user_id);
         EXCEPTION
             WHEN duplicate_object THEN null;
@@ -117,7 +116,7 @@ def upgrade() -> None:
             WHEN duplicate_column THEN null;
         END $$;
     """))
-    
+
     connection.execute(sa.text("""
         DO $$ BEGIN
             ALTER TABLE tournaments ADD COLUMN auto_schedule_enabled BOOLEAN DEFAULT FALSE;
@@ -125,7 +124,7 @@ def upgrade() -> None:
             WHEN duplicate_column THEN null;
         END $$;
     """))
-    
+
     connection.execute(sa.text("""
         DO $$ BEGIN
             ALTER TABLE tournaments ADD COLUMN hourly_time_slots JSONB;
@@ -133,7 +132,7 @@ def upgrade() -> None:
             WHEN duplicate_column THEN null;
         END $$;
     """))
-    
+
     connection.execute(sa.text("""
         DO $$ BEGIN
             ALTER TABLE tournaments ADD COLUMN assigned_court_ids JSONB;
@@ -141,7 +140,7 @@ def upgrade() -> None:
             WHEN duplicate_column THEN null;
         END $$;
     """))
-    
+
     connection.execute(sa.text("""
         DO $$ BEGIN
             ALTER TABLE tournaments ADD COLUMN schedule_generated BOOLEAN DEFAULT FALSE;
@@ -153,17 +152,17 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Remove columns from tournaments table
-    op.drop_column('tournaments', 'schedule_generated')
-    op.drop_column('tournaments', 'assigned_court_ids')
-    op.drop_column('tournaments', 'hourly_time_slots')
-    op.drop_column('tournaments', 'auto_schedule_enabled')
-    op.drop_column('tournaments', 'recurring_tournament_id')
-    
+    op.drop_column("tournaments", "schedule_generated")
+    op.drop_column("tournaments", "assigned_court_ids")
+    op.drop_column("tournaments", "hourly_time_slots")
+    op.drop_column("tournaments", "auto_schedule_enabled")
+    op.drop_column("tournaments", "recurring_tournament_id")
+
     # Drop tables in reverse order
-    op.drop_table('tournament_participants')
-    op.drop_table('recurring_tournament_category_templates')
-    op.drop_table('recurring_tournaments')
-    
+    op.drop_table("tournament_participants")
+    op.drop_table("recurring_tournament_category_templates")
+    op.drop_table("recurring_tournaments")
+
     # Drop enum
     connection = op.get_bind()
     connection.execute(sa.text("DROP TYPE IF EXISTS recurrencepattern"))

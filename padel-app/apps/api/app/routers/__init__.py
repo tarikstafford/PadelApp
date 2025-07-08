@@ -22,8 +22,7 @@ admin_router = admin.router
 leaderboard_router = leaderboard.router
 public_router = public.router
 
-# Import other routers here as they are created, e.g.:
-# from .items import router as items_router
+# Import other routers here as they are created
 
 __all__ = [
     "admin_router",

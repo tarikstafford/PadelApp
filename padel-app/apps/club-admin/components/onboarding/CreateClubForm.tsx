@@ -56,7 +56,7 @@ export function CreateClubForm() {
     setIsSubmitting(true);
     try {
       // Step 1: Create the club with text data
-      const newClub = await apiClient.post<Club>("/admin/my-club", values);
+      await apiClient.post<Club>("/admin/my-club", values);
       toast.success("Club details saved successfully!");
 
       // Step 2: If there's an image, upload it

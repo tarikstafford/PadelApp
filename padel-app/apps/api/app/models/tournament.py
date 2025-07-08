@@ -54,7 +54,10 @@ CATEGORY_ELO_RANGES = {
     TournamentCategory.BRONZE: (1.0, 2.0),
     TournamentCategory.SILVER: (2.0, 3.0),
     TournamentCategory.GOLD: (3.0, 5.0),
-    TournamentCategory.PLATINUM: (5.0, 10.0),  # Using 10.0 instead of infinity for database compatibility
+    TournamentCategory.PLATINUM: (
+        5.0,
+        10.0,
+    ),  # Using 10.0 instead of infinity for database compatibility
 }
 
 
@@ -153,7 +156,8 @@ class RecurringTournamentCategoryTemplate(Base):
 
     def __repr__(self):
         return (
-            f"<RecurringTournamentCategoryTemplate(id={self.id}, category='{self.category}', "
+            f"<RecurringTournamentCategoryTemplate(id={self.id}, "
+            f"category='{self.category}', "
             f"elo_range={self.min_elo}-{self.max_elo})>"
         )
 

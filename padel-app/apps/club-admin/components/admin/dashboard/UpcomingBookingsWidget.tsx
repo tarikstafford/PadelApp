@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { Calendar, Clock, MapPin, User, GamepadIcon } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Calendar, MapPin, User, GamepadIcon } from 'lucide-react';
 import { useClub } from '@/contexts/ClubContext';
 import { apiClient } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +27,7 @@ export function UpcomingBookingsWidget() {
   const [error, setError] = useState<string | null>(null);
   const [daysAhead, setDaysAhead] = useState(7);
 
-  const fetchUpcomingBookings = async () => {
+  const fetchUpcomingBookings = useCallback(async () => {
     if (!selectedClub) return;
 
     setIsLoading(true);
@@ -45,11 +45,11 @@ export function UpcomingBookingsWidget() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedClub, daysAhead]);
 
   useEffect(() => {
     fetchUpcomingBookings();
-  }, [selectedClub, daysAhead]);
+  }, [fetchUpcomingBookings]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

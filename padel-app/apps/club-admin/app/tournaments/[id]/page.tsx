@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Settings, Play, Trophy, Calendar, Users, DollarSign } from 'lucide-react';
+import { ArrowLeft, Settings, Trophy, Calendar, Users, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 
@@ -75,7 +75,6 @@ const statusColors = {
 
 export default function TournamentDetailsPage() {
   const params = useParams();
-  const router = useRouter();
   const tournamentId = params.id as string;
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -84,13 +83,7 @@ export default function TournamentDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (tournamentId) {
-      fetchTournamentData();
-    }
-  }, [tournamentId]);
-
-  const fetchTournamentData = async () => {
+  const fetchTournamentData = useCallback(async () => {
     try {
       // Fetch tournament details
       const tournamentData = await apiClient.get<Tournament>(`/tournaments/${tournamentId}`);
@@ -119,7 +112,13 @@ export default function TournamentDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tournamentId]);
+
+  useEffect(() => {
+    if (tournamentId) {
+      fetchTournamentData();
+    }
+  }, [tournamentId, fetchTournamentData]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {

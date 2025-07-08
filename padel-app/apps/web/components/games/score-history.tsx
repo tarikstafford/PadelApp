@@ -92,7 +92,12 @@ export function ScoreHistory({
     } catch (error: unknown) {
       console.error('Error fetching score history:', error);
       // Don't show error toast if user doesn't have permission (expected for non-participants)
-      if ((error as any).response?.status !== 403) {
+      if (error instanceof Error) {
+        const apiError = error as { response?: { status?: number } };
+        if (apiError.response?.status !== 403) {
+          toast.error('Failed to load score history');
+        }
+      } else {
         toast.error('Failed to load score history');
       }
     } finally {

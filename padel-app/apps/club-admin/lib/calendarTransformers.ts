@@ -154,7 +154,6 @@ export function transformTournamentsToEvents(tournaments: Tournament[]): Calenda
       start_date,
       end_date,
       status,
-      tournament_type,
     } = tournament;
 
     if (!id || !name || !start_date || !end_date || !status) {
@@ -207,14 +206,11 @@ export function transformTournamentMatchesToEvents(matches: TournamentMatch[]): 
 
     const {
       id,
-      tournament_id,
       team1_name,
       team2_name,
       scheduled_time,
       court_name,
       status,
-      round_number,
-      match_number,
     } = match;
 
     if (!id || !scheduled_time) {

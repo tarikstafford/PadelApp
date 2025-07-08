@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Calendar, TrendingUp, TrendingDown, DollarSign, Users, Trophy, Clock } from 'lucide-react';
 import { useClub } from '@/contexts/ClubContext';
 import { apiClient } from '@/lib/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface BusinessMetrics {
   revenue: {
@@ -39,7 +38,7 @@ export function BusinessMetricsOverview() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     if (!selectedClub) return;
 
     setIsLoading(true);
@@ -63,11 +62,11 @@ export function BusinessMetricsOverview() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedClub]);
 
   useEffect(() => {
     fetchMetrics();
-  }, [selectedClub]);
+  }, [fetchMetrics]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

@@ -27,13 +27,7 @@ def main():
     logger.info("Initializing database session for seeding...")
     try:
         # These imports are here to ensure sys.path is set first
-        from app.database import (  # noqa: PLC0415
-            SessionLocal,
-            engine,
-        )  # Import engine for create_all if needed
-        from app.models import (  # noqa: PLC0415
-            Base,
-        )  # Import Base if you need to create tables from here
+        from app.database import SessionLocal  # noqa: PLC0415
         from app.seeds.seed_data import seed_all_data  # noqa: PLC0415
 
         # Optional: Create tables if they don't exist.

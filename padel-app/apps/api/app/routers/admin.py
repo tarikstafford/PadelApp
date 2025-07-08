@@ -59,7 +59,8 @@ async def read_owned_club(current_admin: User = Depends(get_current_active_user)
     """
     Retrieve the club owned by the current admin user.
 
-    This endpoint returns the full details of the club associated with the authenticated admin.
+    This endpoint returns the full details of the club associated with the
+    authenticated admin.
     If the admin does not own a club, it returns a 404 error.
     """
     if not current_admin.owned_club:
@@ -79,7 +80,8 @@ async def read_administered_clubs(
     Retrieve all clubs that the current admin user administers.
 
     This includes owned clubs and clubs where the user is assigned as an admin.
-    For now, returns only the owned club as multi-club admin support needs to be implemented.
+    For now, returns only the owned club as multi-club admin support needs to be
+    implemented.
     """
     clubs = []
 
@@ -88,8 +90,6 @@ async def read_administered_clubs(
         clubs.append(current_admin.owned_club)
 
     # TODO: Add clubs where user is assigned as admin via ClubAdmin table
-    # club_admin_entries = crud.club_admin_crud.get_clubs_by_admin(db=db, admin_id=current_admin.id)
-    # clubs.extend(club_admin_entries)
 
     return clubs
 
@@ -165,11 +165,13 @@ async def read_club_schedule(
     club_id: int,
     start_date: Optional[date] = Query(
         None,
-        description="Start date for fetching schedule. Defaults to today if no dates are provided.",
+        description="Start date for fetching schedule. Defaults to today if no "
+                   "dates are provided.",
     ),
     end_date: Optional[date] = Query(
         None,
-        description="End date for fetching schedule. Defaults to start_date if not provided.",
+        description="End date for fetching schedule. Defaults to start_date if not "
+                   "provided.",
     ),
     db: Session = Depends(get_db),
 ):
@@ -243,7 +245,8 @@ async def read_owned_club_courts(
     """
     Retrieve the courts for the club owned by the current admin user.
 
-    This endpoint returns a list of all courts associated with the authenticated admin's club.
+    This endpoint returns a list of all courts associated with the authenticated
+    admin's club.
     If the admin does not own a club, it returns a 404 error.
     """
     club = current_admin.owned_club
@@ -289,9 +292,11 @@ async def update_owned_club_court(
     """
     Update a court for the club owned by the current admin user.
 
-    This endpoint allows an admin to update the details of a specific court in their club.
+    This endpoint allows an admin to update the details of a specific court in
+    their club.
     The admin must own the club to which the court belongs.
-    If the court is not found or does not belong to the admin's club, it returns a 404 error.
+    If the court is not found or does not belong to the admin's club, it returns a
+    404 error.
     """
     club = current_admin.owned_club
     if not club:
@@ -353,7 +358,8 @@ async def delete_owned_club_court(
 
     This endpoint allows an admin to delete a specific court from their club.
     The admin must own the club to which the court belongs.
-    If the court is not found or does not belong to the admin's club, it returns a 404 error.
+    If the court is not found or does not belong to the admin's club, it returns a
+    404 error.
     """
     club = current_admin.owned_club
     if not club:
@@ -515,7 +521,8 @@ async def create_my_club(
 ):
     """
     Create a new club for the current admin user.
-    This endpoint handles multipart/form-data for club creation, including an optional image upload.
+    This endpoint handles multipart/form-data for club creation, including an
+    optional image upload.
     """
     if current_admin.owned_club:
         raise HTTPException(
@@ -525,7 +532,8 @@ async def create_my_club(
 
     image_url = None
     if image_file:
-        # Assuming file_service.upload_file handles the async upload and returns a URL string
+        # Assuming file_service.upload_file handles the async upload and returns a
+        # URL string
         image_url = await file_service.upload_file(image_file, "club_images")
 
     club_in = club_schemas.ClubCreate(

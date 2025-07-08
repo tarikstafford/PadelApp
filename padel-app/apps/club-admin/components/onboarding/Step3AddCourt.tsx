@@ -36,7 +36,7 @@ const formSchema = z.object({
 
 interface Step3Props {
   prevStep: () => void;
-  formData: any;
+  formData: Record<string, unknown>;
 }
 
 export default function Step3AddCourt({ prevStep, formData }: Step3Props) {
@@ -62,10 +62,10 @@ export default function Step3AddCourt({ prevStep, formData }: Step3Props) {
         setIsLoading(false);
         return;
       }
-      await createCourt({ ...values, club_id: formData.clubId }, formData.access_token);
+      await createCourt({ ...values, club_id: Number(formData.clubId) }, String(formData.access_token));
       toast.success("Onboarding complete! Welcome to your dashboard.");
       router.push("/dashboard");
-    } catch (error) {
+    } catch {
       // Error is handled by apiClient
     } finally {
       setIsLoading(false);

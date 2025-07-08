@@ -66,7 +66,7 @@ async def complete_skill_assessment(
     except Exception as e:
         return schemas.SkillAssessmentResponse(
             success=False,
-            message=f"Failed to update skill assessment: {str(e)}",
+            message=f"Failed to update skill assessment: {e!s}",
             new_elo_rating=current_user.elo_rating,
             preferred_position=current_user.preferred_position,
         )
@@ -99,7 +99,7 @@ async def update_user_elo(
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=500, detail=f"Failed to update ELO rating: {str(e)}"
+            status_code=500, detail=f"Failed to update ELO rating: {e!s}"
         )
 
 

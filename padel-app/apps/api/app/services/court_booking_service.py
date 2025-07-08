@@ -373,11 +373,11 @@ class CourtBookingService:
                 db.delete(booking)
 
             db.commit()
-            return True
-
         except Exception:
             db.rollback()
             return False
+        else:
+            return True
 
     def get_tournament_court_utilization(
         self, db: Session, tournament_id: int

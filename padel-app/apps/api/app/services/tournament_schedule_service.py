@@ -13,7 +13,8 @@ from app.services.court_booking_service import court_booking_service
 
 
 class TournamentScheduleService:
-    """Service for automatically scheduling tournaments with hourly time slots and court management"""
+    """Service for automatically scheduling tournaments with hourly time slots and
+    court management"""
 
     def __init__(self):
         self.slot_duration = timedelta(hours=1)  # Hourly slots
@@ -28,7 +29,8 @@ class TournamentScheduleService:
         court_ids: list[int],
     ) -> Optional[dict[str, Any]]:
         """
-        Calculate the optimal tournament schedule based on selected time slots and available courts.
+        Calculate the optimal tournament schedule based on selected time slots and
+        available courts.
 
         Args:
             db: Database session
@@ -151,10 +153,11 @@ class TournamentScheduleService:
                 db.delete(booking)
 
             db.commit()
-            return True
         except Exception:
             db.rollback()
             return False
+        else:
+            return True
 
     def get_optimal_court_allocation(
         self,
@@ -207,7 +210,8 @@ class TournamentScheduleService:
     def _calculate_matches_needed(
         self, tournament_type: TournamentType, participant_count: int
     ) -> int:
-        """Calculate number of matches needed based on tournament type and participants"""
+        """Calculate number of matches needed based on tournament type and
+        participants"""
         if participant_count < 2:
             return 0
 
@@ -344,7 +348,8 @@ class TournamentScheduleService:
         available_courts: list[int],
     ) -> dict[str, Any]:
         """Generate schedule for Fixed Americano tournament (predetermined partners)"""
-        # Fixed Americano has same scheduling as regular Americano but with fixed partnerships
+        # Fixed Americano has same scheduling as regular Americano but with fixed
+        # partnerships
         return self._generate_americano_schedule(
             matches_by_category, time_slots, available_courts
         )

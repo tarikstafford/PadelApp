@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Calendar } from 'lucide-react';
 import { HourlyTimeSlot } from '@/lib/types';
-import { format, parse, addHours, startOfDay, endOfDay, isAfter, isBefore, isSameDay } from 'date-fns';
+import { format, addHours, startOfDay, isAfter, isBefore, isSameDay } from 'date-fns';
 
 interface TimeSlotPickerProps {
   selectedSlots: HourlyTimeSlot[];
@@ -17,7 +17,6 @@ interface TimeSlotPickerProps {
   availableHoursEnd?: number; // 0-23
 }
 
-const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function TimeSlotPicker({
   selectedSlots,

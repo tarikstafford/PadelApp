@@ -116,7 +116,12 @@ function TeamDetailPage() {
       setTeam(response);
     } catch (error: unknown) {
       console.error('Error fetching team details:', error);
-      setError((error as any).response?.data?.detail || 'Failed to load team details');
+      if (error instanceof Error) {
+        const apiError = error as { response?: { data?: { detail?: string } } };
+        setError(apiError.response?.data?.detail || 'Failed to load team details');
+      } else {
+        setError('Failed to load team details');
+      }
     } finally {
       setIsLoading(false);
     }

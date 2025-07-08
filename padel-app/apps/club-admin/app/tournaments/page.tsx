@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Calendar, Users, Trophy, Settings, Tag } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { CategoryBadgeGrid } from '@/components/tournaments/CategoryBadge';
 import { TournamentCategory } from '@/lib/types';
@@ -33,14 +32,20 @@ interface Tournament {
 }
 
 // Helper function to convert API response to typed Tournament
-function convertApiTournament(apiTournament: any): Tournament {
+function convertApiTournament(apiTournament: Record<string, unknown>): Tournament {
   return {
     ...apiTournament,
-    categories: apiTournament.categories?.map((cat: any) => ({
-      ...cat,
-      category: cat.category as TournamentCategory
+    categories: (apiTournament.categories as Array<Record<string, unknown>>)?.map((cat: Record<string, unknown>) => ({
+      id: cat.id as number,
+      category: cat.category as TournamentCategory,
+      max_participants: cat.max_participants as number,
+      min_elo: cat.min_elo as number,
+      max_elo: cat.max_elo as number,
+      current_participants: cat.current_participants as number,
+      current_teams: cat.current_teams as number,
+      current_individuals: cat.current_individuals as number,
     }))
-  };
+  } as Tournament;
 }
 
 const statusColors = {
@@ -65,7 +70,6 @@ export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     fetchTournaments();
@@ -73,11 +77,11 @@ export default function TournamentsPage() {
 
   const fetchTournaments = async () => {
     try {
-      const data = await apiClient.get<any[]>('/tournaments/club');
+      const data = await apiClient.get<Array<Record<string, unknown>>>('/tournaments/club');
       const convertedTournaments = data.map(convertApiTournament);
       setTournaments(convertedTournaments);
-    } catch (err: any) {
-      if (err.response?.status === 404) {
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'response' in err && (err as { response?: { status?: number } }).response?.status === 404) {
         // 404 means no tournaments found - show empty state
         setTournaments([]);
       } else {

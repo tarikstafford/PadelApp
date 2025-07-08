@@ -15,7 +15,6 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
-import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
@@ -29,7 +28,6 @@ const formSchema = z.object({
 });
 
 export default function NewCourtPage() {
-  const { user } = useAuth();
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({

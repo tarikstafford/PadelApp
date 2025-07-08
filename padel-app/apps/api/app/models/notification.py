@@ -84,7 +84,10 @@ class Notification(Base):
         return datetime.now(timezone.utc) > self.expires_at
 
     def __repr__(self):
-        return f"<Notification(id={self.id}, user_id={self.user_id}, type='{self.type}', read={self.read})>"
+        return (
+            f"<Notification(id={self.id}, user_id={self.user_id}, "
+            f"type='{self.type}', read={self.read})>"
+        )
 
 
 class NotificationPreference(Base):

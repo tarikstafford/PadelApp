@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api';
-import { TournamentType, TournamentCategory, RecurrencePattern, TournamentCreateData, RecurringTournamentCreateData, HourlyTimeSlot } from '@/lib/types';
+import { TournamentType, RecurrencePattern, TournamentCreateData, RecurringTournamentCreateData, HourlyTimeSlot } from '@/lib/types';
 import CategorySelector, { CategoryConfig } from '@/components/tournaments/CategorySelector';
 import TournamentTypeSelector from '@/components/tournaments/TournamentTypeSelector';
 import TimeSlotPicker from '@/components/tournaments/TimeSlotPicker';
@@ -70,7 +70,7 @@ export default function NewTournamentPage() {
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | number | TournamentType) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -189,7 +189,7 @@ export default function NewTournamentPage() {
           enabled={isRecurring}
           onEnabledChange={setIsRecurring}
           config={recurringConfig}
-          onConfigChange={setRecurringConfig}
+          onConfigChange={(updates) => setRecurringConfig(prev => ({ ...prev, ...updates }))}
         />
         
         <Card>
