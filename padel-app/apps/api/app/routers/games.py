@@ -117,25 +117,36 @@ async def read_game_details(
     Ensures the current user is a participant of the game.
     Auto-expires the game if it's past the end time.
     """
-    # Check and auto-expire game if needed
-    game_expiration_service.check_single_game_expiration(db, game_id)
+    try:
+        # Check and auto-expire game if needed
+        game_expiration_service.check_single_game_expiration(db, game_id)
 
-    game = crud.game_crud.get_game(db, game_id=game_id)
-    if not game:
+        game = crud.game_crud.get_game(db, game_id=game_id)
+        if not game:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Game not found"
+            )
+
+        is_participant = any(gp.user_id == current_user.id for gp in game.players)
+        is_creator = game.booking and game.booking.user_id == current_user.id
+
+        if not is_participant and not is_creator:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to access this game's details.",
+            )
+
+        return game
+    except HTTPException:
+        # Re-raise HTTP exceptions as they are expected
+        raise
+    except Exception as e:
+        # Log the error and return a generic 500 error
+        print(f"Error retrieving game {game_id}: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Game not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving game details"
         )
-
-    is_participant = any(gp.user_id == current_user.id for gp in game.players)
-    is_creator = game.booking and game.booking.user_id == current_user.id
-
-    if not is_participant and not is_creator:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to access this game's details.",
-        )
-
-    return game
 
 
 MAX_PLAYERS_PER_GAME = 4
@@ -402,7 +413,7 @@ async def manage_game_player_status(
 
 
 def validate_game_exists(db: Session, game_id: int) -> models.Game:
-    game = crud.game_crud.game_crud.get_game_with_teams(db, game_id=game_id)
+    game = crud.game_crud.get_game_with_teams(db, game_id=game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
     return game
