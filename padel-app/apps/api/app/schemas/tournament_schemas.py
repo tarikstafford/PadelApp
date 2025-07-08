@@ -147,8 +147,8 @@ class TournamentParticipantResponse(BaseModel):
     user_name: str
     user_email: str
     category: TournamentCategory
-    seed: Optional[int]
-    elo_rating: float
+    seed_position: Optional[int]
+    elo_at_registration: float
     registration_date: datetime
     is_active: bool
     match_teams: Optional[dict[str, Any]] = None  # Temporary team assignments

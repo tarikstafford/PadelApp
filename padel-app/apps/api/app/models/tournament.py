@@ -281,8 +281,8 @@ class TournamentParticipant(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # Participant-specific data
-    seed = Column(Integer, nullable=True)  # Seeding position for Americano
-    elo_rating = Column(Float, nullable=False)  # User's ELO at registration
+    seed_position = Column(Integer, nullable=True)  # Seeding position for Americano
+    elo_at_registration = Column(Float, nullable=False)  # User's ELO at registration
     registration_date = Column(DateTime, default=datetime.utcnow, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
 

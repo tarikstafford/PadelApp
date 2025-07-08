@@ -1,3 +1,4 @@
+import contextlib
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -95,7 +96,7 @@ class TournamentCRUD:
 
     def get_tournament(self, db: Session, tournament_id: int) -> Optional[Tournament]:
         try:
-            return (
+            tournament = (
                 db.query(Tournament)
                 .options(
                     joinedload(Tournament.categories),
@@ -106,9 +107,20 @@ class TournamentCRUD:
                 .filter(Tournament.id == tournament_id)
                 .first()
             )
+            return tournament
         except Exception:
             # Fallback without eager loading if relationships fail
-            return db.query(Tournament).filter(Tournament.id == tournament_id).first()
+            try:
+                tournament = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+                if tournament:
+                    # Try to load essential relationships separately
+                    with contextlib.suppress(Exception):
+                        tournament.categories
+                    with contextlib.suppress(Exception):
+                        tournament.teams
+                return tournament
+            except Exception:
+                return None
 
     def get_tournaments_by_club(
         self, db: Session, club_id: int, skip: int = 0, limit: int = 100
@@ -341,12 +353,12 @@ class TournamentCRUD:
                 tournament_id=tournament_id,
                 category_config_id=category_config.id,
                 user_id=user_id,
-                elo_rating=user.elo_rating,
+                elo_at_registration=user.elo_rating,
             )
         except Exception:
             # Table might not exist yet
             return None
-        
+
         try:
             db.add(tournament_participant)
             db.commit()

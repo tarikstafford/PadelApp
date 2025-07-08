@@ -14,6 +14,7 @@ from app.schemas.tournament_schemas import (
     CourtAvailabilityRequest,
     CourtAvailabilityResponse,
     TournamentBracket,
+    TournamentCategoryResponse,
     TournamentCourtBookingBulkCreate,
     TournamentCourtBookingBulkResponse,
     TournamentCreate,
@@ -187,7 +188,7 @@ async def get_club_tournaments(
             status=t.status,
             total_registered_teams=len(t.teams),
             max_participants=t.max_participants,
-            entry_fee=t.entry_fee,
+            entry_fee=t.entry_fee if t.entry_fee is not None else 0.0,
             club_name=t.club.name if t.club else None,
         )
         for t in tournaments
@@ -220,7 +221,7 @@ async def get_public_tournaments(
             status=t.status,
             total_registered_teams=len(t.teams),
             max_participants=t.max_participants,
-            entry_fee=t.entry_fee,
+            entry_fee=t.entry_fee if t.entry_fee is not None else 0.0,
             club_name=t.club.name if t.club else None,
         )
         for t in tournaments
@@ -251,13 +252,18 @@ async def get_tournament(tournament_id: int, db: Session = Depends(get_db)):
             team_count = len(
                 [t for t in tournament.teams if t.category_config_id == category.id]
             )
-            participant_count = len(
-                [
-                    p
-                    for p in tournament.participants
-                    if p.category_config_id == category.id
-                ]
-            )
+            participant_count = 0
+            try:
+                if hasattr(tournament, "participants") and tournament.participants:
+                    participant_count = len(
+                        [
+                            p
+                            for p in tournament.participants
+                            if p.category_config_id == category.id
+                        ]
+                    )
+            except Exception:
+                participant_count = 0
 
             categories_data.append(
                 TournamentCategoryResponse(
@@ -290,7 +296,9 @@ async def get_tournament(tournament_id: int, db: Session = Depends(get_db)):
             updated_at=tournament.updated_at,
             categories=categories_data,
             total_registered_teams=len(tournament.teams) if tournament.teams else 0,
-            total_registered_participants=len(tournament.participants)
+            total_registered_participants=0
+            if not hasattr(tournament, "participants")
+            else len(tournament.participants)
             if tournament.participants
             else 0,
             requires_teams=not is_americano,
@@ -351,29 +359,7 @@ async def update_tournament(
             detail="Failed to update tournament",
         )
 
-    # Safe calculation of registered teams
-    with contextlib.suppress(AttributeError, TypeError):
-        len(updated_tournament.teams) if updated_tournament.teams else 0
-
-    return TournamentResponse(
-        id=updated_tournament.id,
-        club_id=updated_tournament.club_id,
-        name=updated_tournament.name,
-        description=updated_tournament.description,
-        tournament_type=updated_tournament.tournament_type,
-        start_date=updated_tournament.start_date,
-        end_date=updated_tournament.end_date,
-        registration_deadline=updated_tournament.registration_deadline,
-        status=updated_tournament.status,
-        max_participants=updated_tournament.max_participants,
-        entry_fee=updated_tournament.entry_fee,
-        created_at=updated_tournament.created_at,
-        updated_at=updated_tournament.updated_at,
-        categories=[category.category for category in updated_tournament.categories],
-        total_registered_teams=(
-            len(updated_tournament.teams) if updated_tournament.teams else 0
-        ),
-    )
+    return updated_tournament
 
 
 @router.delete("/{tournament_id}")
