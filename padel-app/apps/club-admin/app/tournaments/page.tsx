@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { CategoryBadgeGrid } from '@/components/tournaments/CategoryBadge';
+import { TournamentCategory } from '@/lib/types';
 
 interface Tournament {
   id: number;
@@ -21,7 +22,7 @@ interface Tournament {
   max_participants: number;
   categories?: {
     id: number;
-    category: string;
+    category: TournamentCategory;
     max_participants: number;
     min_elo: number;
     max_elo: number;
@@ -29,6 +30,17 @@ interface Tournament {
     current_teams: number;
     current_individuals: number;
   }[];
+}
+
+// Helper function to convert API response to typed Tournament
+function convertApiTournament(apiTournament: any): Tournament {
+  return {
+    ...apiTournament,
+    categories: apiTournament.categories?.map((cat: any) => ({
+      ...cat,
+      category: cat.category as TournamentCategory
+    }))
+  };
 }
 
 const statusColors = {
@@ -61,8 +73,9 @@ export default function TournamentsPage() {
 
   const fetchTournaments = async () => {
     try {
-      const data = await apiClient.get<Tournament[]>('/tournaments/club');
-      setTournaments(data);
+      const data = await apiClient.get<any[]>('/tournaments/club');
+      const convertedTournaments = data.map(convertApiTournament);
+      setTournaments(convertedTournaments);
     } catch (err: any) {
       if (err.response?.status === 404) {
         // 404 means no tournaments found - show empty state

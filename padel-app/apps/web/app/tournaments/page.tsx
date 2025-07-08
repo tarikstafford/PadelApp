@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import { CategoryBadgeGrid, CategoryEligibilityLegend } from '@/components/tournaments/CategoryBadge';
 import { useAuth } from '@/contexts/AuthContext';
+import { TournamentCategory } from '@/lib/types';
 
 interface Tournament {
   id: number;
@@ -23,7 +24,7 @@ interface Tournament {
   club_name?: string;
   categories?: {
     id: number;
-    category: string;
+    category: TournamentCategory;
     max_participants: number;
     min_elo: number;
     max_elo: number;
@@ -31,6 +32,17 @@ interface Tournament {
     current_teams: number;
     current_individuals: number;
   }[];
+}
+
+// Helper function to convert API response to typed Tournament
+function convertApiTournament(apiTournament: any): Tournament {
+  return {
+    ...apiTournament,
+    categories: apiTournament.categories?.map((cat: any) => ({
+      ...cat,
+      category: cat.category as TournamentCategory
+    }))
+  };
 }
 
 const statusColors = {
@@ -64,8 +76,9 @@ export default function TournamentsPage() {
   const fetchTournaments = async () => {
     try {
       // Use public tournaments endpoint (no authentication required)
-      const data = await apiClient.get<Tournament[]>('/tournaments/', {}, null, false);
-      setTournaments(data);
+      const data = await apiClient.get<any[]>('/tournaments/', {}, null, false);
+      const convertedTournaments = data.map(convertApiTournament);
+      setTournaments(convertedTournaments);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
