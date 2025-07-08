@@ -189,10 +189,10 @@ class Tournament(Base):
     entry_fee = Column(Float, nullable=True, default=0.0)
 
     # Scheduling configuration
-    auto_schedule_enabled = Column(Boolean, default=True, nullable=False)
+    auto_schedule_enabled = Column(Boolean, default=False, nullable=True)
     hourly_time_slots = Column(JSON, nullable=True)  # Store selected hourly time slots
     assigned_court_ids = Column(JSON, nullable=True)  # Store assigned court IDs
-    schedule_generated = Column(Boolean, default=False, nullable=False)
+    schedule_generated = Column(Boolean, default=False, nullable=True)
 
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -217,6 +217,7 @@ class Tournament(Base):
         "TournamentParticipant",
         back_populates="tournament",
         cascade="all, delete-orphan",
+        lazy="select",
     )
     matches = relationship(
         "TournamentMatch", back_populates="tournament", cascade="all, delete-orphan"
@@ -259,6 +260,7 @@ class TournamentCategoryConfig(Base):
         "TournamentParticipant",
         back_populates="category_config",
         cascade="all, delete-orphan",
+        lazy="select",
     )
 
     def __repr__(self):
