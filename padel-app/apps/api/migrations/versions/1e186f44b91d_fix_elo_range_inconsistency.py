@@ -1,6 +1,6 @@
 """Fix ELO range inconsistency - align all tournament category configs with CATEGORY_ELO_RANGES
 
-Revision ID: fix_elo_range_inconsistency
+Revision ID: 1e186f44b91d
 Revises: final_tournament_fixes
 Create Date: 2025-01-08 12:00:00.000000
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = 'fix_elo_range_inconsistency'
+revision = '1e186f44b91d'
 down_revision = 'final_tournament_fixes'
 branch_labels = None
 depends_on = None
