@@ -30,7 +30,77 @@ async def update_user_me(
     """
     Update current user's profile.
     """
-    return crud.user_crud.update_user(db=db, db_user=current_user, user_in=user_in)
+    return crud.user_crud.update_user(
+        db=db, db_user=current_user, user_in=user_in, allow_elo_update=False
+    )
+
+
+@router.post("/me/skill-assessment", response_model=schemas.SkillAssessmentResponse)
+async def complete_skill_assessment(
+    assessment: schemas.SkillAssessmentRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user),
+):
+    """
+    Complete skill assessment during onboarding and update ELO rating.
+    """
+    try:
+        # Update user with the calculated ELO from the assessment
+        user_update = schemas.UserUpdate(
+            elo_rating=assessment.calculated_elo,
+            preferred_position=assessment.preferred_position,
+        )
+
+        # Use allow_elo_update=True to bypass the ELO restriction for onboarding
+        updated_user = crud.user_crud.update_user(
+            db=db, db_user=current_user, user_in=user_update, allow_elo_update=True
+        )
+
+        return schemas.SkillAssessmentResponse(
+            success=True,
+            message="Skill assessment completed successfully",
+            new_elo_rating=updated_user.elo_rating,
+            preferred_position=updated_user.preferred_position,
+        )
+
+    except Exception as e:
+        return schemas.SkillAssessmentResponse(
+            success=False,
+            message=f"Failed to update skill assessment: {str(e)}",
+            new_elo_rating=current_user.elo_rating,
+            preferred_position=current_user.preferred_position,
+        )
+
+
+@router.put("/me/elo", response_model=schemas.User)
+async def update_user_elo(
+    elo_rating: float,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user),
+):
+    """
+    Directly update user's ELO rating (for onboarding completion or admin use).
+    """
+    # Validate ELO range
+    if not (1.0 <= elo_rating <= 7.0):
+        raise HTTPException(
+            status_code=400, detail="ELO rating must be between 1.0 and 7.0"
+        )
+
+    try:
+        # Direct database update bypassing CRUD restrictions
+        current_user.elo_rating = elo_rating
+        db.add(current_user)
+        db.commit()
+        db.refresh(current_user)
+
+        return current_user
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update ELO rating: {str(e)}"
+        )
 
 
 @router.post("/me/profile-picture", response_model=schemas.User)

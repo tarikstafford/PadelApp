@@ -99,3 +99,26 @@ class UserSearchResult(BaseModel):
 class EloAdjustmentRequest(BaseModel):
     requested_rating: float = Field(..., ge=1.0, le=7.0)
     reason: str = Field(..., min_length=10, max_length=500)
+
+
+class SkillAssessmentRequest(BaseModel):
+    """Schema for skill assessment during onboarding"""
+
+    years_playing: int = Field(..., ge=0, le=50, description="Years playing padel")
+    playing_frequency: str = Field(
+        ..., description="How often they play (e.g., 'weekly', 'monthly')"
+    )
+    skill_level: str = Field(..., description="Self-assessed skill level")
+    preferred_position: Optional[PreferredPosition] = None
+    calculated_elo: float = Field(
+        ..., ge=1.0, le=7.0, description="Calculated ELO rating from assessment"
+    )
+
+
+class SkillAssessmentResponse(BaseModel):
+    """Response after completing skill assessment"""
+
+    success: bool
+    message: str
+    new_elo_rating: float
+    preferred_position: Optional[PreferredPosition] = None

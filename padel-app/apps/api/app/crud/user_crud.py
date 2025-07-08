@@ -40,12 +40,14 @@ def create_user(db: Session, user: UserCreate) -> UserModel:
     return db_user
 
 
-def update_user(db: Session, db_user: UserModel, user_in: UserUpdate) -> UserModel:
+def update_user(
+    db: Session, db_user: UserModel, user_in: UserUpdate, allow_elo_update: bool = False
+) -> UserModel:
     """Update a user's details."""
     update_data = user_in.model_dump(exclude_unset=True)  # Pydantic V2
 
-    # Exclude elo_rating from direct updates
-    if "elo_rating" in update_data:
+    # Exclude elo_rating from direct updates unless explicitly allowed (for onboarding)
+    if "elo_rating" in update_data and not allow_elo_update:
         del update_data["elo_rating"]
 
     if update_data.get("password"):
