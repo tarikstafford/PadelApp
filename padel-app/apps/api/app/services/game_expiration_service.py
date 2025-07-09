@@ -37,17 +37,24 @@ class GameExpirationService:
         Check and expire a single game if needed.
         Returns True if game was expired, False otherwise.
         """
-        game = game_crud.get_game(db, game_id)
-        if not game:
+        try:
+            game = game_crud.get_game(db, game_id)
+            if not game:
+                return False
+
+            if game.should_auto_expire():
+                game.game_status = GameStatus.EXPIRED
+                db.add(game)
+                db.commit()
+                return True
+
             return False
-
-        if game.should_auto_expire():
-            game.game_status = GameStatus.EXPIRED
-            db.add(game)
-            db.commit()
-            return True
-
-        return False
+        except Exception as e:
+            # Log the error but don't fail the request
+            import logging
+            logging.error(f"Error checking game expiration for game {game_id}: {e}")
+            # Re-raise to let the caller handle it
+            raise
 
 
 # Create instance

@@ -119,8 +119,12 @@ async def read_game_details(
     Auto-expires the game if it's past the end time.
     """
     try:
-        # Check and auto-expire game if needed
-        game_expiration_service.check_single_game_expiration(db, game_id)
+        # Try to expire game but don't fail if there's an issue
+        try:
+            game_expiration_service.check_single_game_expiration(db, game_id)
+        except Exception as exp_error:
+            logging.warning(f"Failed to check game expiration for game {game_id}: {exp_error}")
+            # Continue without failing the request
 
         game = crud.game_crud.get_game(db, game_id=game_id)
         if not game:
@@ -128,8 +132,23 @@ async def read_game_details(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Game not found"
             )
 
-        is_participant = any(gp.user_id == current_user.id for gp in game.players)
-        is_creator = game.booking and game.booking.user_id == current_user.id
+        # Safe check for participants
+        try:
+            is_participant = False
+            if game.players:
+                is_participant = any(gp.user_id == current_user.id for gp in game.players)
+        except Exception as e:
+            logging.error(f"Error checking participants: {e}")
+            is_participant = False
+
+        # Safe check for creator
+        try:
+            is_creator = False
+            if game.booking and hasattr(game.booking, 'user_id'):
+                is_creator = game.booking.user_id == current_user.id
+        except Exception as e:
+            logging.error(f"Error checking creator: {e}")
+            is_creator = False
 
         if not is_participant and not is_creator:
             raise HTTPException(
@@ -142,11 +161,19 @@ async def read_game_details(
         # Re-raise HTTP exceptions as they are expected
         raise
     except Exception as e:
-        # Log the error and return a generic 500 error
-        logging.exception(f"Error retrieving game {game_id}: {e!s}")
+        # Log the error with full stack trace
+        import traceback
+        error_details = traceback.format_exc()
+        logging.error(f"Error retrieving game {game_id}: {e!s}")
+        logging.error(f"Full traceback:\n{error_details}")
+        
+        # Include more details in development/debugging
+        error_message = f"Error retrieving game {game_id}: {str(e)}"
+        logging.error(f"Error type: {type(e).__name__}")
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while retrieving game details",
+            detail=error_message,
         )
 
 

@@ -91,11 +91,23 @@ class Game(Base):
 
     def is_expired(self) -> bool:
         """Check if the game is expired (past end time)"""
-        return datetime.now(timezone.utc) > self.end_time
+        current_time = datetime.now(timezone.utc)
+        # Handle timezone-naive end_time
+        if self.end_time.tzinfo is None:
+            # Assume end_time is in UTC if no timezone info
+            end_time_aware = self.end_time.replace(tzinfo=timezone.utc)
+            return current_time > end_time_aware
+        return current_time > self.end_time
 
     def can_leave_game(self) -> bool:
         """Check if players can leave (more than 24 hours before start)"""
-        return datetime.now(timezone.utc) < (self.start_time - timedelta(hours=24))
+        current_time = datetime.now(timezone.utc)
+        # Handle timezone-naive start_time
+        if self.start_time.tzinfo is None:
+            # Assume start_time is in UTC if no timezone info
+            start_time_aware = self.start_time.replace(tzinfo=timezone.utc)
+            return current_time < (start_time_aware - timedelta(hours=24))
+        return current_time < (self.start_time - timedelta(hours=24))
 
     def should_auto_expire(self) -> bool:
         """Check if game should be automatically expired"""
