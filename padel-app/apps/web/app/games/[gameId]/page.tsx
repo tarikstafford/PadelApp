@@ -551,21 +551,23 @@ function GameDetailPageInternal() {
         </DialogContent>
       </Dialog>
 
-      {/* Score Management Section */}
-      <div className="space-y-6">
-        <ScoreSubmission 
-          gameId={parseInt(gameId)}
-          team1Name={game.team1?.name || "Team A"}
-          team2Name={game.team2?.name || "Team B"}
-          onScoreSubmitted={fetchGameData}
-        />
-        
-        <ScoreHistory 
-          gameId={parseInt(gameId)}
-          team1Name={game.team1?.name || "Team A"}
-          team2Name={game.team2?.name || "Team B"}
-        />
-      </div>
+      {/* Score Management Section - Only show for games that have ended or are in progress */}
+      {game.booking?.end_time && new Date(game.booking.end_time) <= new Date() && (
+        <div className="space-y-6">
+          <ScoreSubmission 
+            gameId={parseInt(gameId)}
+            team1Name={game.team1?.name || "Team A"}
+            team2Name={game.team2?.name || "Team B"}
+            onScoreSubmitted={fetchGameData}
+          />
+          
+          <ScoreHistory 
+            gameId={parseInt(gameId)}
+            team1Name={game.team1?.name || "Team A"}
+            team2Name={game.team2?.name || "Team B"}
+          />
+        </div>
+      )}
     </div>
   );
 }

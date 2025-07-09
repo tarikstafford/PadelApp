@@ -164,12 +164,12 @@ class GameInvitationCRUD:
                 "game_type": game.game_type,
                 "game_status": game.game_status,
                 "skill_level": game.skill_level,
-                "start_time": game.start_time,
-                "end_time": game.end_time,
+                "start_time": game.start_time.isoformat() if game.start_time else None,
+                "end_time": game.end_time.isoformat() if game.end_time else None,
                 "booking": {
                     "id": game.booking.id if game.booking else None,
-                    "start_time": game.booking.start_time if game.booking else game.start_time,
-                    "end_time": game.booking.end_time if game.booking else game.end_time,
+                    "start_time": (game.booking.start_time.isoformat() if game.booking.start_time else None) if game.booking else (game.start_time.isoformat() if game.start_time else None),
+                    "end_time": (game.booking.end_time.isoformat() if game.booking.end_time else None) if game.booking else (game.end_time.isoformat() if game.end_time else None),
                     "court": {
                         "id": game.booking.court.id if game.booking and game.booking.court else None,
                         "name": game.booking.court.name if game.booking and game.booking.court else "Unknown Court",
