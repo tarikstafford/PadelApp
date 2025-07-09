@@ -149,7 +149,10 @@ async def read_game_details(
             logging.error(f"Error checking creator: {e}")
             is_creator = False
 
-        if not is_participant and not is_creator:
+        # Check if game is public - public games can be viewed by anyone
+        is_public_game = game.game_type == "PUBLIC"
+        
+        if not is_public_game and not is_participant and not is_creator:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access this game's details.",
