@@ -1,7 +1,7 @@
 from typing import Optional
 
 from sqlalchemy import and_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.game import Game
 from app.models.game_invitation import GameInvitation
@@ -128,7 +128,17 @@ class GameInvitationCRUD:
         if not invitation:
             return None
 
-        game = db.query(Game).filter(Game.id == invitation.game_id).first()
+        # Eagerly load all required relationships
+        game = (
+            db.query(Game)
+            .filter(Game.id == invitation.game_id)
+            .options(
+                joinedload(Game.booking).joinedload("court").joinedload("club"),
+                joinedload(Game.club),
+                joinedload(Game.players).joinedload("user"),
+            )
+            .first()
+        )
         if not game:
             return None
 
@@ -145,27 +155,56 @@ class GameInvitationCRUD:
             .count()
         )
 
+        # Return the complete game object structure for frontend compatibility
         return {
-            "game_id": game.id,
-            "game_name": (
-                "Game at "
-                + (
-                    game.booking.court.name
-                    if game.booking and game.booking.court
-                    else "Unknown Court"
-                )
-            ),
-            "creator_name": creator.full_name if creator else "Unknown",
-            "start_time": game.start_time,
-            "end_time": game.end_time,
-            "court_name": game.booking.court.name
-            if game.booking and game.booking.court
-            else "Unknown Court",
-            "club_name": game.club.name if game.club else "Unknown Club",
-            "current_players": current_players_count,
-            "max_players": 4,
+            "game": {
+                "id": game.id,
+                "club_id": game.club_id,
+                "booking_id": game.booking_id,
+                "game_type": game.game_type,
+                "game_status": game.game_status,
+                "skill_level": game.skill_level,
+                "start_time": game.start_time,
+                "end_time": game.end_time,
+                "booking": {
+                    "id": game.booking.id if game.booking else None,
+                    "start_time": game.booking.start_time if game.booking else game.start_time,
+                    "end_time": game.booking.end_time if game.booking else game.end_time,
+                    "court": {
+                        "id": game.booking.court.id if game.booking and game.booking.court else None,
+                        "name": game.booking.court.name if game.booking and game.booking.court else "Unknown Court",
+                        "club": {
+                            "id": game.booking.court.club.id if game.booking and game.booking.court and game.booking.court.club else game.club_id,
+                            "name": game.booking.court.club.name if game.booking and game.booking.court and game.booking.court.club else (game.club.name if game.club else "Unknown Club"),
+                        } if game.booking and game.booking.court else None,
+                    } if game.booking else None,
+                } if game.booking else None,
+                "players": [
+                    {
+                        "user_id": player.user_id,
+                        "status": player.status.value,
+                        "user": {
+                            "id": player.user.id,
+                            "full_name": player.user.full_name,
+                            "email": player.user.email,
+                        },
+                        "elo_rating": getattr(player.user, 'elo_rating', 1000),
+                    }
+                    for player in game.players
+                    if player.status == GamePlayerStatus.ACCEPTED
+                ],
+            },
+            "creator": {
+                "id": creator.id if creator else invitation.created_by,
+                "full_name": creator.full_name if creator else "Unknown",
+                "email": creator.email if creator else "unknown@email.com",
+            },
+            "invitation_token": invitation.token,
             "is_valid": invitation.is_valid(),
-            "expires_at": invitation.expires_at,
+            "is_expired": not invitation.is_valid(),
+            "is_full": current_players_count >= 4,
+            "can_join": invitation.is_valid() and current_players_count < 4,
+            "expires_at": invitation.expires_at.isoformat() if invitation.expires_at else None,
         }
 
 

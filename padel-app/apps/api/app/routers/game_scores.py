@@ -38,6 +38,11 @@ async def submit_game_score(
 
     # Verify user is on the team they claim to be submitting for
     user_team = game_score_crud.get_user_team_for_game(db, game_id, current_user.id)
+    if user_team == -1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Teams have not been assigned for this game yet",
+        )
     if user_team != score_request.submitted_by_team:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -101,6 +106,11 @@ async def confirm_game_score(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You are not a participant in this game",
         )
+    if user_team == -1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Teams have not been assigned for this game yet",
+        )
 
     # Confirm the score
     game_score = game_score_crud.confirm_score(
@@ -161,6 +171,11 @@ async def counter_game_score(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You are not a participant in this game",
+        )
+    if user_team == -1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Teams have not been assigned for this game yet",
         )
 
     # Counter the score

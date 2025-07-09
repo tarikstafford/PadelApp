@@ -13,7 +13,6 @@ from app.models.game import GameType
 from app.models.game_player import GamePlayerStatus
 from app.models.team import Team
 from app.schemas.game_invitation_schemas import (
-    GameInvitationInfo,
     GameInvitationResponse,
 )
 from app.services.elo_rating_service import elo_rating_service
@@ -564,7 +563,7 @@ async def create_game_invitation(
     )
 
 
-@router.get("/invitations/{token}/info", response_model=GameInvitationInfo)
+@router.get("/invitations/{token}/info")
 async def get_invitation_info(token: str, db: Session = Depends(get_db)):
     """
     Get public information about a game invitation.
@@ -578,7 +577,7 @@ async def get_invitation_info(token: str, db: Session = Depends(get_db)):
             detail="Invitation not found or expired",
         )
 
-    return GameInvitationInfo(**invitation_info)
+    return invitation_info
 
 
 @router.post("/invitations/{token}/accept")

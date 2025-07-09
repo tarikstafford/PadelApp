@@ -224,7 +224,13 @@ class GameScoreCRUD:
             return False, "Game not found"
 
         # Check if game has ended
-        if datetime.now(timezone.utc) < game.end_time:
+        current_time = datetime.now(timezone.utc)
+        # Handle timezone-naive end_time
+        if game.end_time.tzinfo is None:
+            end_time_aware = game.end_time.replace(tzinfo=timezone.utc)
+            if current_time < end_time_aware:
+                return False, "Cannot submit score before game ends"
+        elif current_time < game.end_time:
             return False, "Cannot submit score before game ends"
 
         # Check if user is part of the game
@@ -234,6 +240,10 @@ class GameScoreCRUD:
         )
         if not user_in_game:
             return False, "You are not a participant in this game"
+
+        # Check if teams are assigned (required for score submission)
+        if not game.team1_id or not game.team2_id:
+            return False, "Teams have not been assigned for this game yet"
 
         # Check if score already confirmed
         latest_score = self.get_latest_game_score(db, game_id)
@@ -278,7 +288,16 @@ class GameScoreCRUD:
         self, db: Session, game_id: int, user_id: int
     ) -> Optional[int]:
         """Get which team (1 or 2) a user belongs to in a game"""
-        game = db.query(Game).filter(Game.id == game_id).first()
+        game = (
+            db.query(Game)
+            .filter(Game.id == game_id)
+            .options(
+                joinedload(Game.team1).joinedload("players"),
+                joinedload(Game.team2).joinedload("players"),
+                joinedload(Game.players),
+            )
+            .first()
+        )
         if not game:
             return None
 
@@ -293,6 +312,17 @@ class GameScoreCRUD:
             for player in game.team2.players:
                 if player.id == user_id:
                     return 2
+
+        # For games without teams assigned yet (future games),
+        # check if user is a participant
+        user_in_game = any(
+            gp.user_id == user_id and gp.status.value == "ACCEPTED"
+            for gp in game.players
+        )
+        if user_in_game:
+            # Return a placeholder team number for participants
+            # This allows them to view score history but not submit scores
+            return -1
 
         return None
 
