@@ -123,89 +123,163 @@ class GameInvitationCRUD:
 
     def get_invitation_info(self, db: Session, token: str) -> Optional[dict]:
         """Get public information about an invitation (for preview before auth)"""
-        invitation = self.get_invitation_by_token(db, token)
+        try:
+            invitation = self.get_invitation_by_token(db, token)
 
-        if not invitation:
-            return None
+            if not invitation:
+                return None
 
-        # Eagerly load all required relationships
-        game = (
-            db.query(Game)
-            .filter(Game.id == invitation.game_id)
-            .options(
-                joinedload(Game.booking).joinedload("court").joinedload("club"),
-                joinedload(Game.club),
-                joinedload(Game.players).joinedload("user"),
-            )
-            .first()
-        )
-        if not game:
-            return None
+            # Get the game record without complex joinedload operations
+            game = db.query(Game).filter(Game.id == invitation.game_id).first()
+            if not game:
+                return None
 
-        creator = db.query(User).filter(User.id == invitation.created_by).first()
+            # Get creator safely
+            creator = db.query(User).filter(User.id == invitation.created_by).first()
 
-        current_players_count = (
-            db.query(GamePlayer)
-            .filter(
-                and_(
-                    GamePlayer.game_id == invitation.game_id,
-                    GamePlayer.status == GamePlayerStatus.ACCEPTED,
+            # Count current players safely
+            current_players_count = (
+                db.query(GamePlayer)
+                .filter(
+                    and_(
+                        GamePlayer.game_id == invitation.game_id,
+                        GamePlayer.status == GamePlayerStatus.ACCEPTED,
+                    )
                 )
+                .count()
             )
-            .count()
-        )
 
-        # Return the complete game object structure for frontend compatibility
-        return {
-            "game": {
-                "id": game.id,
-                "club_id": game.club_id,
-                "booking_id": game.booking_id,
-                "game_type": game.game_type,
-                "game_status": game.game_status,
-                "skill_level": game.skill_level,
-                "start_time": game.start_time.isoformat() if game.start_time else None,
-                "end_time": game.end_time.isoformat() if game.end_time else None,
-                "booking": {
-                    "id": game.booking.id if game.booking else None,
-                    "start_time": (game.booking.start_time.isoformat() if game.booking.start_time else None) if game.booking else (game.start_time.isoformat() if game.start_time else None),
-                    "end_time": (game.booking.end_time.isoformat() if game.booking.end_time else None) if game.booking else (game.end_time.isoformat() if game.end_time else None),
-                    "court": {
-                        "id": game.booking.court.id if game.booking and game.booking.court else None,
-                        "name": game.booking.court.name if game.booking and game.booking.court else "Unknown Court",
-                        "club": {
-                            "id": game.booking.court.club.id if game.booking and game.booking.court and game.booking.court.club else game.club_id,
-                            "name": game.booking.court.club.name if game.booking and game.booking.court and game.booking.court.club else (game.club.name if game.club else "Unknown Club"),
-                        } if game.booking and game.booking.court else None,
-                    } if game.booking else None,
-                } if game.booking else None,
-                "players": [
-                    {
-                        "user_id": player.user_id,
-                        "status": player.status.value,
-                        "user": {
-                            "id": player.user.id,
-                            "full_name": player.user.full_name,
-                            "email": player.user.email,
+            # Build booking info safely
+            booking_info = None
+            if game.booking_id:
+                try:
+                    from app.models.booking import Booking
+                    from app.models.court import Court
+                    from app.models.club import Club
+                    
+                    booking = db.query(Booking).filter(Booking.id == game.booking_id).first()
+                    if booking:
+                        court_info = None
+                        if booking.court_id:
+                            court = db.query(Court).filter(Court.id == booking.court_id).first()
+                            if court:
+                                club_info = None
+                                if court.club_id:
+                                    court_club = db.query(Club).filter(Club.id == court.club_id).first()
+                                    if court_club:
+                                        club_info = {
+                                            "id": court_club.id,
+                                            "name": court_club.name,
+                                        }
+                                court_info = {
+                                    "id": court.id,
+                                    "name": court.name,
+                                    "club": club_info,
+                                }
+                        
+                        booking_info = {
+                            "id": booking.id,
+                            "start_time": booking.start_time.isoformat() if booking.start_time else None,
+                            "end_time": booking.end_time.isoformat() if booking.end_time else None,
+                            "court": court_info,
+                        }
+                except Exception:
+                    # If booking relationships fail, use fallback
+                    booking_info = {
+                        "id": game.booking_id,
+                        "start_time": game.start_time.isoformat() if game.start_time else None,
+                        "end_time": game.end_time.isoformat() if game.end_time else None,
+                        "court": {
+                            "id": None,
+                            "name": "Unknown Court",
+                            "club": {"id": game.club_id, "name": "Unknown Club"},
                         },
-                        "elo_rating": getattr(player.user, 'elo_rating', 1000),
                     }
-                    for player in game.players
-                    if player.status == GamePlayerStatus.ACCEPTED
-                ],
-            },
-            "creator": {
-                "id": creator.id if creator else invitation.created_by,
-                "full_name": creator.full_name if creator else "Unknown",
-                "email": creator.email if creator else "unknown@email.com",
-            },
-            "invitation_token": invitation.token,
-            "is_valid": invitation.is_valid(),
-            "is_expired": not invitation.is_valid(),
-            "is_full": current_players_count >= 4,
-            "can_join": invitation.is_valid() and current_players_count < 4,
-            "expires_at": invitation.expires_at.isoformat() if invitation.expires_at else None,
-        }
+
+            # Get game club info safely
+            game_club_info = None
+            if game.club_id:
+                try:
+                    from app.models.club import Club
+                    game_club = db.query(Club).filter(Club.id == game.club_id).first()
+                    if game_club:
+                        game_club_info = {
+                            "id": game_club.id,
+                            "name": game_club.name,
+                        }
+                except Exception:
+                    game_club_info = {
+                        "id": game.club_id,
+                        "name": "Unknown Club",
+                    }
+
+            # Get players safely
+            players_info = []
+            try:
+                players = (
+                    db.query(GamePlayer)
+                    .filter(
+                        and_(
+                            GamePlayer.game_id == invitation.game_id,
+                            GamePlayer.status == GamePlayerStatus.ACCEPTED,
+                        )
+                    )
+                    .all()
+                )
+                
+                for player in players:
+                    try:
+                        user = db.query(User).filter(User.id == player.user_id).first()
+                        if user:
+                            players_info.append({
+                                "user_id": player.user_id,
+                                "status": player.status.value,
+                                "user": {
+                                    "id": user.id,
+                                    "full_name": user.full_name,
+                                    "email": user.email,
+                                },
+                                "elo_rating": getattr(user, 'elo_rating', 1000),
+                            })
+                    except Exception:
+                        # Skip problematic players
+                        continue
+            except Exception:
+                # If players query fails, return empty list
+                players_info = []
+
+            # Return the complete game object structure for frontend compatibility
+            return {
+                "game": {
+                    "id": game.id,
+                    "club_id": game.club_id,
+                    "booking_id": game.booking_id,
+                    "game_type": game.game_type,
+                    "game_status": game.game_status,
+                    "skill_level": game.skill_level,
+                    "start_time": game.start_time.isoformat() if game.start_time else None,
+                    "end_time": game.end_time.isoformat() if game.end_time else None,
+                    "booking": booking_info,
+                    "club": game_club_info,
+                    "players": players_info,
+                },
+                "creator": {
+                    "id": creator.id if creator else invitation.created_by,
+                    "full_name": creator.full_name if creator else "Unknown",
+                    "email": creator.email if creator else "unknown@email.com",
+                },
+                "invitation_token": invitation.token,
+                "is_valid": invitation.is_valid(),
+                "is_expired": not invitation.is_valid(),
+                "is_full": current_players_count >= 4,
+                "can_join": invitation.is_valid() and current_players_count < 4,
+                "expires_at": invitation.expires_at.isoformat() if invitation.expires_at else None,
+            }
+        
+        except Exception as e:
+            # Log the error but don't crash
+            print(f"Error in get_invitation_info: {e}")
+            return None
 
 
 # Create instance
