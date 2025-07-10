@@ -115,3 +115,55 @@ def test_submit_game_result_elo_integration(
             404,
             403,
         ]  # Acceptable status codes for this test
+
+
+class TestPublicGamesEndpoint:
+    """Test the enhanced public games endpoint with time-based filtering"""
+
+    def test_public_games_endpoint_with_buffer_hours(self, client: TestClient):
+        """Test the public games endpoint with buffer_hours parameter"""
+        response = client.get("/api/v1/games/public?buffer_hours=2")
+        
+        # Should return 200 with an empty list or valid games
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+    def test_public_games_endpoint_with_invalid_buffer_hours(self, client: TestClient):
+        """Test the public games endpoint with invalid buffer_hours parameter"""
+        response = client.get("/api/v1/games/public?buffer_hours=25")
+        
+        # Should return 422 for validation error (buffer_hours > 24)
+        assert response.status_code == 422
+
+    def test_public_games_endpoint_with_negative_buffer_hours(self, client: TestClient):
+        """Test the public games endpoint with negative buffer_hours parameter"""
+        response = client.get("/api/v1/games/public?buffer_hours=-1")
+        
+        # Should return 422 for validation error (buffer_hours < 0)
+        assert response.status_code == 422
+
+    def test_public_games_endpoint_with_zero_buffer_hours(self, client: TestClient):
+        """Test the public games endpoint with zero buffer_hours parameter"""
+        response = client.get("/api/v1/games/public?buffer_hours=0")
+        
+        # Should return 200 with valid response
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+    def test_public_games_endpoint_default_behavior(self, client: TestClient):
+        """Test the public games endpoint with default parameters"""
+        response = client.get("/api/v1/games/public")
+        
+        # Should return 200 with valid response
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+    def test_public_games_endpoint_with_all_parameters(self, client: TestClient):
+        """Test the public games endpoint with all parameters"""
+        response = client.get(
+            "/api/v1/games/public?skip=0&limit=10&target_date=2024-12-31&future_only=true&buffer_hours=3"
+        )
+        
+        # Should return 200 with valid response
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)

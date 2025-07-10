@@ -30,10 +30,20 @@ from app.schemas.elo_adjustment_request_schemas import (
     EloAdjustmentRequest,
     EloAdjustmentRequestCreate,
 )
+from app.schemas.onboarding_schemas import (
+    OnboardingCompleteWithInvitationRequest,
+    OnboardingCompleteWithInvitationResponse,
+    OnboardingProgressResponse,
+    OnboardingProgressUpdate,
+    OnboardingStatusResponse,
+    OnboardingStatusUpdate,
+)
 from app.schemas.game_invitation_schemas import (
+    CompleteOnboardingWithInvitation,
     GameInvitationCreate,
     GameInvitationInfo,
     GameInvitationResponse,
+    OnboardingRequiredResponse,
 )
 from app.schemas.game_player_schemas import (
     GamePlayer,
@@ -53,8 +63,27 @@ from app.schemas.game_schemas import (
     InvitationResponseRequest,
     UserInviteRequest,
 )
+from app.schemas.game_history_schemas import (
+    GameHistoryEntry,
+    GameHistoryQuery,
+    GameHistoryResponse,
+    GameStatistics,
+    EloProgressionResponse,
+    PartnerStatistics,
+    ProfileGameHistoryResponse,
+)
 from app.schemas.leaderboard_schemas import LeaderboardResponse, LeaderboardUserResponse
-from app.schemas.team_schemas import Team, TeamCreate, TeamUpdate
+from app.schemas.team_schemas import (
+    Team,
+    TeamCreate,
+    TeamUpdate,
+    TeamMembershipCreate,
+    TeamMembershipResponse,
+    TeamMembershipUpdate,
+    TeamWithMembers,
+    TeamGameHistoryResponse,
+    TeamStatsResponse,
+)
 from app.schemas.token_schemas import RefreshTokenRequest, Token, TokenData
 from app.schemas.tournament_schemas import (
     BracketNode,
@@ -121,7 +150,16 @@ __all__ = [
     # Game
     "Game",
     "GameCreate",
+    # Game History
+    "GameHistoryEntry",
+    "GameHistoryQuery",
+    "GameHistoryResponse",
+    "GameStatistics",
+    "EloProgressionResponse",
+    "PartnerStatistics",
+    "ProfileGameHistoryResponse",
     # Game Invitations
+    "CompleteOnboardingWithInvitation",
     "GameInvitationCreate",
     "GameInvitationInfo",
     "GameInvitationResponse",
@@ -141,6 +179,14 @@ __all__ = [
     # Leaderboard
     "LeaderboardResponse",
     "LeaderboardUserResponse",
+    # Onboarding
+    "OnboardingCompleteWithInvitationRequest",
+    "OnboardingCompleteWithInvitationResponse",
+    "OnboardingProgressResponse",
+    "OnboardingProgressUpdate",
+    "OnboardingRequiredResponse",
+    "OnboardingStatusResponse",
+    "OnboardingStatusUpdate",
     "RefreshTokenRequest",
     "ScheduleResponse",
     # Skill Assessment
@@ -151,6 +197,12 @@ __all__ = [
     "TeamCreate",
     "TeamEligibilityCheck",
     "TeamUpdate",
+    "TeamMembershipCreate",
+    "TeamMembershipResponse",
+    "TeamMembershipUpdate",
+    "TeamWithMembers",
+    "TeamGameHistoryResponse",
+    "TeamStatsResponse",
     # Token
     "Token",
     "TokenData",
@@ -191,4 +243,8 @@ ScheduleResponse.model_rebuild()
 Game.model_rebuild()
 GameWithTeams.model_rebuild()
 GameWithRatingsResponse.model_rebuild()
+GameHistoryResponse.model_rebuild()
+GameStatistics.model_rebuild()
+EloProgressionResponse.model_rebuild()
+ProfileGameHistoryResponse.model_rebuild()
 Team.model_rebuild()

@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Float, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import relationship
 
@@ -32,6 +32,14 @@ class User(Base):
         SAEnum(PreferredPosition, name="preferredposition", create_enum=False),
         nullable=True,
     )
+    
+    # Onboarding fields
+    onboarding_completed = Column(Boolean, default=False, nullable=False, server_default="false")
+    onboarding_completed_at = Column(DateTime, nullable=True)
+    
+    # Privacy settings for game history
+    is_game_history_public = Column(Boolean, default=True, nullable=False, server_default="true")
+    is_game_statistics_public = Column(Boolean, default=True, nullable=False, server_default="true")
 
     # Relationship to Bookings (one-to-many)
     bookings = relationship("Booking", back_populates="user")
@@ -53,6 +61,9 @@ class User(Base):
     is_superuser = Column(Boolean(), default=False)
 
     teams = relationship("Team", secondary=team_players, back_populates="players")
+    
+    # Relationship to team memberships
+    team_memberships = relationship("TeamMembership", back_populates="user", cascade="all, delete-orphan")
 
     elo_adjustment_requests = relationship(
         "EloAdjustmentRequest", back_populates="user"
@@ -64,6 +75,11 @@ class User(Base):
     )
     club_memberships = relationship(
         "ClubMembership", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    # Team membership relationships
+    team_memberships = relationship(
+        "TeamMembership", back_populates="user", cascade="all, delete-orphan"
     )
 
     # Notification relationships

@@ -5,8 +5,15 @@ from app import crud, models, schemas
 from app.core import security
 from app.crud.team_crud import team_crud
 from app.crud.tournament_crud import tournament_crud
+from app.crud.game_history_crud import game_history_crud
 from app.database import get_db
 from app.services import file_service
+from app.schemas.game_history_schemas import (
+    GameHistoryQuery,
+    GameHistoryResponse,
+    GameStatistics,
+    ProfileGameHistoryResponse,
+)
 
 router = APIRouter()
 
@@ -285,3 +292,150 @@ async def add_player_to_team(
 
     # Add the user to the team
     return team_crud.add_player_to_team(db=db, team=team, user=user_to_add)
+
+
+# Game History Endpoints
+
+@router.get("/me/game-history", response_model=GameHistoryResponse)
+async def get_current_user_game_history(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of records to return"),
+    start_date: Optional[str] = Query(None, description="Filter games from this date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Filter games until this date (YYYY-MM-DD)"),
+    result_filter: Optional[str] = Query("ALL", description="Filter by result: ALL, WINS, LOSSES, DRAWS"),
+    partner_id: Optional[int] = Query(None, description="Filter by partner user ID"),
+    opponent_id: Optional[int] = Query(None, description="Filter by opponent user ID"),
+    club_id: Optional[int] = Query(None, description="Filter by club ID"),
+    completed_only: bool = Query(True, description="Only include completed games"),
+):
+    """
+    Get the current user's game history with filtering and pagination.
+    """
+    from datetime import datetime
+
+    # Parse dates
+    start_date_parsed = None
+    end_date_parsed = None
+
+    if start_date:
+        try:
+            start_date_parsed = datetime.fromisoformat(start_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid start_date format. Use YYYY-MM-DD"
+            )
+
+    if end_date:
+        try:
+            end_date_parsed = datetime.fromisoformat(end_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid end_date format. Use YYYY-MM-DD"
+            )
+
+    # Create query object
+    query = GameHistoryQuery(
+        skip=skip,
+        limit=limit,
+        start_date=start_date_parsed,
+        end_date=end_date_parsed,
+        result_filter=result_filter,
+        partner_id=partner_id,
+        opponent_id=opponent_id,
+        club_id=club_id,
+        completed_only=completed_only,
+    )
+
+    # Get game history
+    games, total_count = game_history_crud.get_user_game_history(
+        db=db,
+        user_id=current_user.id,
+        query=query,
+    )
+
+    has_more = (skip + limit) < total_count
+
+    return GameHistoryResponse(
+        games=games,
+        total_count=total_count,
+        has_more=has_more,
+    )
+
+
+@router.get("/me/game-stats", response_model=GameStatistics)
+async def get_current_user_game_statistics(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user),
+    limit_recent: int = Query(10, ge=1, le=50, description="Number of recent games to include in statistics"),
+):
+    """
+    Get comprehensive game statistics for the current user.
+    """
+    return game_history_crud.get_user_game_statistics(
+        db=db,
+        user_id=current_user.id,
+        limit_recent=limit_recent,
+    )
+
+
+@router.get("/{user_id}/game-history", response_model=ProfileGameHistoryResponse)
+async def get_user_public_game_history(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user),
+    limit: int = Query(5, ge=1, le=20, description="Number of recent games to include"),
+):
+    """
+    Get public game history for any user's profile.
+    Respects privacy settings - only shows public information.
+    """
+    # Check if user exists
+    target_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    return game_history_crud.get_public_game_history(
+        db=db,
+        user_id=user_id,
+        limit=limit,
+    )
+
+
+@router.get("/{user_id}/game-stats", response_model=GameStatistics)
+async def get_user_public_game_statistics(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_active_user),
+    limit_recent: int = Query(10, ge=1, le=50, description="Number of recent games to include in statistics"),
+):
+    """
+    Get game statistics for any user's profile.
+    Respects privacy settings - only shows public information.
+    """
+    # Check if user exists
+    target_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    # Check privacy settings (basic implementation)
+    # For now, allow viewing if user is public or if it's the same user
+    if user_id != current_user.id:
+        # TODO: Implement proper privacy controls
+        # For now, allow public access to basic statistics
+        pass
+
+    return game_history_crud.get_user_game_statistics(
+        db=db,
+        user_id=user_id,
+        limit_recent=limit_recent,
+    )

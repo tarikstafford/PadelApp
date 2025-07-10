@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models.game import Game
 from app.models.game_player import GamePlayer as GamePlayerModel
-from app.models.game_player import GamePlayerStatus
+from app.models.game_player import GamePlayerStatus, GamePlayerPosition, GamePlayerTeamSide
 
 
 class GamePlayerCRUD:
@@ -106,6 +106,118 @@ class GamePlayerCRUD:
             }
 
         return {"can_leave": True, "reason": ""}
+
+    def update_player_position(
+        self,
+        db: Session,
+        game_id: int,
+        user_id: int,
+        position: GamePlayerPosition,
+        team_side: GamePlayerTeamSide
+    ) -> Optional[GamePlayerModel]:
+        """Update a player's position and team side in a game."""
+        game_player = self.get_game_player(db, game_id, user_id)
+        if not game_player:
+            return None
+
+        game_player.position = position
+        game_player.team_side = team_side
+        db.add(game_player)
+        db.commit()
+        db.refresh(game_player)
+        return game_player
+
+    def get_players_with_positions(self, db: Session, game_id: int) -> list[GamePlayerModel]:
+        """Retrieve all players for a specific game with their positions."""
+        return (
+            db.query(GamePlayerModel)
+            .filter(GamePlayerModel.game_id == game_id)
+            .filter(GamePlayerModel.status == GamePlayerStatus.ACCEPTED)
+            .all()
+        )
+
+    def validate_position_assignment(
+        self,
+        db: Session,
+        game_id: int,
+        user_id: int,
+        position: GamePlayerPosition,
+        team_side: GamePlayerTeamSide
+    ) -> dict:
+        """Validate if a position assignment is valid for a game."""
+        # Get all accepted players with positions
+        players = self.get_players_with_positions(db, game_id)
+
+        # Check if the position is already taken on the same team
+        for player in players:
+            if (
+                player.user_id != user_id and
+                player.position == position and
+                player.team_side == team_side
+            ):
+                return {
+                    "valid": False,
+                    "reason": f"Position {position.value} is already taken on {team_side.value}"
+                }
+
+        # Check if user is already assigned to a different team
+        current_player = next((p for p in players if p.user_id == user_id), None)
+        if current_player and current_player.team_side and current_player.team_side != team_side:
+            return {
+                "valid": False,
+                "reason": f"Player is already assigned to {current_player.team_side.value}"
+            }
+
+        return {"valid": True, "reason": ""}
+
+    def auto_assign_positions(self, db: Session, game_id: int) -> dict:
+        """Auto-assign positions to players in a game."""
+        # Get all accepted players without positions
+        players = (
+            db.query(GamePlayerModel)
+            .filter(GamePlayerModel.game_id == game_id)
+            .filter(GamePlayerModel.status == GamePlayerStatus.ACCEPTED)
+            .all()
+        )
+
+        if len(players) != 4:
+            return {
+                "success": False,
+                "reason": f"Need exactly 4 players for auto-assignment, found {len(players)}"
+            }
+
+        # Assign positions: first 2 players to TEAM_1, last 2 to TEAM_2
+        assignments = [
+            (players[0], GamePlayerPosition.LEFT, GamePlayerTeamSide.TEAM_1),
+            (players[1], GamePlayerPosition.RIGHT, GamePlayerTeamSide.TEAM_1),
+            (players[2], GamePlayerPosition.LEFT, GamePlayerTeamSide.TEAM_2),
+            (players[3], GamePlayerPosition.RIGHT, GamePlayerTeamSide.TEAM_2),
+        ]
+
+        assigned_players = []
+        for player, position, team_side in assignments:
+            player.position = position
+            player.team_side = team_side
+            db.add(player)
+            assigned_players.append(player)
+
+        db.commit()
+
+        # Refresh all players
+        for player in assigned_players:
+            db.refresh(player)
+
+        return {
+            "success": True,
+            "assignments": [
+                {
+                    "user_id": player.user_id,
+                    "position": player.position.value,
+                    "team_side": player.team_side.value
+                }
+                for player in assigned_players
+            ]
+        }
 
 
 # Create instance

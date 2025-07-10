@@ -45,3 +45,35 @@ class GameInvitationInfo(BaseModel):
     expires_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# Team Invitation Schemas
+class TeamInviteRequest(BaseModel):
+    team_id: int
+
+
+class TeamInvitationResponse(BaseModel):
+    message: str
+    team_id: int
+    team_name: str
+    invited_members: int
+    game_id: int
+
+
+# Onboarding-related invitation schemas
+class OnboardingRequiredResponse(BaseModel):
+    """Response when user needs to complete onboarding before joining game"""
+
+    success: bool = False
+    message: str
+    requires_onboarding: bool = True
+    game_id: int
+    invitation_token: str
+    onboarding_redirect_url: str
+
+
+class CompleteOnboardingWithInvitation(BaseModel):
+    """Schema for completing onboarding with an invitation context"""
+
+    invitation_token: str
+    completed: bool = True

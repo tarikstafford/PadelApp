@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -22,6 +23,10 @@ class UserBase(BaseModel):
     role: Optional[UserRole] = UserRole.PLAYER
     elo_rating: float = Field(default=1.0, ge=1.0, le=7.0)
     preferred_position: Optional[PreferredPosition] = None
+    onboarding_completed: Optional[bool] = False
+    onboarding_completed_at: Optional[datetime] = None
+    is_game_history_public: Optional[bool] = True
+    is_game_statistics_public: Optional[bool] = True
 
     @field_validator("role", mode="before")
     @classmethod
@@ -45,6 +50,10 @@ class UserUpdate(UserBase):
     is_active: Optional[bool] = None
     elo_rating: Optional[float] = Field(default=None, ge=1.0, le=7.0)
     preferred_position: Optional[PreferredPosition] = None
+    onboarding_completed: Optional[bool] = None
+    onboarding_completed_at: Optional[datetime] = None
+    is_game_history_public: Optional[bool] = None
+    is_game_statistics_public: Optional[bool] = None
 
 
 class UserInDBBase(UserBase):
@@ -64,6 +73,10 @@ class User(UserBase):
     full_name: Optional[str] = None
     elo_rating: float = Field(default=1.0, ge=1.0, le=7.0)
     preferred_position: Optional[PreferredPosition] = None
+    onboarding_completed: Optional[bool] = False
+    onboarding_completed_at: Optional[datetime] = None
+    is_game_history_public: Optional[bool] = True
+    is_game_statistics_public: Optional[bool] = True
     # model_config needed here too if this schema is created from an ORM model instance
     model_config = {"from_attributes": True}
 

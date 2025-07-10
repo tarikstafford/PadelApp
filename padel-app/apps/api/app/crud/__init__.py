@@ -13,6 +13,7 @@ from app.crud import (
 
 # Import class-based CRUD instances
 from app.crud.game_crud import game_crud
+from app.crud.game_history_crud import game_history_crud
 from app.crud.game_invitation_crud import game_invitation_crud
 from app.crud.game_player_crud import game_player_crud
 from app.crud.team_crud import team_crud
@@ -25,6 +26,7 @@ __all__ = [
     "court_crud",
     "elo_adjustment_request_crud",
     "game_crud",
+    "game_history_crud",
     "game_invitation_crud",
     "game_player_crud",
     "leaderboard_crud",

@@ -1,7 +1,7 @@
 from typing import Optional
 
 from sqlalchemy import and_
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.models.game import Game
 from app.models.game_invitation import GameInvitation
@@ -52,6 +52,39 @@ class GameInvitationCRUD:
             db.commit()
             return True
         return False
+
+    def check_user_onboarding_status(self, db: Session, user_id: int) -> bool:
+        """Check if user has completed onboarding"""
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return False
+        return user.onboarding_completed
+
+    def accept_invitation_with_onboarding_check(self, db: Session, token: str, user_id: int) -> dict:
+        """Accept a game invitation with onboarding status check"""
+        invitation = self.get_invitation_by_token(db, token)
+
+        if not invitation:
+            return {"success": False, "message": "Invitation not found"}
+
+        if not invitation.is_valid():
+            return {
+                "success": False,
+                "message": "Invitation has expired or is no longer valid",
+            }
+
+        # Check if user has completed onboarding
+        if not self.check_user_onboarding_status(db, user_id):
+            return {
+                "success": False,
+                "message": "Onboarding required before joining game",
+                "requires_onboarding": True,
+                "game_id": invitation.game_id,
+                "invitation_token": token,
+            }
+
+        # Continue with normal invitation acceptance
+        return self.accept_invitation(db, token, user_id)
 
     def accept_invitation(self, db: Session, token: str, user_id: int) -> dict:
         """Accept a game invitation and add user to game"""
@@ -121,6 +154,23 @@ class GameInvitationCRUD:
             "game_player": game_player,
         }
 
+    def complete_onboarding_and_join_game(self, db: Session, token: str, user_id: int) -> dict:
+        """Complete user onboarding and immediately join the game"""
+        # First, complete onboarding
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return {"success": False, "message": "User not found"}
+
+        # Update onboarding status
+        from datetime import datetime
+        user.onboarding_completed = True
+        user.onboarding_completed_at = datetime.utcnow()
+        db.add(user)
+        db.commit()
+
+        # Now accept the invitation
+        return self.accept_invitation(db, token, user_id)
+
     def get_invitation_info(self, db: Session, token: str) -> Optional[dict]:
         """Get public information about an invitation (for preview before auth)"""
         try:
@@ -156,7 +206,7 @@ class GameInvitationCRUD:
                     from app.models.booking import Booking
                     from app.models.court import Court
                     from app.models.club import Club
-                    
+
                     booking = db.query(Booking).filter(Booking.id == game.booking_id).first()
                     if booking:
                         court_info = None
@@ -176,7 +226,7 @@ class GameInvitationCRUD:
                                     "name": court.name,
                                     "club": club_info,
                                 }
-                        
+
                         booking_info = {
                             "id": booking.id,
                             "start_time": booking.start_time.isoformat() if booking.start_time else None,
@@ -226,7 +276,7 @@ class GameInvitationCRUD:
                     )
                     .all()
                 )
-                
+
                 for player in players:
                     try:
                         user = db.query(User).filter(User.id == player.user_id).first()
@@ -275,7 +325,7 @@ class GameInvitationCRUD:
                 "can_join": invitation.is_valid() and current_players_count < 4,
                 "expires_at": invitation.expires_at.isoformat() if invitation.expires_at else None,
             }
-        
+
         except Exception as e:
             # Log the error but don't crash
             print(f"Error in get_invitation_info: {e}")

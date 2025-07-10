@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = Field(..., env="CLOUDINARY_API_KEY")
     CLOUDINARY_API_SECRET: str = Field(..., env="CLOUDINARY_API_SECRET")
 
+    # Game discovery settings
+    GAME_DISCOVERY_BUFFER_HOURS: int = Field(
+        default=1, env="GAME_DISCOVERY_BUFFER_HOURS",
+        description="Hours before game start time to hide from discovery"
+    )
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

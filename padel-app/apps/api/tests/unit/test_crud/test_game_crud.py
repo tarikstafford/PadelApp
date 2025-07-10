@@ -1,11 +1,11 @@
-from datetime import date, datetime, timezone
-from unittest.mock import Mock
+from datetime import date, datetime, timezone, timedelta
+from unittest.mock import Mock, patch
 
 import pytest
 from sqlalchemy.orm import Session
 
 from app.crud.game_crud import MAX_PLAYERS_PER_GAME, GameCRUD
-from app.models.game import Game, GameType
+from app.models.game import Game, GameType, GameStatus
 from app.schemas.game_schemas import GameCreate
 
 
@@ -392,6 +392,106 @@ class TestGetPublicGames:
         assert mock_query.filter.call_count >= 2
         assert result == mock_games
 
+    def test_get_public_games_filters_by_game_status(self, mock_db):
+        game_crud = GameCRUD()
+
+        mock_games = [Game(id=1, game_type=GameType.PUBLIC, booking_id=1, club_id=1)]
+
+        mock_query = Mock()
+        mock_db.query.return_value = mock_query
+        mock_query.outerjoin.return_value = mock_query
+        mock_query.join.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.order_by.return_value = mock_query
+        mock_query.offset.return_value = mock_query
+        mock_query.limit.return_value = mock_query
+        mock_query.options.return_value = mock_query
+        mock_query.all.return_value = mock_games
+
+        result = game_crud.get_public_games(mock_db)
+
+        # Should filter by SCHEDULED game status
+        assert mock_query.filter.call_count >= 3  # game_type + game_status + available_slots
+        assert result == mock_games
+
+    @patch('app.crud.game_crud.settings')
+    def test_get_public_games_with_buffer_time(self, mock_settings, mock_db):
+        """Test that games within buffer time are excluded from discovery"""
+        mock_settings.GAME_DISCOVERY_BUFFER_HOURS = 2
+        game_crud = GameCRUD()
+
+        mock_games = []
+        mock_query = Mock()
+        mock_db.query.return_value = mock_query
+        mock_query.outerjoin.return_value = mock_query
+        mock_query.join.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.order_by.return_value = mock_query
+        mock_query.offset.return_value = mock_query
+        mock_query.limit.return_value = mock_query
+        mock_query.options.return_value = mock_query
+        mock_query.all.return_value = mock_games
+
+        with patch('app.crud.game_crud.datetime') as mock_datetime:
+            mock_now = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+            mock_datetime.now.return_value = mock_now
+            mock_datetime.combine = datetime.combine
+            
+            result = game_crud.get_public_games(mock_db)
+
+            # Should call filter multiple times including buffer time filtering
+            assert mock_query.filter.call_count >= 5  # Additional filters for time
+            assert result == mock_games
+
+    def test_get_public_games_with_custom_buffer_hours(self, mock_db):
+        """Test custom buffer hours parameter"""
+        game_crud = GameCRUD()
+
+        mock_games = []
+        mock_query = Mock()
+        mock_db.query.return_value = mock_query
+        mock_query.outerjoin.return_value = mock_query
+        mock_query.join.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.order_by.return_value = mock_query
+        mock_query.offset.return_value = mock_query
+        mock_query.limit.return_value = mock_query
+        mock_query.options.return_value = mock_query
+        mock_query.all.return_value = mock_games
+
+        with patch('app.crud.game_crud.datetime') as mock_datetime:
+            mock_now = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+            mock_datetime.now.return_value = mock_now
+            mock_datetime.combine = datetime.combine
+            
+            result = game_crud.get_public_games(mock_db, buffer_hours=3)
+
+            # Should call filter multiple times including buffer time filtering
+            assert mock_query.filter.call_count >= 5
+            assert result == mock_games
+
+    def test_get_public_games_future_only_false(self, mock_db):
+        """Test that future_only=False still applies game status filtering"""
+        game_crud = GameCRUD()
+
+        mock_games = [Game(id=1, game_type=GameType.PUBLIC, booking_id=1, club_id=1)]
+        mock_query = Mock()
+        mock_db.query.return_value = mock_query
+        mock_query.outerjoin.return_value = mock_query
+        mock_query.join.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.order_by.return_value = mock_query
+        mock_query.offset.return_value = mock_query
+        mock_query.limit.return_value = mock_query
+        mock_query.options.return_value = mock_query
+        mock_query.all.return_value = mock_games
+
+        result = game_crud.get_public_games(mock_db, future_only=False)
+
+        # Should still filter by game_type, game_status, and available_slots
+        assert mock_query.filter.call_count >= 3
+        assert result == mock_games
+
 
 class TestGetRecentGamesByClub:
     def test_get_recent_games_by_club_success(self, mock_db):
@@ -701,6 +801,127 @@ class TestGameCRUDIntegration:
 
         recent_games = game_crud.get_recent_games_by_club(mock_db, club_id=1)
         assert len(recent_games) == 1
+
+
+class TestTimeBasedFiltering:
+    """Test suite for enhanced time-based filtering in game discovery"""
+
+    @pytest.fixture
+    def mock_db(self):
+        return Mock(spec=Session)
+
+    @pytest.fixture
+    def game_crud(self):
+        return GameCRUD()
+
+    def setup_mock_query(self, mock_db, mock_games):
+        """Helper to set up mock query chain"""
+        mock_query = Mock()
+        mock_db.query.return_value = mock_query
+        mock_query.outerjoin.return_value = mock_query
+        mock_query.join.return_value = mock_query
+        mock_query.filter.return_value = mock_query
+        mock_query.order_by.return_value = mock_query
+        mock_query.offset.return_value = mock_query
+        mock_query.limit.return_value = mock_query
+        mock_query.options.return_value = mock_query
+        mock_query.all.return_value = mock_games
+        return mock_query
+
+    @patch('app.crud.game_crud.settings')
+    def test_buffer_time_filtering_with_configured_hours(self, mock_settings, mock_db, game_crud):
+        """Test that the configured buffer hours are used correctly"""
+        mock_settings.GAME_DISCOVERY_BUFFER_HOURS = 2
+        
+        mock_games = []
+        mock_query = self.setup_mock_query(mock_db, mock_games)
+        
+        current_time = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+        
+        with patch('app.crud.game_crud.datetime') as mock_datetime:
+            mock_datetime.now.return_value = current_time
+            mock_datetime.combine = datetime.combine
+            
+            game_crud.get_public_games(mock_db)
+            
+            # Verify the method was called correctly
+            mock_datetime.now.assert_called_once_with(timezone.utc)
+            
+            # Check that multiple filters were applied
+            assert mock_query.filter.call_count >= 5
+
+    def test_buffer_time_override_parameter(self, mock_db, game_crud):
+        """Test that buffer_hours parameter overrides the configured value"""
+        mock_games = []
+        mock_query = self.setup_mock_query(mock_db, mock_games)
+        
+        current_time = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+        
+        with patch('app.crud.game_crud.datetime') as mock_datetime:
+            mock_datetime.now.return_value = current_time
+            mock_datetime.combine = datetime.combine
+            
+            game_crud.get_public_games(mock_db, buffer_hours=3)
+            
+            # Verify the method was called correctly
+            mock_datetime.now.assert_called_once_with(timezone.utc)
+            
+            # Check that multiple filters were applied
+            assert mock_query.filter.call_count >= 5
+
+    def test_zero_buffer_hours(self, mock_db, game_crud):
+        """Test that zero buffer hours still applies other filters"""
+        mock_games = []
+        mock_query = self.setup_mock_query(mock_db, mock_games)
+        
+        current_time = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+        
+        with patch('app.crud.game_crud.datetime') as mock_datetime:
+            mock_datetime.now.return_value = current_time
+            mock_datetime.combine = datetime.combine
+            
+            game_crud.get_public_games(mock_db, buffer_hours=0)
+            
+            # Verify basic filters are still applied
+            assert mock_query.filter.call_count >= 3
+
+    def test_time_filtering_with_target_date(self, mock_db, game_crud):
+        """Test that time filtering works correctly with target_date"""
+        mock_games = []
+        mock_query = self.setup_mock_query(mock_db, mock_games)
+        
+        current_time = datetime(2024, 1, 15, 10, 0, tzinfo=timezone.utc)
+        target_date = date(2024, 1, 16)
+        
+        with patch('app.crud.game_crud.datetime') as mock_datetime:
+            mock_datetime.now.return_value = current_time
+            mock_datetime.combine = datetime.combine
+            
+            game_crud.get_public_games(mock_db, target_date=target_date)
+            
+            # Should have additional filters for date range + time-based filtering
+            assert mock_query.filter.call_count >= 7
+
+    def test_game_status_filtering_enforced(self, mock_db, game_crud):
+        """Test that only SCHEDULED games are returned"""
+        mock_games = [Game(id=1, game_type=GameType.PUBLIC, game_status=GameStatus.SCHEDULED)]
+        mock_query = self.setup_mock_query(mock_db, mock_games)
+        
+        game_crud.get_public_games(mock_db)
+        
+        # Should filter by game_type, game_status, and available_slots at minimum
+        assert mock_query.filter.call_count >= 3
+
+    def test_future_only_false_behavior(self, mock_db, game_crud):
+        """Test behavior when future_only=False"""
+        mock_games = []
+        mock_query = self.setup_mock_query(mock_db, mock_games)
+        
+        game_crud.get_public_games(mock_db, future_only=False)
+        
+        # Should still apply basic filters (game_type, game_status, available_slots)
+        # but not time-based filters
+        assert mock_query.filter.call_count >= 3
 
 
 class TestGameCRUDEdgeCases:

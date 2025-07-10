@@ -1,13 +1,14 @@
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.core.config import settings
 from app.models.booking import Booking as BookingModel
 from app.models.court import Court as CourtModel
 from app.models.game import Game as GameModel
-from app.models.game import GameType
+from app.models.game import GameStatus, GameType
 from app.models.game_player import GamePlayer as GamePlayerModel
 from app.models.game_player import GamePlayerStatus
 from app.schemas.game_schemas import GameCreate
@@ -76,12 +77,33 @@ class GameCRUD:
         limit: int = 100,
         target_date: Optional[date] = None,
         future_only: bool = True,
+        buffer_hours: Optional[int] = None,
     ) -> list[GameModel]:
         """
-        Retrieve a list of public games with available slots, optionally
-        filtered by date. By default only shows future games.
-        Eager loads necessary relationships for GameResponse.
+        Retrieve a list of public games with available slots for discovery.
+
+        Filters applied:
+        - Only PUBLIC games
+        - Only SCHEDULED games (not completed, cancelled, or expired)
+        - Games with available slots (< MAX_PLAYERS_PER_GAME)
+        - Games that haven't started yet
+        - Games that don't start within the buffer time (default 1 hour)
+
+        Args:
+            db: Database session
+            skip: Number of records to skip (pagination)
+            limit: Maximum number of records to return
+            target_date: Filter games by specific date
+            future_only: Whether to only show future games
+            buffer_hours: Hours before game start to hide from discovery
         """
+        # Use configured buffer time if not specified
+        if buffer_hours is None:
+            buffer_hours = settings.GAME_DISCOVERY_BUFFER_HOURS
+
+        current_time = datetime.now(timezone.utc)
+        buffer_time = current_time + timedelta(hours=buffer_hours)
+
         subquery = (
             db.query(
                 GamePlayerModel.game_id,
@@ -97,6 +119,7 @@ class GameCRUD:
             .outerjoin(subquery, GameModel.id == subquery.c.game_id)
             .join(GameModel.booking)
             .filter(GameModel.game_type == GameType.PUBLIC)
+            .filter(GameModel.game_status == GameStatus.SCHEDULED)
             .filter(
                 func.coalesce(subquery.c.accepted_player_count, 0)
                 < MAX_PLAYERS_PER_GAME
@@ -111,9 +134,13 @@ class GameCRUD:
                 BookingModel.start_time <= end_datetime,
             )
 
-        # Filter for future games only (default behavior)
+        # Enhanced time-based filtering
         if future_only:
-            query = query.filter(BookingModel.start_time > datetime.now(timezone.utc))
+            # Filter out games that are in the past
+            query = query.filter(BookingModel.start_time > current_time)
+
+            # Filter out games that start within the buffer time
+            query = query.filter(BookingModel.start_time > buffer_time)
 
         return (
             query.order_by(BookingModel.start_time)
@@ -149,6 +176,22 @@ class GameCRUD:
             db.query(GameModel)
             .filter(GameModel.booking_id == booking_id)
             .options(joinedload(GameModel.players).joinedload(GamePlayerModel.user))
+            .first()
+        )
+
+    def get_game_with_positions(self, db: Session, game_id: int) -> Optional[GameModel]:
+        """
+        Retrieve a single game by its ID with player positions information.
+        """
+        return (
+            db.query(GameModel)
+            .filter(GameModel.id == game_id)
+            .options(
+                joinedload(GameModel.booking)
+                .joinedload(BookingModel.court)
+                .joinedload(CourtModel.club),
+                joinedload(GameModel.players).joinedload(GamePlayerModel.user),
+            )
             .first()
         )
 

@@ -20,6 +20,7 @@ from app.routers import (
     public_router,
     users_router,
 )
+from app.routers.onboarding import router as onboarding_router
 from app.routers.business import router as business_router
 from app.routers.game_scores import router as game_scores_router
 from app.routers.notifications import router as notifications_router
@@ -82,6 +83,9 @@ app.include_router(
 app.include_router(
     users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"]
 )  # Added users_router
+app.include_router(
+    onboarding_router, prefix=f"{settings.API_V1_STR}/users/onboarding", tags=["Onboarding"]
+)  # Added onboarding_router
 app.include_router(admin_router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
 app.include_router(
     leaderboard_router,

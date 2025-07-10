@@ -83,3 +83,8 @@ class UserInviteRequest(BaseModel):
 
 class InvitationResponseRequest(BaseModel):
     status: GamePlayerStatus  # User will send "accepted" or "declined"
+
+
+# --- Team Join Schema ---
+class TeamJoinRequest(BaseModel):
+    team_id: int

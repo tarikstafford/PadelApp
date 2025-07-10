@@ -13,7 +13,7 @@ from app.models.elo_adjustment_request import (
     EloAdjustmentRequestStatus,
 )
 from app.models.game import Game, GameType
-from app.models.game_player import GamePlayer, GamePlayerStatus
+from app.models.game_player import GamePlayer, GamePlayerStatus, GamePlayerPosition, GamePlayerTeamSide
 
 # Import new game score and notification models
 from app.models.game_score import (
@@ -33,6 +33,7 @@ from app.models.notification import (
 from app.models.payment_transaction import PaymentTransaction
 from app.models.revenue_record import RevenueRecord
 from app.models.team import Team, team_players
+from app.models.team_membership import TeamMembership, TeamMembershipRole, TeamMembershipStatus
 from app.models.team_stats import TeamGameHistory, TeamStats
 from app.models.tournament import (
     CATEGORY_ELO_RANGES,
@@ -73,6 +74,8 @@ __all__ = [
     "Game",
     "GamePlayer",
     "GamePlayerStatus",
+    "GamePlayerPosition",
+    "GamePlayerTeamSide",
     "GameScore",
     "GameType",
     "MatchStatus",
@@ -89,6 +92,9 @@ __all__ = [
     "ScoreConfirmation",
     "ScoreStatus",
     "Team",
+    "TeamMembership",
+    "TeamMembershipRole",
+    "TeamMembershipStatus",
     "TeamGameHistory",
     "TeamStats",
     "Tournament",
