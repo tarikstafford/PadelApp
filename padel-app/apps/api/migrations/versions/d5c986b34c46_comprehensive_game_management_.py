@@ -10,8 +10,6 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.sql import table, column
-from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -24,178 +22,177 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema with comprehensive game management enhancements."""
     
-    # Get the connection and inspector
-    conn = op.get_bind()
-    inspector = inspect(conn)
+    # Use raw SQL with proper error handling for PostgreSQL
+    connection = op.get_bind()
     
-    # Helper function to check if column exists
-    def column_exists(table_name, column_name):
-        try:
-            columns = [col['name'] for col in inspector.get_columns(table_name)]
-            return column_name in columns
-        except Exception:
-            return False
+    # 1. Add columns to users table
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            -- Add onboarding_completed if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='users' AND column_name='onboarding_completed') THEN
+                ALTER TABLE users ADD COLUMN onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE;
+            END IF;
+            
+            -- Add onboarding_completed_at if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='users' AND column_name='onboarding_completed_at') THEN
+                ALTER TABLE users ADD COLUMN onboarding_completed_at TIMESTAMP WITH TIME ZONE;
+            END IF;
+            
+            -- Add is_game_history_public if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='users' AND column_name='is_game_history_public') THEN
+                ALTER TABLE users ADD COLUMN is_game_history_public BOOLEAN NOT NULL DEFAULT TRUE;
+            END IF;
+            
+            -- Add is_game_statistics_public if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='users' AND column_name='is_game_statistics_public') THEN
+                ALTER TABLE users ADD COLUMN is_game_statistics_public BOOLEAN NOT NULL DEFAULT TRUE;
+            END IF;
+        END $$;
+    """))
     
-    # Helper function to check if table exists
-    def table_exists(table_name):
-        return inspector.has_table(table_name)
+    # 2. Add columns to teams table
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            -- Add description if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='teams' AND column_name='description') THEN
+                ALTER TABLE teams ADD COLUMN description TEXT;
+            END IF;
+            
+            -- Add logo_url if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='teams' AND column_name='logo_url') THEN
+                ALTER TABLE teams ADD COLUMN logo_url VARCHAR;
+            END IF;
+            
+            -- Add created_by if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='teams' AND column_name='created_by') THEN
+                ALTER TABLE teams ADD COLUMN created_by INTEGER REFERENCES users(id);
+            END IF;
+            
+            -- Add created_at if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='teams' AND column_name='created_at') THEN
+                ALTER TABLE teams ADD COLUMN created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP;
+            END IF;
+            
+            -- Add is_active if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='teams' AND column_name='is_active') THEN
+                ALTER TABLE teams ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE;
+            END IF;
+        END $$;
+    """))
     
-    # Helper function to check if enum exists
-    def enum_exists(enum_name):
-        try:
-            result = conn.execute(
-                sa.text("SELECT 1 FROM pg_type WHERE typname = :name"),
-                {"name": enum_name}
-            )
-            return result.fetchone() is not None
-        except Exception:
-            return False
+    # 3. Create ENUMs if they don't exist
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            -- Create teammembershiprole enum
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'teammembershiprole') THEN
+                CREATE TYPE teammembershiprole AS ENUM ('OWNER', 'ADMIN', 'MEMBER');
+            END IF;
+            
+            -- Create teammembershipstatus enum
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'teammembershipstatus') THEN
+                CREATE TYPE teammembershipstatus AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING', 'REMOVED');
+            END IF;
+            
+            -- Create gameplayerposition enum
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'gameplayerposition') THEN
+                CREATE TYPE gameplayerposition AS ENUM ('LEFT', 'RIGHT');
+            END IF;
+            
+            -- Create gameplayerteamside enum
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'gameplayerteamside') THEN
+                CREATE TYPE gameplayerteamside AS ENUM ('TEAM_1', 'TEAM_2');
+            END IF;
+        END $$;
+    """))
     
-    # Add onboarding tracking to users table
-    if not column_exists('users', 'onboarding_completed'):
-        op.add_column('users', sa.Column('onboarding_completed', sa.Boolean(), nullable=False, server_default='false'))
+    # 4. Create team_memberships table if it doesn't exist
+    connection.execute(sa.text("""
+        CREATE TABLE IF NOT EXISTS team_memberships (
+            id SERIAL PRIMARY KEY,
+            team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            role teammembershiprole NOT NULL DEFAULT 'MEMBER',
+            status teammembershipstatus NOT NULL DEFAULT 'ACTIVE',
+            joined_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            left_at TIMESTAMP WITH TIME ZONE,
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            CONSTRAINT unique_team_user_membership UNIQUE (team_id, user_id)
+        );
+    """))
     
-    if not column_exists('users', 'onboarding_completed_at'):
-        op.add_column('users', sa.Column('onboarding_completed_at', sa.TIMESTAMP(timezone=True), nullable=True))
-
-    # Add privacy settings to users table
-    if not column_exists('users', 'is_game_history_public'):
-        op.add_column('users', sa.Column('is_game_history_public', sa.Boolean(), nullable=False, server_default='true'))
+    # 5. Create indexes if they don't exist
+    connection.execute(sa.text("""
+        CREATE INDEX IF NOT EXISTS idx_team_memberships_team_id ON team_memberships(team_id);
+        CREATE INDEX IF NOT EXISTS idx_team_memberships_user_id ON team_memberships(user_id);
+        CREATE INDEX IF NOT EXISTS idx_team_memberships_active ON team_memberships(team_id, is_active);
+    """))
     
-    if not column_exists('users', 'is_game_statistics_public'):
-        op.add_column('users', sa.Column('is_game_statistics_public', sa.Boolean(), nullable=False, server_default='true'))
-
-    # Extend teams table for persistence
-    if not column_exists('teams', 'description'):
-        op.add_column('teams', sa.Column('description', sa.Text(), nullable=True))
-    
-    if not column_exists('teams', 'logo_url'):
-        op.add_column('teams', sa.Column('logo_url', sa.String(), nullable=True))
-    
-    if not column_exists('teams', 'created_by'):
-        op.add_column('teams', sa.Column('created_by', sa.Integer(), nullable=True))
-    
-    if not column_exists('teams', 'created_at'):
-        op.add_column('teams', sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')))
-    
-    if not column_exists('teams', 'is_active'):
-        op.add_column('teams', sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'))
-
-    # Create team membership role enum
-    if not enum_exists('teammembershiprole'):
-        conn.execute(sa.text("CREATE TYPE teammembershiprole AS ENUM ('OWNER', 'ADMIN', 'MEMBER')"))
-
-    # Create team membership status enum
-    if not enum_exists('teammembershipstatus'):
-        conn.execute(sa.text("CREATE TYPE teammembershipstatus AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING', 'REMOVED')"))
-
-    # Create team_memberships table
-    if not table_exists('team_memberships'):
-        op.create_table('team_memberships',
-            sa.Column('id', sa.Integer(), nullable=False),
-            sa.Column('team_id', sa.Integer(), nullable=False),
-            sa.Column('user_id', sa.Integer(), nullable=False),
-            sa.Column('role', postgresql.ENUM('OWNER', 'ADMIN', 'MEMBER', name='teammembershiprole', create_type=False), nullable=False, server_default='MEMBER'),
-            sa.Column('status', postgresql.ENUM('ACTIVE', 'INACTIVE', 'PENDING', 'REMOVED', name='teammembershipstatus', create_type=False), nullable=False, server_default='ACTIVE'),
-            sa.Column('joined_at', sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
-            sa.Column('left_at', sa.TIMESTAMP(timezone=True), nullable=True),
-            sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
-            sa.ForeignKeyConstraint(['team_id'], ['teams.id'], ondelete='CASCADE'),
-            sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-            sa.PrimaryKeyConstraint('id'),
-            sa.UniqueConstraint('team_id', 'user_id', name='unique_team_user_membership')
-        )
-        op.create_index('idx_team_memberships_team_id', 'team_memberships', ['team_id'])
-        op.create_index('idx_team_memberships_user_id', 'team_memberships', ['user_id'])
-        op.create_index('idx_team_memberships_active', 'team_memberships', ['team_id', 'is_active'])
-
-    # Create game player position enum
-    if not enum_exists('gameplayerposition'):
-        conn.execute(sa.text("CREATE TYPE gameplayerposition AS ENUM ('LEFT', 'RIGHT')"))
-
-    # Create game player team side enum
-    if not enum_exists('gameplayerteamside'):
-        conn.execute(sa.text("CREATE TYPE gameplayerteamside AS ENUM ('TEAM_1', 'TEAM_2')"))
-
-    # Add position tracking to game_players
-    if not column_exists('game_players', 'position'):
-        op.add_column('game_players', sa.Column('position', postgresql.ENUM('LEFT', 'RIGHT', name='gameplayerposition', create_type=False), nullable=True))
-    
-    if not column_exists('game_players', 'team_side'):
-        op.add_column('game_players', sa.Column('team_side', postgresql.ENUM('TEAM_1', 'TEAM_2', name='gameplayerteamside', create_type=False), nullable=True))
-
-    # Add foreign key constraints if they don't exist
-    existing_fks = [fk['name'] for fk in inspector.get_foreign_keys('teams')]
-    if 'fk_teams_created_by' not in existing_fks:
-        op.create_foreign_key('fk_teams_created_by', 'teams', 'users', ['created_by'], ['id'])
+    # 6. Add columns to game_players table
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            -- Add position if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='game_players' AND column_name='position') THEN
+                ALTER TABLE game_players ADD COLUMN position gameplayerposition;
+            END IF;
+            
+            -- Add team_side if it doesn't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='game_players' AND column_name='team_side') THEN
+                ALTER TABLE game_players ADD COLUMN team_side gameplayerteamside;
+            END IF;
+        END $$;
+    """))
 
 
 def downgrade() -> None:
     """Downgrade schema - remove comprehensive game management enhancements."""
     
-    # Get the connection and inspector
-    conn = op.get_bind()
-    inspector = inspect(conn)
+    connection = op.get_bind()
     
-    # Helper function to check if column exists
-    def column_exists(table_name, column_name):
-        try:
-            columns = [col['name'] for col in inspector.get_columns(table_name)]
-            return column_name in columns
-        except Exception:
-            return False
+    # Drop columns from game_players
+    connection.execute(sa.text("""
+        ALTER TABLE game_players DROP COLUMN IF EXISTS team_side;
+        ALTER TABLE game_players DROP COLUMN IF EXISTS position;
+    """))
     
-    # Helper function to check if table exists
-    def table_exists(table_name):
-        return inspector.has_table(table_name)
-    
-    # Remove position tracking from game_players
-    if column_exists('game_players', 'team_side'):
-        op.drop_column('game_players', 'team_side')
-    
-    if column_exists('game_players', 'position'):
-        op.drop_column('game_players', 'position')
-
     # Drop team_memberships table
-    if table_exists('team_memberships'):
-        op.drop_table('team_memberships')
-
-    # Remove team table extensions
-    existing_fks = [fk['name'] for fk in inspector.get_foreign_keys('teams')]
-    if 'fk_teams_created_by' in existing_fks:
-        op.drop_constraint('fk_teams_created_by', 'teams', type_='foreignkey')
+    connection.execute(sa.text("DROP TABLE IF EXISTS team_memberships;"))
     
-    if column_exists('teams', 'is_active'):
-        op.drop_column('teams', 'is_active')
+    # Drop columns from teams
+    connection.execute(sa.text("""
+        ALTER TABLE teams DROP COLUMN IF EXISTS is_active;
+        ALTER TABLE teams DROP COLUMN IF EXISTS created_at;
+        ALTER TABLE teams DROP COLUMN IF EXISTS created_by;
+        ALTER TABLE teams DROP COLUMN IF EXISTS logo_url;
+        ALTER TABLE teams DROP COLUMN IF EXISTS description;
+    """))
     
-    if column_exists('teams', 'created_at'):
-        op.drop_column('teams', 'created_at')
+    # Drop columns from users
+    connection.execute(sa.text("""
+        ALTER TABLE users DROP COLUMN IF EXISTS is_game_statistics_public;
+        ALTER TABLE users DROP COLUMN IF EXISTS is_game_history_public;
+        ALTER TABLE users DROP COLUMN IF EXISTS onboarding_completed_at;
+        ALTER TABLE users DROP COLUMN IF EXISTS onboarding_completed;
+    """))
     
-    if column_exists('teams', 'created_by'):
-        op.drop_column('teams', 'created_by')
-    
-    if column_exists('teams', 'logo_url'):
-        op.drop_column('teams', 'logo_url')
-    
-    if column_exists('teams', 'description'):
-        op.drop_column('teams', 'description')
-
-    # Remove privacy settings from users
-    if column_exists('users', 'is_game_statistics_public'):
-        op.drop_column('users', 'is_game_statistics_public')
-    
-    if column_exists('users', 'is_game_history_public'):
-        op.drop_column('users', 'is_game_history_public')
-
-    # Remove onboarding tracking from users
-    if column_exists('users', 'onboarding_completed_at'):
-        op.drop_column('users', 'onboarding_completed_at')
-    
-    if column_exists('users', 'onboarding_completed'):
-        op.drop_column('users', 'onboarding_completed')
-
-    # Drop enums - using raw SQL for PostgreSQL
-    conn.execute(sa.text("DROP TYPE IF EXISTS gameplayerteamside"))
-    conn.execute(sa.text("DROP TYPE IF EXISTS gameplayerposition"))
-    conn.execute(sa.text("DROP TYPE IF EXISTS teammembershipstatus"))
-    conn.execute(sa.text("DROP TYPE IF EXISTS teammembershiprole"))
+    # Drop enums
+    connection.execute(sa.text("""
+        DROP TYPE IF EXISTS gameplayerteamside;
+        DROP TYPE IF EXISTS gameplayerposition;
+        DROP TYPE IF EXISTS teammembershipstatus;
+        DROP TYPE IF EXISTS teammembershiprole;
+    """))

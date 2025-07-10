@@ -44,12 +44,16 @@ from app.schemas.game_invitation_schemas import (
     GameInvitationInfo,
     GameInvitationResponse,
     OnboardingRequiredResponse,
+    TeamInviteRequest,
+    TeamInvitationResponse,
 )
 from app.schemas.game_player_schemas import (
     GamePlayer,
     GamePlayerCreate,
+    GamePlayerPositionUpdate,
     GamePlayerStatus,
     GamePlayerUpdate,
+    GamePlayerWithPosition,
 )
 from app.schemas.game_schemas import (
     Game,
@@ -60,6 +64,7 @@ from app.schemas.game_schemas import (
     GameUpdate,
     GameWithRatingsResponse,
     GameWithTeams,
+    TeamJoinRequest,
     InvitationResponseRequest,
     UserInviteRequest,
 )
@@ -166,8 +171,10 @@ __all__ = [
     # GamePlayer
     "GamePlayer",
     "GamePlayerCreate",
+    "GamePlayerPositionUpdate",
     "GamePlayerStatus",
     "GamePlayerUpdate",
+    "GamePlayerWithPosition",
     "GameResponse",
     "GameResult",
     "GameResultRequest",
@@ -175,6 +182,7 @@ __all__ = [
     "GameUpdate",
     "GameWithRatingsResponse",
     "GameWithTeams",
+    "TeamJoinRequest",
     "InvitationResponseRequest",
     # Leaderboard
     "LeaderboardResponse",
@@ -187,6 +195,8 @@ __all__ = [
     "OnboardingRequiredResponse",
     "OnboardingStatusResponse",
     "OnboardingStatusUpdate",
+    "TeamInviteRequest",
+    "TeamInvitationResponse",
     "RefreshTokenRequest",
     "ScheduleResponse",
     # Skill Assessment
