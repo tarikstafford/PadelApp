@@ -106,6 +106,7 @@ app.include_router(
     tags=["Notifications"],
 )
 app.include_router(teams_router, prefix=f"{settings.API_V1_STR}/teams", tags=["Teams"])
+app.include_router(onboarding_router, prefix=f"{settings.API_V1_STR}/users/onboarding", tags=["Onboarding"])
 
 
 @app.on_event("startup")
