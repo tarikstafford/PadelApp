@@ -9,6 +9,9 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.sql import table, column
+from sqlalchemy import inspect
 
 
 # revision identifiers, used by Alembic.
@@ -21,76 +24,79 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema with comprehensive game management enhancements."""
     
-    # Add onboarding tracking to users table
-    try:
-        op.add_column('users', sa.Column('onboarding_completed', sa.Boolean(), nullable=False, server_default='false'))
-    except Exception:
-        pass  # Column already exists
+    # Get the connection and inspector
+    conn = op.get_bind()
+    inspector = inspect(conn)
     
-    try:
+    # Helper function to check if column exists
+    def column_exists(table_name, column_name):
+        try:
+            columns = [col['name'] for col in inspector.get_columns(table_name)]
+            return column_name in columns
+        except Exception:
+            return False
+    
+    # Helper function to check if table exists
+    def table_exists(table_name):
+        return inspector.has_table(table_name)
+    
+    # Helper function to check if enum exists
+    def enum_exists(enum_name):
+        try:
+            result = conn.execute(
+                sa.text("SELECT 1 FROM pg_type WHERE typname = :name"),
+                {"name": enum_name}
+            )
+            return result.fetchone() is not None
+        except Exception:
+            return False
+    
+    # Add onboarding tracking to users table
+    if not column_exists('users', 'onboarding_completed'):
+        op.add_column('users', sa.Column('onboarding_completed', sa.Boolean(), nullable=False, server_default='false'))
+    
+    if not column_exists('users', 'onboarding_completed_at'):
         op.add_column('users', sa.Column('onboarding_completed_at', sa.TIMESTAMP(timezone=True), nullable=True))
-    except Exception:
-        pass  # Column already exists
 
     # Add privacy settings to users table
-    try:
+    if not column_exists('users', 'is_game_history_public'):
         op.add_column('users', sa.Column('is_game_history_public', sa.Boolean(), nullable=False, server_default='true'))
-    except Exception:
-        pass  # Column already exists
     
-    try:
+    if not column_exists('users', 'is_game_statistics_public'):
         op.add_column('users', sa.Column('is_game_statistics_public', sa.Boolean(), nullable=False, server_default='true'))
-    except Exception:
-        pass  # Column already exists
 
     # Extend teams table for persistence
-    try:
+    if not column_exists('teams', 'description'):
         op.add_column('teams', sa.Column('description', sa.Text(), nullable=True))
-    except Exception:
-        pass  # Column already exists
     
-    try:
+    if not column_exists('teams', 'logo_url'):
         op.add_column('teams', sa.Column('logo_url', sa.String(), nullable=True))
-    except Exception:
-        pass  # Column already exists
     
-    try:
+    if not column_exists('teams', 'created_by'):
         op.add_column('teams', sa.Column('created_by', sa.Integer(), nullable=True))
-    except Exception:
-        pass  # Column already exists
     
-    try:
+    if not column_exists('teams', 'created_at'):
         op.add_column('teams', sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')))
-    except Exception:
-        pass  # Column already exists
     
-    try:
+    if not column_exists('teams', 'is_active'):
         op.add_column('teams', sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'))
-    except Exception:
-        pass  # Column already exists
 
     # Create team membership role enum
-    try:
-        team_role_enum = sa.Enum('OWNER', 'ADMIN', 'MEMBER', name='teammembershiprole')
-        team_role_enum.create(op.get_bind(), checkfirst=True)
-    except Exception:
-        pass  # Enum already exists
+    if not enum_exists('teammembershiprole'):
+        conn.execute(sa.text("CREATE TYPE teammembershiprole AS ENUM ('OWNER', 'ADMIN', 'MEMBER')"))
 
     # Create team membership status enum
-    try:
-        team_status_enum = sa.Enum('ACTIVE', 'INACTIVE', 'PENDING', 'REMOVED', name='teammembershipstatus')
-        team_status_enum.create(op.get_bind(), checkfirst=True)
-    except Exception:
-        pass  # Enum already exists
+    if not enum_exists('teammembershipstatus'):
+        conn.execute(sa.text("CREATE TYPE teammembershipstatus AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING', 'REMOVED')"))
 
     # Create team_memberships table
-    try:
+    if not table_exists('team_memberships'):
         op.create_table('team_memberships',
             sa.Column('id', sa.Integer(), nullable=False),
             sa.Column('team_id', sa.Integer(), nullable=False),
             sa.Column('user_id', sa.Integer(), nullable=False),
-            sa.Column('role', sa.Enum('OWNER', 'ADMIN', 'MEMBER', name='teammembershiprole'), nullable=False, server_default='MEMBER'),
-            sa.Column('status', sa.Enum('ACTIVE', 'INACTIVE', 'PENDING', 'REMOVED', name='teammembershipstatus'), nullable=False, server_default='ACTIVE'),
+            sa.Column('role', postgresql.ENUM('OWNER', 'ADMIN', 'MEMBER', name='teammembershiprole', create_type=False), nullable=False, server_default='MEMBER'),
+            sa.Column('status', postgresql.ENUM('ACTIVE', 'INACTIVE', 'PENDING', 'REMOVED', name='teammembershipstatus', create_type=False), nullable=False, server_default='ACTIVE'),
             sa.Column('joined_at', sa.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
             sa.Column('left_at', sa.TIMESTAMP(timezone=True), nullable=True),
             sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
@@ -102,131 +108,94 @@ def upgrade() -> None:
         op.create_index('idx_team_memberships_team_id', 'team_memberships', ['team_id'])
         op.create_index('idx_team_memberships_user_id', 'team_memberships', ['user_id'])
         op.create_index('idx_team_memberships_active', 'team_memberships', ['team_id', 'is_active'])
-    except Exception:
-        pass  # Table already exists
 
     # Create game player position enum
-    try:
-        position_enum = sa.Enum('LEFT', 'RIGHT', name='gameplayerposition')
-        position_enum.create(op.get_bind(), checkfirst=True)
-    except Exception:
-        pass  # Enum already exists
+    if not enum_exists('gameplayerposition'):
+        conn.execute(sa.text("CREATE TYPE gameplayerposition AS ENUM ('LEFT', 'RIGHT')"))
 
     # Create game player team side enum
-    try:
-        team_side_enum = sa.Enum('TEAM_1', 'TEAM_2', name='gameplayerteamside')
-        team_side_enum.create(op.get_bind(), checkfirst=True)
-    except Exception:
-        pass  # Enum already exists
+    if not enum_exists('gameplayerteamside'):
+        conn.execute(sa.text("CREATE TYPE gameplayerteamside AS ENUM ('TEAM_1', 'TEAM_2')"))
 
     # Add position tracking to game_players
-    try:
-        op.add_column('game_players', sa.Column('position', sa.Enum('LEFT', 'RIGHT', name='gameplayerposition'), nullable=True))
-    except Exception:
-        pass  # Column already exists
+    if not column_exists('game_players', 'position'):
+        op.add_column('game_players', sa.Column('position', postgresql.ENUM('LEFT', 'RIGHT', name='gameplayerposition', create_type=False), nullable=True))
     
-    try:
-        op.add_column('game_players', sa.Column('team_side', sa.Enum('TEAM_1', 'TEAM_2', name='gameplayerteamside'), nullable=True))
-    except Exception:
-        pass  # Column already exists
+    if not column_exists('game_players', 'team_side'):
+        op.add_column('game_players', sa.Column('team_side', postgresql.ENUM('TEAM_1', 'TEAM_2', name='gameplayerteamside', create_type=False), nullable=True))
 
     # Add foreign key constraints if they don't exist
-    try:
+    existing_fks = [fk['name'] for fk in inspector.get_foreign_keys('teams')]
+    if 'fk_teams_created_by' not in existing_fks:
         op.create_foreign_key('fk_teams_created_by', 'teams', 'users', ['created_by'], ['id'])
-    except Exception:
-        pass  # Constraint already exists
 
 
 def downgrade() -> None:
     """Downgrade schema - remove comprehensive game management enhancements."""
     
-    # Remove position tracking from game_players
-    try:
-        op.drop_column('game_players', 'team_side')
-    except Exception:
-        pass
+    # Get the connection and inspector
+    conn = op.get_bind()
+    inspector = inspect(conn)
     
-    try:
+    # Helper function to check if column exists
+    def column_exists(table_name, column_name):
+        try:
+            columns = [col['name'] for col in inspector.get_columns(table_name)]
+            return column_name in columns
+        except Exception:
+            return False
+    
+    # Helper function to check if table exists
+    def table_exists(table_name):
+        return inspector.has_table(table_name)
+    
+    # Remove position tracking from game_players
+    if column_exists('game_players', 'team_side'):
+        op.drop_column('game_players', 'team_side')
+    
+    if column_exists('game_players', 'position'):
         op.drop_column('game_players', 'position')
-    except Exception:
-        pass
 
     # Drop team_memberships table
-    try:
+    if table_exists('team_memberships'):
         op.drop_table('team_memberships')
-    except Exception:
-        pass
 
     # Remove team table extensions
-    try:
+    existing_fks = [fk['name'] for fk in inspector.get_foreign_keys('teams')]
+    if 'fk_teams_created_by' in existing_fks:
         op.drop_constraint('fk_teams_created_by', 'teams', type_='foreignkey')
-    except Exception:
-        pass
     
-    try:
+    if column_exists('teams', 'is_active'):
         op.drop_column('teams', 'is_active')
-    except Exception:
-        pass
     
-    try:
+    if column_exists('teams', 'created_at'):
         op.drop_column('teams', 'created_at')
-    except Exception:
-        pass
     
-    try:
+    if column_exists('teams', 'created_by'):
         op.drop_column('teams', 'created_by')
-    except Exception:
-        pass
     
-    try:
+    if column_exists('teams', 'logo_url'):
         op.drop_column('teams', 'logo_url')
-    except Exception:
-        pass
     
-    try:
+    if column_exists('teams', 'description'):
         op.drop_column('teams', 'description')
-    except Exception:
-        pass
 
     # Remove privacy settings from users
-    try:
+    if column_exists('users', 'is_game_statistics_public'):
         op.drop_column('users', 'is_game_statistics_public')
-    except Exception:
-        pass
     
-    try:
+    if column_exists('users', 'is_game_history_public'):
         op.drop_column('users', 'is_game_history_public')
-    except Exception:
-        pass
 
     # Remove onboarding tracking from users
-    try:
+    if column_exists('users', 'onboarding_completed_at'):
         op.drop_column('users', 'onboarding_completed_at')
-    except Exception:
-        pass
     
-    try:
+    if column_exists('users', 'onboarding_completed'):
         op.drop_column('users', 'onboarding_completed')
-    except Exception:
-        pass
 
-    # Drop enums
-    try:
-        sa.Enum(name='gameplayerteamside').drop(op.get_bind(), checkfirst=True)
-    except Exception:
-        pass
-    
-    try:
-        sa.Enum(name='gameplayerposition').drop(op.get_bind(), checkfirst=True)
-    except Exception:
-        pass
-    
-    try:
-        sa.Enum(name='teammembershipstatus').drop(op.get_bind(), checkfirst=True)
-    except Exception:
-        pass
-    
-    try:
-        sa.Enum(name='teammembershiprole').drop(op.get_bind(), checkfirst=True)
-    except Exception:
-        pass
+    # Drop enums - using raw SQL for PostgreSQL
+    conn.execute(sa.text("DROP TYPE IF EXISTS gameplayerteamside"))
+    conn.execute(sa.text("DROP TYPE IF EXISTS gameplayerposition"))
+    conn.execute(sa.text("DROP TYPE IF EXISTS teammembershipstatus"))
+    conn.execute(sa.text("DROP TYPE IF EXISTS teammembershiprole"))
