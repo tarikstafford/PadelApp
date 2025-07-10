@@ -78,6 +78,7 @@ function GameDetailPageInternal() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isGeneratingInvite, setIsGeneratingInvite] = useState(false);
   const [isLeavingGame, setIsLeavingGame] = useState(false);
+  const [isRequestingToJoin, setIsRequestingToJoin] = useState(false);
 
   const generateInviteLink = async () => {
     if (!gameId || !accessToken) {
@@ -301,6 +302,38 @@ function GameDetailPageInternal() {
     }
   };
 
+  const handleRequestToJoin = async () => {
+    if (!gameId || !accessToken) {
+      toast.error('Cannot request to join game');
+      return;
+    }
+    
+    setIsRequestingToJoin(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/games/${gameId}/join`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to send join request');
+      }
+      
+      toast.success('Join request sent successfully! The game creator will be notified.');
+      fetchGameData(); // Refresh game data to show updated status
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to send join request';
+      console.error('Error requesting to join game:', error);
+      toast.error(message);
+    } finally {
+      setIsRequestingToJoin(false);
+    }
+  };
+
 
   if (isLoading) { return <div className="flex justify-center items-center min-h-[calc(100vh-200px)]"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>; }
   if (error) { return <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center px-4"><AlertTriangle className="h-12 w-12 text-destructive mb-3" /><h2 className="text-xl font-semibold text-destructive mb-2">Error loading game details</h2><p className="text-sm text-muted-foreground mb-4">{error}</p><Button variant="outline" onClick={() => router.push('/bookings')}>Back to My Bookings</Button></div>; }
@@ -311,12 +344,19 @@ function GameDetailPageInternal() {
   const courtName = game.booking?.court?.name || (game.booking?.court?.id ? `Court ID: ${game.booking.court.id}` : (game.booking ? `Court ID: ${game.booking.court_id}` : 'Court unavailable'));
   const clubName = game.booking?.court?.club?.name || (game.booking?.court?.club?.id ? `Club ID: ${game.booking.court.club.id}` : 'Club details unavailable');
   
+  // Always show 4 slots: fill with accepted players, then null for invite
+  const acceptedPlayers = (game.players ?? []).filter(p => p.status === "ACCEPTED");
+
   // Check if current user can leave the game
   const canLeaveGame = currentUserGamePlayerInfo && currentUserGamePlayerInfo.status === "ACCEPTED" && 
                       !['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(game.game_status || 'SCHEDULED');
 
-  // Always show 4 slots: fill with accepted players, then null for invite
-  const acceptedPlayers = (game.players ?? []).filter(p => p.status === "ACCEPTED");
+  // Check if current user can request to join the game
+  const canRequestToJoin = game.game_type === "PUBLIC" && 
+                          !isCurrentUserGameCreator && 
+                          !currentUserGamePlayerInfo && 
+                          acceptedPlayers.length < MAX_PLAYERS_PER_GAME &&
+                          !['COMPLETED', 'CANCELLED', 'EXPIRED'].includes(game.game_status || 'SCHEDULED');
   const playerSlots: (GamePlayer | undefined)[] = [
     acceptedPlayers[0],
     acceptedPlayers[1],
@@ -474,6 +514,33 @@ function GameDetailPageInternal() {
                             {isRespondingToInvite ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserX className="mr-2 h-4 w-4" />} Decline
                         </Button>
                     </div>
+                </div>
+            )}
+
+            {canRequestToJoin && (
+                <div className="mt-6 pt-4 border-t">
+                    <h3 className="text-lg font-semibold mb-3">Join This Game</h3>
+                    <p className="text-sm mb-3 text-muted-foreground">
+                        This is a public game with {MAX_PLAYERS_PER_GAME - acceptedPlayers.length} open slot{MAX_PLAYERS_PER_GAME - acceptedPlayers.length !== 1 ? 's' : ''}. 
+                        Request to join and the game creator will be notified.
+                    </p>
+                    <Button 
+                        onClick={handleRequestToJoin}
+                        disabled={isRequestingToJoin}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                        {isRequestingToJoin ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Sending Request...
+                            </>
+                        ) : (
+                            <>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Request to Join
+                            </>
+                        )}
+                    </Button>
                 </div>
             )}
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import Link from 'next/link';
 import { Button } from "@workspace/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@workspace/ui/components/card";
 import { Calendar } from "@workspace/ui/components/calendar";
@@ -229,9 +230,9 @@ function PublicGamesPageInternal() {
                         {isCurrentUserInGame ? "You're in this game" : (isCurrentUserCreator ? "Your Game" : "Game Full / Cannot Join")}
                     </Button>
                   )}
-                  {/* <Link href={`/games/${game.id}`} passHref legacyBehavior>
+                  <Link href={`/games/${game.id}`} passHref legacyBehavior>
                     <Button variant="ghost" size="sm" className="mt-2 w-full">View Game Details</Button>
-                  </Link> */}
+                  </Link>
                 </CardFooter>
               </Card>
             );
