@@ -173,15 +173,20 @@ class GameInvitationCRUD:
 
     def get_invitation_info(self, db: Session, token: str) -> Optional[dict]:
         """Get public information about an invitation (for preview before auth)"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
             invitation = self.get_invitation_by_token(db, token)
 
             if not invitation:
+                logger.warning(f"Invitation not found for token: {token}")
                 return None
 
             # Get the game record without complex joinedload operations
             game = db.query(Game).filter(Game.id == invitation.game_id).first()
             if not game:
+                logger.error(f"Game not found for invitation token: {token}, game_id: {invitation.game_id}")
                 return None
 
             # Get creator safely
@@ -199,7 +204,7 @@ class GameInvitationCRUD:
                 .count()
             )
 
-            # Build booking info safely
+            # Build booking info safely - use separate queries to avoid complex joins
             booking_info = None
             if game.booking_id:
                 try:
@@ -210,10 +215,13 @@ class GameInvitationCRUD:
                     booking = db.query(Booking).filter(Booking.id == game.booking_id).first()
                     if booking:
                         court_info = None
+                        club_info = None
+                        
+                        # Get court info if available
                         if booking.court_id:
                             court = db.query(Court).filter(Court.id == booking.court_id).first()
                             if court:
-                                club_info = None
+                                # Get club info if available
                                 if court.club_id:
                                     court_club = db.query(Club).filter(Club.id == court.club_id).first()
                                     if court_club:
@@ -221,10 +229,23 @@ class GameInvitationCRUD:
                                             "id": court_club.id,
                                             "name": court_club.name,
                                         }
+                                    else:
+                                        club_info = {
+                                            "id": court.club_id,
+                                            "name": "Unknown Club",
+                                        }
+                                
                                 court_info = {
                                     "id": court.id,
                                     "name": court.name,
                                     "club": club_info,
+                                }
+                            else:
+                                # Court not found, use fallback
+                                court_info = {
+                                    "id": booking.court_id,
+                                    "name": "Unknown Court",
+                                    "club": {"id": game.club_id, "name": "Unknown Club"},
                                 }
 
                         booking_info = {
@@ -233,7 +254,21 @@ class GameInvitationCRUD:
                             "end_time": booking.end_time.isoformat() if booking.end_time else None,
                             "court": court_info,
                         }
-                except Exception:
+                    else:
+                        logger.warning(f"Booking not found for game {game.id}, booking_id: {game.booking_id}")
+                        # Booking not found, create fallback
+                        booking_info = {
+                            "id": game.booking_id,
+                            "start_time": game.start_time.isoformat() if game.start_time else None,
+                            "end_time": game.end_time.isoformat() if game.end_time else None,
+                            "court": {
+                                "id": None,
+                                "name": "Unknown Court",
+                                "club": {"id": game.club_id, "name": "Unknown Club"},
+                            },
+                        }
+                except Exception as booking_error:
+                    logger.error(f"Error getting booking info: {booking_error}")
                     # If booking relationships fail, use fallback
                     booking_info = {
                         "id": game.booking_id,
@@ -257,7 +292,13 @@ class GameInvitationCRUD:
                             "id": game_club.id,
                             "name": game_club.name,
                         }
-                except Exception:
+                    else:
+                        game_club_info = {
+                            "id": game.club_id,
+                            "name": "Unknown Club",
+                        }
+                except Exception as club_error:
+                    logger.error(f"Error getting club info: {club_error}")
                     game_club_info = {
                         "id": game.club_id,
                         "name": "Unknown Club",
@@ -291,15 +332,15 @@ class GameInvitationCRUD:
                                 },
                                 "elo_rating": getattr(user, 'elo_rating', 1000),
                             })
-                    except Exception:
-                        # Skip problematic players
+                    except Exception as player_error:
+                        logger.error(f"Error getting player info for user {player.user_id}: {player_error}")
                         continue
-            except Exception:
-                # If players query fails, return empty list
+            except Exception as players_error:
+                logger.error(f"Error getting players info: {players_error}")
                 players_info = []
 
             # Return the complete game object structure for frontend compatibility
-            return {
+            response_data = {
                 "game": {
                     "id": game.id,
                     "club_id": game.club_id,
@@ -325,10 +366,14 @@ class GameInvitationCRUD:
                 "can_join": invitation.is_valid() and current_players_count < 4,
                 "expires_at": invitation.expires_at.isoformat() if invitation.expires_at else None,
             }
+            
+            logger.info(f"Successfully retrieved invitation info for token: {token}")
+            return response_data
 
         except Exception as e:
-            # Log the error but don't crash
-            print(f"Error in get_invitation_info: {e}")
+            # Log the error with full details for debugging
+            logger.error(f"Unexpected error in get_invitation_info for token {token}: {e}")
+            logger.exception("Full traceback:")
             return None
 
 
