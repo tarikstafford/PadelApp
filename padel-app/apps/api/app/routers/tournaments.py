@@ -1312,3 +1312,99 @@ async def get_tournament_schedule_summary(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to get tournament schedule summary: {e!s}",
         )
+
+
+# Tournament Expiration Endpoints
+
+@router.post("/expire-past-tournaments")
+async def expire_past_tournaments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Expire past tournaments by automatically updating their status.
+    
+    This endpoint:
+    1. Closes registration for tournaments past their registration deadline
+    2. Completes tournaments that are past their end date
+    
+    Can be called manually or by scheduled jobs.
+    """
+    # TODO: Add admin role check here if needed
+    # For now, any authenticated user can trigger this (consider restricting to admins)
+    
+    from app.services.tournament_expiration_service import tournament_expiration_service
+    
+    result = tournament_expiration_service.expire_past_tournaments(db)
+    
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to expire tournaments: {result.get('error', 'Unknown error')}",
+        )
+    
+    return {
+        "message": f"Successfully processed {result['total_processed']} tournaments",
+        "registration_closed": result["registration_closed_count"],
+        "completed": result["completed_count"],
+        "registration_closed_ids": result["registration_closed_ids"],
+        "completed_ids": result["completed_ids"],
+        "timestamp": result["timestamp"]
+    }
+
+
+@router.get("/expiration-status")
+async def get_tournament_expiration_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Get a summary of tournaments that need expiration without actually expiring them.
+    Useful for monitoring and reporting.
+    """
+    from app.services.tournament_expiration_service import tournament_expiration_service
+    
+    status_info = tournament_expiration_service.get_tournaments_needing_expiration(db)
+    
+    if "error" in status_info:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get expiration status: {status_info['error']}",
+        )
+    
+    return {
+        "message": f"Found {status_info['total_needing_action']} tournaments needing action",
+        "registration_to_close": status_info["registration_to_close"],
+        "tournaments_to_complete": status_info["tournaments_to_complete"],
+        "total_needing_action": status_info["total_needing_action"],
+        "timestamp": status_info["timestamp"]
+    }
+
+
+@router.post("/{tournament_id}/expire")
+async def expire_single_tournament(
+    tournament_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Check and expire a single tournament if needed.
+    """
+    from app.services.tournament_expiration_service import tournament_expiration_service
+    
+    result = tournament_expiration_service.check_single_tournament_expiration(db, tournament_id)
+    
+    if not result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND if "not found" in result.get("error", "").lower() else status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result.get("error", "Failed to check tournament expiration"),
+        )
+    
+    return {
+        "message": f"Tournament {tournament_id} checked for expiration",
+        "tournament_id": result["tournament_id"],
+        "original_status": result["original_status"],
+        "new_status": result["new_status"],
+        "action_taken": result["action_taken"],
+        "timestamp": result["timestamp"]
+    }
